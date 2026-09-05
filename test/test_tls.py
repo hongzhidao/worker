@@ -115,6 +115,26 @@ def context_cert_req(cert='root'):
 
     return context
 
+def test_tls_connection_info():
+    client.load('connection_info')
+    client.certificate()
+    add_tls(application='connection_info')
+
+    resp = client.get_ssl(
+        headers={
+            'Connection': 'close',
+            'X-Forwarded-For': '203.0.113.7',
+            'X-Forwarded-Proto': 'http',
+        },
+    )
+
+    assert resp['status'] == 200
+    assert resp['headers']['Remote-Addr'] == '127.0.0.1'
+    assert resp['headers']['Url-Scheme'] == 'https'
+    assert resp['headers']['Request-Forwarded-For'] == '203.0.113.7'
+    assert resp['headers']['Request-Forwarded-Proto'] == 'http'
+
+
 def test_tls_listener_option_add():
     client.load('empty')
 

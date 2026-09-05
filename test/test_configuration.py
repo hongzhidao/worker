@@ -36,6 +36,31 @@ def test_configuration_upstreams_unsupported(upstreams):
     assert client.conf_get() == before
 
 
+@pytest.mark.parametrize(
+    'name,settings',
+    [
+        ('client_ip', {'header': 'X-Forwarded-For', 'source': '127.0.0.1'}),
+        ('forwarded', {
+            'client_ip': 'X-Forwarded-For',
+            'protocol': 'X-Forwarded-Proto',
+            'source': '127.0.0.1',
+        }),
+    ],
+    ids=['client_ip', 'forwarded'],
+)
+def test_listener_forwarding_options_unsupported(name, settings):
+    assert 'success' in try_addr('127.0.0.1:8080')
+    before = client.conf_get()
+
+    resp = client.conf(
+        {'pass': 'routes', name: settings}, 'listeners/127.0.0.1:8080'
+    )
+
+    assert resp.get('detail') == f'Unknown parameter "{name}".'
+    assert client.conf_get() == before
+    assert client.get()['status'] == 200
+
+
 def test_json_unicode():
     assert 'success' in client.conf(
         """

@@ -65,6 +65,41 @@ custom-header: BLAH
     }, 'headers'
     assert resp['body'] == body, 'body'
 
+@pytest.mark.parametrize(
+    'sock_type,address', [('ipv4', '127.0.0.1'), ('ipv6', '::1')]
+)
+@pytest.mark.parametrize(
+    'forwarded_for,forwarded_proto',
+    [('203.0.113.7', 'https'), ('2001:db8::1, 192.0.2.1', 'on')],
+)
+def test_python_application_connection_info(sock_type, address, forwarded_for,
+    forwarded_proto):
+    client.load('connection_info')
+    assert 'success' in client.conf(
+        {
+            '127.0.0.1:8081': {'pass': 'applications/connection_info'},
+            '[::1]:8082': {'pass': 'applications/connection_info'},
+        },
+        'listeners',
+    )
+
+    resp = client.get(
+        sock_type=sock_type,
+        port=8081 if sock_type == 'ipv4' else 8082,
+        headers={
+            'Connection': 'close',
+            'X-Forwarded-For': forwarded_for,
+            'X-Forwarded-Proto': forwarded_proto,
+        },
+    )
+
+    assert resp['status'] == 200
+    assert resp['headers']['Remote-Addr'] == address
+    assert resp['headers']['Url-Scheme'] == 'http'
+    assert resp['headers']['Request-Forwarded-For'] == forwarded_for
+    assert resp['headers']['Request-Forwarded-Proto'] == forwarded_proto
+
+
 def test_python_application_query_string():
     client.load('query_string')
 
