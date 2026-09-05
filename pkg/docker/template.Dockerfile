@@ -1,4 +1,4 @@
-FROM @@CONTAINER@@
+FROM @@CONTAINER@@ AS BUILDER
 
 LABEL org.opencontainers.image.title="Worker"
 LABEL org.opencontainers.image.description="Official build of Worker for Docker."
@@ -12,7 +12,7 @@ RUN set -ex \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential \
     && mkdir -p /usr/lib/worker/modules /usr/lib/worker/debug-modules \
-    && git clone --depth 1 --branch @@VERSION@@ https://github.com/hongzhidao/worker.git worker \
+    && git clone --depth 1 --branch v@@VERSION@@ https://github.com/hongzhidao/worker.git worker \
     && cd worker \
     && NCPU="$(getconf _NPROCESSORS_ONLN)" \
     && DEB_HOST_MULTIARCH="$(dpkg-architecture -q DEB_HOST_MULTIARCH)" \

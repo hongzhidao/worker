@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:trixie-slim AS BUILDER
 
 LABEL org.opencontainers.image.title="Worker"
 LABEL org.opencontainers.image.description="Official build of Worker for Docker."
@@ -12,7 +12,7 @@ RUN set -ex \
     && apt-get update \
     && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential \
     && mkdir -p /usr/lib/worker/modules /usr/lib/worker/debug-modules \
-    && git clone --depth 1 --branch 0.1.0 https://github.com/hongzhidao/worker.git worker \
+    && git clone --depth 1 --branch v0.1.0 https://github.com/hongzhidao/worker.git worker \
     && cd worker \
     && NCPU="$(getconf _NPROCESSORS_ONLN)" \
     && DEB_HOST_MULTIARCH="$(dpkg-architecture -q DEB_HOST_MULTIARCH)" \
@@ -44,7 +44,7 @@ RUN set -ex \
     && make -j $NCPU version \
     && ldd /usr/sbin/workerd | awk '/=>/{print $(NF-1)}' | while read n; do dpkg-query -S $n; done | sed 's/^\([^:]\+\):.*$/\1/' | sort | uniq > /requirements.apt
 
-FROM debian:bullseye-slim
+FROM debian:trixie-slim
 COPY docker-entrypoint.sh /usr/local/bin/
 COPY --from=BUILDER /usr/sbin/workerd /usr/sbin/workerd
 COPY --from=BUILDER /usr/sbin/workerd-debug /usr/sbin/workerd-debug

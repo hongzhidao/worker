@@ -13,7 +13,7 @@ MODULES ?= go php python ruby
 VARIANT ?= bullseye
 
 VERSIONS_minimal ?=
-CONTAINER_minimal ?= debian:$(VARIANT)-slim
+CONTAINER_minimal ?= debian:trixie-slim
 CONFIGURE_minimal ?=
 INSTALL_minimal ?=	version
 define COPY_minimal
@@ -64,7 +64,7 @@ tag: $(addprefix tag-,$(MODVERSIONS))
 push: $(addprefix push-,$(MODVERSIONS))
 export: $(addsuffix .tar.gz,$(addprefix $(EXPORT_DIR)/worker-$(VERSION)-,$(MODVERSIONS))) $(addsuffix .tar.gz.sha512, $(addprefix $(EXPORT_DIR)/worker-$(VERSION)-,$(MODVERSIONS)))
 
-Dockerfile.%: ../../version
+Dockerfile.%: ../../version Makefile template.Dockerfile
 	@echo "===> Building $@"
 	cat template.Dockerfile | sed \
 			-e 's,@@VERSION@@,$(VERSION),g' \

@@ -1,0 +1,177 @@
+#!/bin/sh
+set -eu
+WORKER_BUNDLE_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+
+usage() {
+    printf '%s\n' \
+        'Usage: worker [status|config] [OPTIONS]' \
+        'Application: --app DIRECTORY --listen ADDRESS:PORT --language python|php' \
+        'Python: --module NAME --callable NAME --protocol wsgi|asgi --python-path DIRECTORY' \
+        'PHP: --script FILE (default: index.php; auto selects per-file scripts)' \
+        'Management: --state DIRECTORY --control SOCKET --config FILE' \
+        'Combined example: --listen ADDRESS:PORT --php-listen ADDRESS:PORT' \
+        'Options: --help --version' \
+        'Defaults: bundled example, localhost:8080 (PHP in combined example: 8081).' \
+        'Runs in foreground as the current user. --state preserves API changes.' \
+        '--config applies JSON on every start; other app options initialize empty state.'
+}
+
+action=run
+case "${1:-}" in status|config) action=$1; shift ;; esac
+app=${WORKER_APP:-}
+listen=${WORKER_LISTEN:-127.0.0.1:8080}
+php_listen=${WORKER_PHP_LISTEN:-127.0.0.1:8081}
+language=${WORKER_LANGUAGE:-}
+module=${WORKER_MODULE:-}
+callable=${WORKER_CALLABLE:-application}
+protocol=${WORKER_PROTOCOL:-wsgi}
+script=${WORKER_SCRIPT:-index.php}
+python_path=${WORKER_PYTHON_PATH:-}
+state=${WORKER_STATE:-}
+control=${WORKER_CONTROL:-}
+configuration=${WORKER_CONFIG:-}
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --help|-h) usage; exit 0 ;;
+        --version)
+            . "$WORKER_BUNDLE_ROOT/bundle.env"
+            printf 'Worker %s (%s, %s)\n' "$WORKER_VERSION" "$WORKER_FLAVOR" "$WORKER_ARCH"
+            exit 0 ;;
+        --app|--listen|--php-listen|--language|--module|--callable|--protocol|--script|--python-path|--state|--control|--config)
+            if [ "$#" -lt 2 ] || [ -z "$2" ]; then
+                printf 'Missing value for %s\n' "$1" >&2
+                exit 2
+            fi
+            case "$1" in
+                --app) app=$2 ;; --listen) listen=$2 ;; --php-listen) php_listen=$2 ;;
+                --language) language=$2 ;; --module) module=$2 ;; --callable) callable=$2 ;;
+                --protocol) protocol=$2 ;; --script) script=$2 ;; --python-path) python_path=$2 ;;
+                --state) state=$2 ;; --control) control=$2 ;; --config) configuration=$2 ;;
+            esac
+            shift 2 ;;
+        *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+    esac
+done
+. "$WORKER_BUNDLE_ROOT/libexec/environment"
+control=${control#unix:}
+case "$control" in @*) printf 'Use a filesystem path for --control.\n' >&2; exit 2 ;; esac
+if [ "$action" != run ]; then
+    if [ -z "$control" ] && [ -n "$state" ]; then control=$state/control.sock; fi
+    if [ -z "$control" ]; then
+        printf 'Specify --state DIRECTORY or --control SOCKET from the startup output.\n' >&2
+        exit 2
+    fi
+    exec "$WORKER_BUNDLE_ROOT/bin/curl" --noproxy '*' --fail-with-body --silent --show-error \
+        --max-time 15 --unix-socket "$control" "http://localhost/$action/"
+fi
+
+umask 077
+if [ -n "${WORKER_DATA_DIR:-}" ]; then mkdir -p -- "$WORKER_DATA_DIR"; fi
+if [ -n "$state" ]; then
+    mkdir -p -- "$state"
+    state=$(CDPATH= cd -- "$state" && pwd -P)
+    command -v flock >/dev/null || { printf 'Install util-linux (flock) to use --state.\n' >&2; exit 1; }
+    exec 9>"$state/launcher.lock"
+    flock -n 9 || { printf 'Another Worker launcher is using %s\n' "$state" >&2; exit 1; }
+    if [ -z "$control" ]; then control=$state/control.sock; fi
+fi
+run=$(mktemp -d "${TMPDIR:-/tmp}/worker.XXXXXXXX")
+child=
+logger=
+cleanup() {
+    result=$?
+    trap - EXIT INT TERM HUP
+    if [ -n "$child" ] && kill -0 "$child" 2>/dev/null; then
+        kill -QUIT "$child" 2>/dev/null || :
+        wait "$child" || :
+    fi
+    if [ -n "$logger" ]; then wait "$logger" || :; fi
+    rm -rf -- "$run"
+    exit "$result"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
+if [ -z "$state" ]; then state=$run/state; mkdir "$state"; fi
+if [ -z "$control" ]; then control=$run/control.sock; fi
+case "$control" in /*) ;; *) control=$PWD/$control ;; esac
+if [ ! -d "$(dirname -- "$control")" ]; then
+    printf 'Control socket directory does not exist: %s\n' "$control" >&2
+    exit 2
+fi
+
+initialize=false
+if [ -n "$configuration" ]; then
+    if [ -x "$WORKER_BUNDLE_ROOT/runtime/bin/python" ]; then
+        "$WORKER_BUNDLE_ROOT/runtime/bin/python" -I "$WORKER_BUNDLE_ROOT/libexec/config.py" \
+            --config "$WORKER_BUNDLE_ROOT" "$configuration" > "$run/config.json"
+    else
+        "$WORKER_BUNDLE_ROOT/runtime/bin/php" "$WORKER_BUNDLE_ROOT/libexec/config.php" \
+            --config "$WORKER_BUNDLE_ROOT" "$configuration" > "$run/config.json"
+    fi
+    initialize=true
+elif [ ! -f "$state/conf.json" ]; then
+    language=${language:-$WORKER_FLAVOR}
+    case "$language" in python|php|all) ;; *) printf 'Language must be python or php.\n' >&2; exit 2 ;; esac
+    if [ "$WORKER_FLAVOR" != all ] && [ "$language" != "$WORKER_FLAVOR" ]; then
+        printf 'This package only includes %s.\n' "$WORKER_FLAVOR" >&2; exit 2
+    fi
+    if [ "$language" = all ] && [ -n "$app" ]; then
+        printf 'Use --language python|php with --app, or --config FILE for multiple applications.\n' >&2
+        exit 2
+    fi
+    app=${app:-$WORKER_BUNDLE_ROOT/example}
+    if [ ! -d "$app" ]; then printf 'Application directory does not exist: %s\n' "$app" >&2; exit 2; fi
+    app=$(CDPATH= cd -- "$app" && pwd -P)
+    if [ -n "$python_path" ]; then python_path=$(CDPATH= cd -- "$python_path" && pwd -P); fi
+    case "$protocol" in wsgi|asgi) ;; *) printf 'Protocol must be wsgi or asgi.\n' >&2; exit 2 ;; esac
+    module=${module:-$protocol}
+    if [ "$language" = php ]; then
+        "$WORKER_BUNDLE_ROOT/runtime/bin/php" "$WORKER_BUNDLE_ROOT/libexec/config.php" \
+            "$WORKER_BUNDLE_ROOT" "$app" "$listen" "$script" > "$run/config.json"
+    else
+        set --
+        if [ "$language" = all ]; then set -- --all "$php_listen"; fi
+        "$WORKER_BUNDLE_ROOT/runtime/bin/python" -I "$WORKER_BUNDLE_ROOT/libexec/config.py" "$@" \
+            "$WORKER_BUNDLE_ROOT" "$app" "$listen" "$module" "$callable" "$protocol" "$python_path" \
+            > "$run/config.json"
+    fi
+    initialize=true
+fi
+set --
+if [ "$(id -u)" -eq 0 ]; then set -- --user "$(id -un)"; fi
+: > "$run/worker.log"
+"$WORKER_BUNDLE_ROOT/bin/workerd" --no-daemon "$@" \
+    --modules "$WORKER_BUNDLE_ROOT/modules" --state "$state" \
+    --pid "$run/worker.pid" --log "$run/worker.log" --tmp "$run" \
+    --control "unix:$control" &
+child=$!
+tail --pid="$child" --sleep-interval=0.1 -n +1 -f "$run/worker.log" >&2 &
+logger=$!
+attempt=0
+until [ -S "$control" ] && "$WORKER_BUNDLE_ROOT/bin/curl" --noproxy '*' --fail --silent \
+    --max-time 1 --unix-socket "$control" http://localhost/status > /dev/null; do
+    if ! kill -0 "$child" 2>/dev/null; then wait "$child"; exit 1; fi
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 100 ]; then printf 'Worker did not create %s\n' "$control" >&2; exit 1; fi
+    sleep 0.1
+done
+if [ "$initialize" = true ]; then
+    "$WORKER_BUNDLE_ROOT/bin/curl" --noproxy '*' --fail-with-body --silent --show-error \
+        --max-time 15 --unix-socket "$control" --request PUT --data-binary "@$run/config.json" \
+        http://localhost/config/ > "$run/response.json" || {
+            cat "$run/response.json" >&2; exit 1;
+        }
+else
+    printf 'Restored API configuration from %s (application startup options are not reapplied).\n' "$state"
+fi
+quote() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+quoted_launcher=$(quote "$WORKER_BUNDLE_ROOT/worker")
+quoted_control=$(quote "$control")
+printf 'Control socket: %s\nState directory: %s\nStatistics: %s status --control %s\nConfiguration: %s config --control %s\n' \
+    "$control" "$state" "$quoted_launcher" "$quoted_control" "$quoted_launcher" "$quoted_control"
+if [ "$initialize" = true ] && [ -z "$configuration" ]; then
+    case "$listen" in unix:*) printf 'Application socket: %s\n' "$listen" ;; *) printf 'Application URL: http://%s/\n' "$listen" ;; esac
+    if [ "$language" = all ]; then printf 'PHP URL: http://%s/\n' "$php_listen"; fi
+fi
+wait "$child"
