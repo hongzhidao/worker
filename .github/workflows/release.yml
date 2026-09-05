@@ -1,0 +1,91 @@
+name: Linux Runtime Packages
+
+on:
+  push:
+    branches: ['main', 'release/**', 'codex/runtime-packages']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-packages-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+jobs:
+  build:
+    name: ${{ matrix.distribution }} / ${{ matrix.architecture }} / ${{ matrix.flavor }}
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: [ubuntu24.04, debian13]
+        architecture: [amd64, arm64]
+        flavor: [python, php]
+        include:
+          - distribution: ubuntu24.04
+            image: ubuntu:24.04
+          - distribution: debian13
+            image: debian:13-slim
+          - architecture: amd64
+            runner: ubuntu-24.04
+          - architecture: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build complete runtime packages
+        env:
+          IMAGE: ${{ matrix.image }}
+          FLAVOR: ${{ matrix.flavor }}
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" -w /work \
+            -e GITHUB_REF_TYPE -e GITHUB_REF_NAME -e GITHUB_SHA \
+            "$IMAGE" sh -ec '
+              sh pkg/release/install-build-deps.sh "$1"
+              git config --global --add safe.directory /work
+              python3 pkg/release/build.py "$1" --source-ref "$GITHUB_SHA" --output dist --jobs 4
+            ' sh "$FLAVOR"
+          sudo chown -R "$(id -u):$(id -g)" build dist
+      - name: Test release validation
+        run: python3 pkg/release/test_release.py
+      - name: Test on an OS without Python, PHP, or a compiler
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          python3 pkg/release/smoke.py --container "$IMAGE" dist/*.tar.gz dist/*.deb
+      - name: Upload verified packages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: worker-${{ matrix.distribution }}-${{ matrix.architecture }}-${{ matrix.flavor }}
+          path: dist/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  publish:
+    name: Publish release assets
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: worker-*
+          merge-multiple: true
+          path: dist
+      - name: Verify and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 pkg/release/publish.py "$GITHUB_REF_NAME" dist

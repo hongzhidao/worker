@@ -1,0 +1,44 @@
+# Sourced by launchers after WORKER_BUNDLE_ROOT has been resolved.
+. "$WORKER_BUNDLE_ROOT/bundle.env"
+case "$(uname -m)" in
+    x86_64) worker_host_arch=amd64 ;;
+    aarch64) worker_host_arch=arm64 ;;
+    *) worker_host_arch=unsupported ;;
+esac
+if [ "$worker_host_arch" != "$WORKER_ARCH" ]; then
+    printf 'This package requires Linux %s.\n' "$WORKER_ARCH" >&2
+    exit 1
+fi
+worker_host_glibc=$(getconf GNU_LIBC_VERSION 2>/dev/null) || {
+    printf 'This package requires glibc %s or newer; musl/Alpine is unsupported.\n' "$WORKER_GLIBC_MIN" >&2
+    exit 1
+}
+worker_host_glibc=${worker_host_glibc#glibc }
+worker_host_major=${worker_host_glibc%%.*}
+worker_host_minor=${worker_host_glibc#*.}
+worker_host_minor=${worker_host_minor%%.*}
+worker_min_major=${WORKER_GLIBC_MIN%%.*}
+worker_min_minor=${WORKER_GLIBC_MIN#*.}
+if [ "$worker_host_major" -lt "$worker_min_major" ] || {
+    [ "$worker_host_major" -eq "$worker_min_major" ] &&
+    [ "$worker_host_minor" -lt "$worker_min_minor" ]
+}; then
+    printf 'glibc %s is too old; this package requires %s or newer.\n' "$worker_host_glibc" "$WORKER_GLIBC_MIN" >&2
+    exit 1
+fi
+export WORKER_BUNDLE_ROOT
+LD_LIBRARY_PATH="$WORKER_BUNDLE_ROOT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+SSL_CERT_FILE="$WORKER_BUNDLE_ROOT/runtime/ca-certificates.crt"
+CURL_CA_BUNDLE=$SSL_CERT_FILE
+export LD_LIBRARY_PATH SSL_CERT_FILE CURL_CA_BUNDLE
+if [ "$WORKER_FLAVOR" = python ]; then
+    PYTHONHOME="$WORKER_BUNDLE_ROOT/runtime"
+    PYTHONTZPATH="$WORKER_BUNDLE_ROOT/runtime/zoneinfo"
+    PYTHONNOUSERSITE=1
+    PYTHONDONTWRITEBYTECODE=1
+    export PYTHONHOME PYTHONTZPATH PYTHONNOUSERSITE PYTHONDONTWRITEBYTECODE
+else
+    PHPRC="$WORKER_BUNDLE_ROOT/runtime/php.ini"
+    PHP_INI_SCAN_DIR="$WORKER_BUNDLE_ROOT/runtime/conf.d"
+    export PHPRC PHP_INI_SCAN_DIR
+fi

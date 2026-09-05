@@ -7,7 +7,7 @@ VERSION ?= $(NXT_VERSION)
 RELEASE ?= 1
 
 default:
-	@echo "available targets: dist rpm deb docker"
+	@echo "available targets: dist rpm deb docker binary-python binary-php"
 
 dist:
 	rm -f worker-$(VERSION).tar.gz
@@ -27,6 +27,12 @@ deb:
 docker:
 	@cd docker && VERSION=$(VERSION) RELEASE=$(RELEASE) make all
 
+binary-python:
+	cd .. && python3 pkg/release/build.py python --source-ref HEAD
+
+binary-php:
+	cd .. && python3 pkg/release/build.py php --source-ref HEAD
+
 clean:
 	@cd rpm && make clean
 	@cd deb && make clean
@@ -34,4 +40,4 @@ clean:
 	rm -f worker-$(VERSION).tar.gz
 	rm -f worker-$(VERSION).tar.gz.sha512
 
-.PHONY: default rpm deb docker clean
+.PHONY: default rpm deb docker binary-python binary-php clean

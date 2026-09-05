@@ -1,0 +1,119 @@
+#!/bin/sh
+set -eu
+WORKER_BUNDLE_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+
+usage() {
+    printf '%s\n' \
+        'Usage: worker [--app DIRECTORY] [--listen ADDRESS:PORT]' \
+        'Python: --module NAME --callable NAME --protocol wsgi|asgi --python-path DIRECTORY' \
+        'PHP:    --script FILE (default: index.php; use auto for per-file scripts)' \
+        'Options: --help --version' \
+        'Defaults: bundled example, 127.0.0.1:8080, current user; runs in foreground.'
+}
+
+app=${WORKER_APP:-$WORKER_BUNDLE_ROOT/example}
+listen=${WORKER_LISTEN:-127.0.0.1:8080}
+module=${WORKER_MODULE:-}
+callable=${WORKER_CALLABLE:-application}
+protocol=${WORKER_PROTOCOL:-wsgi}
+script=${WORKER_SCRIPT:-index.php}
+python_path=${WORKER_PYTHON_PATH:-}
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --help|-h) usage; exit 0 ;;
+        --version)
+            . "$WORKER_BUNDLE_ROOT/bundle.env"
+            printf 'Worker %s (%s, %s)\n' "$WORKER_VERSION" "$WORKER_FLAVOR" "$WORKER_ARCH"
+            exit 0 ;;
+        --app|--listen|--module|--callable|--protocol|--script|--python-path)
+            if [ "$#" -lt 2 ]; then
+                printf 'Missing value for %s\n' "$1" >&2
+                exit 2
+            fi
+            case "$1" in
+                --app) app=$2 ;;
+                --listen) listen=$2 ;;
+                --module) module=$2 ;;
+                --callable) callable=$2 ;;
+                --protocol) protocol=$2 ;;
+                --script) script=$2 ;;
+                --python-path) python_path=$2 ;;
+            esac
+            shift 2 ;;
+        *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+    esac
+done
+case "$protocol" in wsgi|asgi) ;; *) printf 'Protocol must be wsgi or asgi.\n' >&2; exit 2 ;; esac
+if [ ! -d "$app" ]; then
+    printf 'Application directory does not exist: %s\n' "$app" >&2
+    exit 2
+fi
+app=$(CDPATH= cd -- "$app" && pwd -P)
+if [ -n "$python_path" ]; then
+    python_path=$(CDPATH= cd -- "$python_path" && pwd -P)
+fi
+if [ -z "$module" ]; then module=$protocol; fi
+worker_user=$(id -un)
+. "$WORKER_BUNDLE_ROOT/libexec/environment"
+
+umask 077
+run=$(mktemp -d "${TMPDIR:-/tmp}/worker.XXXXXXXX")
+child=
+logger=
+cleanup() {
+    result=$?
+    trap - EXIT INT TERM HUP
+    if [ -n "$child" ] && kill -0 "$child" 2>/dev/null; then
+        kill -QUIT "$child" 2>/dev/null || :
+        wait "$child" || :
+    fi
+    if [ -n "$logger" ]; then
+        wait "$logger" || :
+    fi
+    rm -rf -- "$run"
+    exit "$result"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
+mkdir "$run/state"
+if [ "$WORKER_FLAVOR" = python ]; then
+    "$WORKER_BUNDLE_ROOT/runtime/bin/python" -I "$WORKER_BUNDLE_ROOT/libexec/config.py" \
+        "$WORKER_BUNDLE_ROOT" "$app" "$listen" "$module" "$callable" "$protocol" "$python_path" \
+        > "$run/config.json"
+else
+    "$WORKER_BUNDLE_ROOT/runtime/bin/php" "$WORKER_BUNDLE_ROOT/libexec/config.php" \
+        "$WORKER_BUNDLE_ROOT" "$app" "$listen" "$script" > "$run/config.json"
+fi
+set --
+if [ "$(id -u)" -eq 0 ]; then set -- --user "$worker_user"; fi
+: > "$run/worker.log"
+"$WORKER_BUNDLE_ROOT/bin/workerd" --no-daemon "$@" \
+    --modules "$WORKER_BUNDLE_ROOT/modules" --state "$run/state" \
+    --pid "$run/worker.pid" --log "$run/worker.log" --tmp "$run" \
+    --control "unix:$run/control.sock" &
+child=$!
+tail --pid="$child" --sleep-interval=0.1 -n +1 -f "$run/worker.log" >&2 &
+logger=$!
+attempt=0
+until [ -S "$run/control.sock" ]; do
+    if ! kill -0 "$child" 2>/dev/null; then
+        wait "$child"
+        exit 1
+    fi
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 100 ]; then
+        printf 'Worker did not create its control socket.\n' >&2
+        exit 1
+    fi
+    sleep 0.1
+done
+"$WORKER_BUNDLE_ROOT/bin/curl" --noproxy '*' --fail-with-body --silent --show-error \
+    --max-time 15 --unix-socket "$run/control.sock" \
+    --request PUT --data-binary "@$run/config.json" http://localhost/config/ \
+    > "$run/response.json" || {
+        cat "$run/response.json" >&2
+        exit 1
+    }
+printf 'Worker %s listening on %s; application: %s\n' "$WORKER_FLAVOR" "$listen" "$app"
+wait "$child"

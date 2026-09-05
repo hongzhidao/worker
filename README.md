@@ -15,6 +15,26 @@ Ruby applications through a JSON control API.
 Worker accepts HTTP requests at application or target listening addresses.
 Worker can also run behind an external reverse proxy.
 
+## Download
+
+The [release workflow](.github/workflows/release.yml) builds complete Python and
+PHP packages for Linux amd64 and arm64. Download the matching `.tar.gz` or `.deb`
+from [Releases](https://github.com/hongzhidao/worker/releases). The packages include
+Worker, its language module, the language runtime, and shared libraries; compiling
+Worker or installing system Python/PHP is unnecessary.
+
+For an extracted package, start the included example with `./worker`, or point it
+at your app:
+
+```sh
+./worker --app /srv/python-app --module wsgi
+./worker --app /srv/php-app/public --script index.php
+```
+
+Choose the Python package for the first command and the PHP package for the second.
+Both listen on `127.0.0.1:8080` by default. See [runtime packages](pkg/release/README.md)
+for supported distributions, glibc requirements, dependencies, and service setup.
+
 ## Build
 
 A C toolchain and the development files for the selected language runtimes

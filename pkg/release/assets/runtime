@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+WORKER_BUNDLE_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+. "$WORKER_BUNDLE_ROOT/libexec/environment"
+exec "$WORKER_BUNDLE_ROOT/runtime/bin/$WORKER_FLAVOR" "$@"
