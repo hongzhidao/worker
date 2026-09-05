@@ -1,4 +1,5 @@
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -113,6 +114,47 @@ def test_go_keepalive_body():
     )
 
     assert resp['body'] == body, 'keep-alive 2'
+
+def test_go_application_concurrent():
+    client.load('concurrent', processes=1)
+
+    def request(index):
+        body = f'{index:04d}' * 65536
+        resp = client.post(
+            headers={
+                'Host': 'localhost',
+                'Connection': 'close',
+                'X-Concurrent': '1',
+            },
+            body=body,
+            read_timeout=10,
+        )
+
+        assert resp['status'] == 200, 'concurrent response'
+        assert resp['body'] == body, 'complete response body'
+        return resp['headers']['X-Pid']
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        pids = set(pool.map(request, range(32)))
+
+    assert len(pids) == 1, 'shared context in one application process'
+
+def test_go_application_request_limit():
+    client.load('concurrent', processes=1)
+    assert 'success' in client.conf(
+        {'requests': 2}, 'applications/concurrent/limits'
+    )
+
+    pids = []
+    for index in range(6):
+        body = f'request {index}'
+        resp = client.post(body=body)
+        assert resp['status'] == 200, 'response across process recycle'
+        assert resp['body'] == body, 'response body'
+        pids.append(resp['headers']['X-Pid'])
+
+    assert len(set(pids)) == 3, 'three application processes'
+    assert all(pids.count(pid) == 2 for pid in set(pids)), 'two requests per process'
 
 def test_go_application_cookies():
     client.load('cookies')

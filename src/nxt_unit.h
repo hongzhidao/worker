@@ -48,11 +48,9 @@ struct nxt_unit_s {
 };
 
 /*
- * Thread context.
+ * Application execution context.
  *
- * First (main) context is provided 'for free'.  To receive and process
- * requests in other thread, one need to allocate context and use it
- * further in this thread.
+ * Each library instance has one context, returned by nxt_unit_init().
  */
 struct nxt_unit_ctx_s {
     void                  *data;  /* User context-specific data. */
@@ -230,12 +228,6 @@ int nxt_unit_process_port_msg(nxt_unit_ctx_t *ctx, nxt_unit_port_t *port);
 
 /* Destroy application library object. */
 void nxt_unit_done(nxt_unit_ctx_t *);
-
-/*
- * Allocate and initialize new execution context with new listen port to
- * process requests in other thread.
- */
-nxt_unit_ctx_t *nxt_unit_ctx_alloc(nxt_unit_ctx_t *, void *);
 
 /* Initialize port_id, calculate hash. */
 void nxt_unit_port_id_init(nxt_unit_port_id_t *port_id, pid_t pid, uint16_t id);

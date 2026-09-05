@@ -41,6 +41,10 @@ environment with:
 make go-install-src go-install-env
 ```
 
+The C application library provides one execution context per `nxt_unit_init()`
+call. The `nxt_unit_ctx_alloc()` API for additional thread contexts has been
+removed. Go continues to process requests concurrently using the shared context.
+
 ## Run
 
 Start the daemon in the foreground with a local control socket:
