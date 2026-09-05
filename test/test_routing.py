@@ -465,6 +465,30 @@ def test_routes_route_pass_invalid():
         [{"action": {"pass": "upstreams/blah"}}], 'routes'
     ), 'route pass upstreams invalid'
 
+@pytest.mark.parametrize(
+    'action',
+    [
+        {"return": 200},
+        {"share": "/missing"},
+        {"proxy": "http://127.0.0.1:8081"},
+        {"pass": "routes"},
+    ],
+    ids=['return', 'share', 'proxy', 'pass'],
+)
+@pytest.mark.parametrize('fallback', [False, True], ids=['route', 'fallback'])
+def test_routes_response_headers_unsupported(action, fallback):
+    before = client.conf_get()
+    action = dict(action, response_headers={"X-Test": "value"})
+    if fallback:
+        action = {"share": "/missing", "fallback": action}
+
+    resp = client.conf(action, 'routes/0/action')
+
+    assert resp.get('detail') == 'Unknown parameter "response_headers".'
+    assert client.conf_get() == before
+    assert client.get()['status'] == 200
+
+
 def test_routes_action_unique(temp_dir):
     assert 'success' in client.conf(
         {
