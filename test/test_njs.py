@@ -1,7 +1,8 @@
 import pytest
+from worker.applications.lang.python import ApplicationPython
 from worker.applications.proto import ApplicationProto
 
-prerequisites = {'modules': {'njs': 'any'}}
+prerequisites = {'modules': {'njs': 'any', 'python': 'any'}}
 
 
 client = ApplicationProto()
@@ -9,37 +10,32 @@ client = ApplicationProto()
 
 @pytest.fixture(autouse=True)
 def setup_method_fixture():
-    assert 'success' in client.conf(
-        {
-            "listeners": {"*:8080": {"pass": "routes/entry"}},
-            "routes": {"entry": [{"action": {"return": 200}}]},
-        }
-    )
+    ApplicationPython().load('empty')
 
-def create_routes(*names):
-    routes = client.conf_get('routes')
-    routes.update({name: [{"action": {"return": 200}}] for name in names})
-    assert 'success' in client.conf(routes, 'routes')
+def create_applications(*names):
+    applications = client.conf_get('applications')
+    applications.update({name: applications['empty'] for name in names})
+    assert 'success' in client.conf(applications, 'applications')
 
 def set_pass(target):
-    assert 'success' in client.conf({"pass": target}, 'routes/entry/0/action')
+    assert 'success' in client.conf({"pass": target}, 'listeners/*:8080')
 
 def check_expression(expression, url='/'):
-    set_pass('`routes' + expression + '`')
+    set_pass('`applications' + expression + '`')
     assert client.get(url=url)['status'] == 200
 
 def test_njs_template_string():
-    create_routes('str', '`string`', '`backtick', 'l1\nl2')
+    create_applications('str', '`string`', '`backtick', 'l1\nl2')
 
     check_expression('/str')
     check_expression(r'/\`backtick')
     check_expression('/l1\\nl2')
 
-    set_pass('routes/`string`')
+    set_pass('applications/`string`')
     assert client.get()['status'] == 200
 
 def test_njs_template_expression():
-    create_routes('str', 'localhost')
+    create_applications('str', 'localhost')
 
     check_expression('${uri}', '/str')
     check_expression('${uri}${host}')
@@ -47,19 +43,19 @@ def test_njs_template_expression():
     check_expression('${uri + `${host}`}')
 
 def test_njs_iteration():
-    create_routes('Connection,Host', 'close,localhost')
+    create_applications('Connection,Host', 'close,localhost')
 
     check_expression('/${Object.keys(headers).sort().join()}')
     check_expression('/${Object.values(headers).sort().join()}')
 
 def test_njs_variables():
-    create_routes('str', 'localhost', '127.0.0.1')
+    create_applications('str', 'localhost', '127.0.0.1')
 
     check_expression('/${host}')
     check_expression('/${remoteAddr}')
     check_expression('/${headers.Host}')
 
-    set_pass('`routes/${cookies.foo}`')
+    set_pass('`applications/${cookies.foo}`')
     assert (
         client.get(headers={'Cookie': 'foo=str', 'Connection': 'close'})[
             'status'
@@ -67,23 +63,23 @@ def test_njs_variables():
         == 200
     ), 'cookies'
 
-    set_pass('`routes/${args.foo}`')
+    set_pass('`applications/${args.foo}`')
     assert client.get(url='/?foo=str')['status'] == 200, 'args'
 
     check_expression('/${vars.header_host}')
 
-    set_pass('`routes/${vars["arg_foo"]}`')
+    set_pass('`applications/${vars["arg_foo"]}`')
     assert client.get(url='/?foo=str')['status'] == 200, 'vars'
 
-    set_pass('`routes/${vars.non_exist}`')
+    set_pass('`applications/${vars.non_exist}`')
     assert client.get()['status'] == 404, 'undefined'
 
-    create_routes('undefined')
+    create_applications('undefined')
     assert client.get()['status'] == 200, 'undefined 2'
 
 
 def test_njs_uri_variables():
-    create_routes('str', 'other')
+    create_applications('str', 'other')
 
     for expression in ('${uri}', '${vars.uri}'):
         check_expression(expression, '/str')
@@ -91,8 +87,6 @@ def test_njs_uri_variables():
 
 
 def test_njs_variables_cacheable_access_log(findall, temp_dir):
-    assert 'success' in client.conf({"return": 200}, 'routes/entry/0/action')
-
     assert 'success' in client.conf(
         {
             'path': f'{temp_dir}/access.log',
@@ -112,7 +106,7 @@ def test_njs_invalid(skip_alert):
     skip_alert(r'js exception:')
 
     def check_invalid(template):
-        assert 'error' in client.conf({"pass": template}, 'routes/entry/0/action')
+        assert 'error' in client.conf({"pass": template}, 'listeners/*:8080')
 
     check_invalid('`a')
     check_invalid('`a``')

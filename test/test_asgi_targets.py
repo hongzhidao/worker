@@ -15,17 +15,10 @@ client = ApplicationPython(load_module='asgi')
 def setup_method_fixture():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "match": {"uri": "/1"},
-                    "action": {"pass": "applications/targets/1"},
-                },
-                {
-                    "match": {"uri": "/2"},
-                    "action": {"pass": "applications/targets/2"},
-                },
-            ],
+            "listeners": {
+                "*:8080": {"pass": "applications/targets/1"},
+                "*:8081": {"pass": "applications/targets/2"},
+            },
             "applications": {
                 "targets": {
                     "type": "python",
@@ -54,7 +47,7 @@ def conf_targets(targets):
 
 def test_asgi_targets():
     assert client.get(url='/1')['status'] == 200
-    assert client.get(url='/2')['status'] == 201
+    assert client.get(url='/2', port=8081)['status'] == 201
 
 def test_asgi_targets_legacy():
     conf_targets(
@@ -65,7 +58,7 @@ def test_asgi_targets_legacy():
     )
 
     assert client.get(url='/1')['status'] == 200
-    assert client.get(url='/2')['status'] == 201
+    assert client.get(url='/2', port=8081)['status'] == 201
 
 def test_asgi_targets_mix():
     conf_targets(
@@ -76,7 +69,7 @@ def test_asgi_targets_mix():
     )
 
     assert client.get(url='/1')['status'] == 200
-    assert client.get(url='/2')['status'] == 201
+    assert client.get(url='/2', port=8081)['status'] == 201
 
 def test_asgi_targets_broken(skip_alert):
     skip_alert(r'Python failed to get "blah" from module')

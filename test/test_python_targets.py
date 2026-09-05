@@ -10,17 +10,10 @@ client = ApplicationPython()
 def test_python_targets():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "match": {"uri": "/1"},
-                    "action": {"pass": "applications/targets/1"},
-                },
-                {
-                    "match": {"uri": "/2"},
-                    "action": {"pass": "applications/targets/2"},
-                },
-            ],
+            "listeners": {
+                "*:8080": {"pass": "applications/targets/1"},
+                "*:8081": {"pass": "applications/targets/2"},
+            },
             "applications": {
                 "targets": {
                     "type": "python",
@@ -46,6 +39,6 @@ def test_python_targets():
     assert resp['status'] == 200
     assert resp['body'] == '1'
 
-    resp = client.get(url='/2')
+    resp = client.get(url='/2', port=8081)
     assert resp['status'] == 200
     assert resp['body'] == '2'

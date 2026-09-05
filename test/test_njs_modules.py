@@ -1,9 +1,16 @@
+import pytest
+from worker.applications.lang.python import ApplicationPython
 from worker.applications.proto import ApplicationProto
 from worker.option import option
 
-prerequisites = {'modules': {'njs': 'any'}}
+prerequisites = {'modules': {'njs': 'any', 'python': 'any'}}
 
 client = ApplicationProto()
+
+
+@pytest.fixture(autouse=True)
+def setup_method_fixture():
+    ApplicationPython().load('empty')
 
 
 def njs_script_load(module, name=None, expect='success'):
@@ -23,10 +30,11 @@ def test_njs_modules():
     assert 'success' in client.conf(
         {
             "settings": {"js_module": "next"},
-            "listeners": {"*:8080": {"pass": "routes/first"}},
-            "routes": {
-                "first": [{"action": {"pass": "`routes/${next.route()}`"}}],
-                "next": [{"action": {"return": 200}}],
+            "listeners": {
+                "*:8080": {"pass": "`applications/${next.route()}`"},
+            },
+            "applications": {
+                "next": client.conf_get('applications/empty'),
             },
         }
     )
@@ -47,7 +55,7 @@ def test_njs_modules():
     assert client.get()['status'] == 200, 'array len 2'
 
     assert 'success' in client.conf(
-        '"`routes/${next_2.route()}`"', 'routes/first/0/action/pass'
+        '"`applications/${next_2.route()}`"', 'listeners/*:8080/pass'
     )
     assert client.get()['status'] == 200, 'array new'
 
@@ -68,12 +76,11 @@ def test_njs_modules_import():
     assert 'success' in client.conf(
         {
             "settings": {"js_module": "import_from"},
-            "listeners": {"*:8080": {"pass": "routes/first"}},
-            "routes": {
-                "first": [
-                    {"action": {"pass": "`routes/${import_from.num()}`"}}
-                ],
-                "number": [{"action": {"return": 200}}],
+            "listeners": {
+                "*:8080": {"pass": "`applications/${import_from.num()}`"},
+            },
+            "applications": {
+                "number": client.conf_get('applications/empty'),
             },
         }
     )
@@ -86,12 +93,11 @@ def test_njs_modules_this():
     assert 'success' in client.conf(
         {
             "settings": {"js_module": "global_this"},
-            "listeners": {"*:8080": {"pass": "routes/first"}},
-            "routes": {
-                "first": [
-                    {"action": {"pass": "`routes/${global_this.str()}`"}}
-                ],
-                "string": [{"action": {"return": 200}}],
+            "listeners": {
+                "*:8080": {"pass": "`applications/${global_this.str()}`"},
+            },
+            "applications": {
+                "string": client.conf_get('applications/empty'),
             },
         }
     )

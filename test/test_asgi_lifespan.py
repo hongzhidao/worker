@@ -54,17 +54,10 @@ def test_asgi_lifespan():
 def test_asgi_lifespan_targets():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "match": {"uri": "/1"},
-                    "action": {"pass": "applications/targets/1"},
-                },
-                {
-                    "match": {"uri": "/2"},
-                    "action": {"pass": "applications/targets/2"},
-                },
-            ],
+            "listeners": {
+                "*:8080": {"pass": "applications/targets/1"},
+                "*:8081": {"pass": "applications/targets/2"},
+            },
             "applications": {
                 "targets": {
                     "type": "python",
@@ -88,7 +81,7 @@ def test_asgi_lifespan_targets():
     setup_cookies('app2_')
 
     assert client.get(url="/1")['status'] == 204
-    assert client.get(url="/2")['status'] == 204
+    assert client.get(url="/2", port=8081)['status'] == 204
 
     worker_stop()
 

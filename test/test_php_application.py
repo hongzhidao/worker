@@ -94,17 +94,12 @@ def test_php_application_query_string_empty():
     assert resp['status'] == 200, 'query string empty status'
     assert resp['headers']['Query-String'] == '', 'query string empty'
 
-def test_php_application_query_string_route():
+def test_php_application_query_string_pass():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "action": {
-                        "pass": "applications/query_string",
-                    },
-                },
-            ],
+            "listeners": {
+                "*:8080": {"pass": "applications/query_string"},
+            },
             "applications": {
                 "query_string": {
                     "type": client.get_application_type(),

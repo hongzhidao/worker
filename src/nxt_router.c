@@ -1540,12 +1540,11 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
 #if (NXT_HAVE_NJS)
     nxt_conf_value_t            *js_module;
 #endif
-    nxt_conf_value_t            *root, *conf, *http, *value, *websocket;
+    nxt_conf_value_t            *root, *http, *value, *websocket;
     nxt_conf_value_t            *applications, *application;
     nxt_conf_value_t            *listeners, *listener;
     nxt_socket_conf_t           *skcf;
     nxt_router_conf_t           *rtcf;
-    nxt_http_routes_t           *routes;
     nxt_event_engine_t          *engine;
     nxt_app_lang_module_t       *lang;
     nxt_router_app_conf_t       apcf;
@@ -1554,7 +1553,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     static nxt_str_t  http_path = nxt_string("/settings/http");
     static nxt_str_t  applications_path = nxt_string("/applications");
     static nxt_str_t  listeners_path = nxt_string("/listeners");
-    static nxt_str_t  routes_path = nxt_string("/routes");
     static nxt_str_t  access_log_path = nxt_string("/access_log");
 #if (NXT_HAVE_NJS)
     static nxt_str_t  js_module_path = nxt_string("/settings/js_module");
@@ -1699,6 +1697,7 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
 
             if (apcf.targets_value != NULL) {
                 n = nxt_conf_object_members_count(apcf.targets_value);
+                app->targets_count = n;
 
                 targets = nxt_mp_get(app_mp, sizeof(nxt_str_t) * n);
                 if (nxt_slow_path(targets == NULL)) {
@@ -1818,16 +1817,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
         }
     }
 
-    conf = nxt_conf_get_path(root, &routes_path);
-    if (nxt_fast_path(conf != NULL)) {
-        routes = nxt_http_routes_create(task, tmcf, conf);
-        if (nxt_slow_path(routes == NULL)) {
-            return NXT_ERROR;
-        }
-
-        rtcf->routes = routes;
-    }
-
     http = nxt_conf_get_path(root, &http_path);
 #if 0
     if (http == NULL) {
@@ -1930,11 +1919,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
                 goto fail;
             }
         }
-    }
-
-    ret = nxt_http_routes_resolve(task, tmcf);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        goto fail;
     }
 
     value = nxt_conf_get_path(root, &access_log_path);
@@ -2255,8 +2239,8 @@ typedef struct {
 
 
 nxt_int_t
-nxt_router_application_init(nxt_router_conf_t *rtcf, nxt_str_t *name,
-    nxt_str_t *target, nxt_http_action_t *action)
+nxt_router_application_init(nxt_mp_t *mp, nxt_router_conf_t *rtcf,
+    nxt_str_t *name, nxt_str_t *target, nxt_http_action_t *action)
 {
     nxt_app_t            *app;
     nxt_str_t            *targets;
@@ -2268,7 +2252,7 @@ nxt_router_application_init(nxt_router_conf_t *rtcf, nxt_str_t *name,
         return NXT_DECLINED;
     }
 
-    conf = nxt_mp_get(rtcf->mem_pool, sizeof(nxt_http_app_conf_t));
+    conf = nxt_mp_get(mp, sizeof(nxt_http_app_conf_t));
     if (nxt_slow_path(conf == NULL)) {
         return NXT_ERROR;
     }
@@ -2281,7 +2265,15 @@ nxt_router_application_init(nxt_router_conf_t *rtcf, nxt_str_t *name,
     if (target != NULL && target->length != 0) {
         targets = app->targets;
 
-        for (i = 0; !nxt_strstr_eq(target, &targets[i]); i++);
+        for (i = 0; i < app->targets_count; i++) {
+            if (nxt_strstr_eq(target, &targets[i])) {
+                break;
+            }
+        }
+
+        if (i == app->targets_count) {
+            return NXT_DECLINED;
+        }
 
         conf->target = i;
 

@@ -36,11 +36,10 @@ def test_status_requests(skip_alert):
     assert 'success' in client.conf(
         {
             "listeners": {
-                "*:8080": {"pass": "routes"},
+                "*:8080": {"pass": "applications/empty"},
                 "*:8081": {"pass": "applications/empty"},
                 "*:8082": {"pass": "applications/blah"},
             },
-            "routes": [{"action": {"return": 200}}],
             "applications": {
                 "empty": app_default(),
                 "blah": {
@@ -94,11 +93,11 @@ def test_status_connections():
     assert 'success' in client.conf(
         {
             "listeners": {
-                "*:8080": {"pass": "routes"},
+                "*:8080": {"pass": "applications/empty"},
                 "*:8081": {"pass": "applications/delayed"},
             },
-            "routes": [{"action": {"return": 200}}],
             "applications": {
+                "empty": app_default(),
                 "delayed": app_default("delayed"),
             },
         },
@@ -192,7 +191,6 @@ def test_status_applications():
                 "*:8080": {"pass": "applications/restart"},
                 "*:8081": {"pass": "applications/delayed"},
             },
-            "routes": [],
             "applications": {
                 "restart": app_default("restart", "longstart"),
                 "delayed": app_default("delayed"),
@@ -210,18 +208,12 @@ def test_status_applications():
     check_application('restart', 0, 1, 0, 1)
     check_application('delayed', 0, 0, 0, 0)
 
-def test_status_route_pass():
+def test_status_application_pass():
     assert 'success' in client.conf(
         {
             "listeners": {
-                "*:8080": {"pass": "routes"},
+                "*:8080": {"pass": "applications/empty"},
             },
-            "routes": [
-                {
-                    "match": {"uri": "/"},
-                    "action": {"pass": "applications/empty"},
-                }
-            ],
             "applications": {
                 "empty": app_default(),
             },
@@ -232,4 +224,4 @@ def test_status_route_pass():
 
     assert client.get()['status'] == 200
     check_connections(1, 0, 0, 1)
-    assert Status.get('/requests/total') == 1, 'route pass'
+    assert Status.get('/requests/total') == 1, 'application pass'

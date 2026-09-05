@@ -2,23 +2,20 @@ import re
 import time
 
 import pytest
-from worker.applications.proto import ApplicationProto
 from worker.applications.lang.python import ApplicationPython
 from worker.option import option
 
 
-client = ApplicationProto()
+prerequisites = {'modules': {'python': 'any'}}
+
+
+client = ApplicationPython()
 client_python = ApplicationPython()
 
 
 @pytest.fixture(autouse=True)
 def setup_method_fixture():
-    assert 'success' in client.conf(
-        {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [{"action": {"return": 200}}],
-        },
-    ), 'configure routes'
+    client.load('response')
 
 def set_format(format):
     assert 'success' in client.conf(
@@ -119,7 +116,7 @@ def test_variables_remote_addr(search_in_file, wait_for_record):
     assert wait_for_record(r'^127\.0\.0\.1$', 'access.log') is not None
 
     assert 'success' in client.conf(
-        {"[::1]:8080": {"pass": "routes"}}, 'listeners'
+        {"[::1]:8080": {"pass": "applications/response"}}, 'listeners'
     )
 
     reg = r'^::1$'
@@ -177,11 +174,11 @@ def test_variables_request_id(search_in_file, wait_for_record, findall):
 def test_variables_status(search_in_file, wait_for_record):
     set_format('$status')
 
-    assert 'success' in client.conf("418", 'routes/0/action/return')
-
     reg = r'^418$'
     assert search_in_file(reg, 'access.log') is None
-    assert client.get()['status'] == 418
+    assert client.get(
+        headers={'X-Status': '418', 'Connection': 'close'},
+    )['status'] == 418
     assert wait_for_record(reg, 'access.log') is not None
 
 def test_variables_header_referer(search_in_file, wait_for_record):
@@ -378,45 +375,11 @@ def test_variables_dynamic_cookies(search_in_file, wait_for_record):
     check_no_cookie('fOo_bar=0')
     check_no_cookie('foo_bar=')
 
-def test_variables_response_header(wait_for_record):
-    # If response has two headers with the same name then first value
-    # will be stored in variable.
-    # $response_header_transfer_encoding value can be 'chunked' or null only.
-
-    # return
-
-    set_format(
-        'return@$response_header_server@$response_header_date@'
-        '$response_header_content_length@$response_header_connection'
-    )
-
-    assert client.get()['status'] == 200
-    assert (
-        wait_for_record(r'return@Worker/.*@.*GMT@0@close', 'access.log')
-        is not None
-    )
-
-    # redirect
+def test_variables_response_header_error(wait_for_record):
 
     assert 'success' in client.conf(
-        {"return": 301, "location": "/foo/"}, 'routes/0/action'
+        {'pass': 'applications/$arg_app'}, 'listeners/*:8080'
     )
-
-    set_format(
-        'redirect@$response_header_location@$response_header_server@'
-        '$response_header_date@$response_header_content_length@'
-        '$response_header_connection'
-    )
-
-    assert client.get(url='/foo')['status'] == 301
-    assert (
-        wait_for_record(r'redirect@/foo/@Worker/.*@.*GMT@0@close', 'access.log')
-        is not None
-    )
-
-    # error
-
-    assert 'success' in client.conf({"return": 404}, 'routes/0/action')
 
     set_format(
         'error@$response_header_content_type@$response_header_server@'
@@ -424,7 +387,7 @@ def test_variables_response_header(wait_for_record):
         '$response_header_connection'
     )
 
-    assert client.get(url='/blah')['status'] == 404
+    assert client.get(url='/blah?app=missing')['status'] == 404
     assert (
         wait_for_record(r'error@text/html@Worker/.*@.*GMT@54@close', 'access.log')
         is not None
