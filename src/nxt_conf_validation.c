@@ -6,7 +6,6 @@
 
 #include <nxt_main.h>
 #include <nxt_conf.h>
-#include <nxt_script.h>
 #include <nxt_router.h>
 #include <nxt_http.h>
 #include <nxt_sockaddr.h>
@@ -32,7 +31,6 @@ typedef enum {
 
 typedef enum {
     NXT_CONF_VLDT_REQUIRED  = 1 << 0,
-    NXT_CONF_VLDT_TSTR      = 1 << 1,
 } nxt_conf_vldt_flags_t;
 
 
@@ -72,8 +70,6 @@ static nxt_int_t nxt_conf_vldt_type(nxt_conf_validation_t *vldt,
     nxt_str_t *name, nxt_conf_value_t *value, nxt_conf_vldt_type_t type);
 static nxt_int_t nxt_conf_vldt_error(nxt_conf_validation_t *vldt,
     const char *fmt, ...);
-static nxt_int_t nxt_conf_vldt_var(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_str_t *value);
 nxt_inline nxt_int_t nxt_conf_vldt_unsupported(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 
@@ -134,12 +130,6 @@ static nxt_int_t nxt_conf_vldt_clone_gidmap(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value);
 #endif
 
-#if (NXT_HAVE_NJS)
-static nxt_int_t nxt_conf_vldt_js_module(nxt_conf_validation_t *vldt,
-     nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_js_module_element(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value);
-#endif
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_setting_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_http_members[];
@@ -186,12 +176,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_setting_members[] = {
         .type       = NXT_CONF_VLDT_OBJECT,
         .validator  = nxt_conf_vldt_object,
         .u.members  = nxt_conf_vldt_http_members,
-#if (NXT_HAVE_NJS)
-    }, {
-        .name       = nxt_string("js_module"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_js_module,
-#endif
     },
 
     NXT_CONF_VLDT_END
@@ -256,7 +240,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_listener_members[] = {
         .name       = nxt_string("pass"),
         .type       = NXT_CONF_VLDT_STRING,
         .validator  = nxt_conf_vldt_pass,
-        .flags      = NXT_CONF_VLDT_TSTR,
     }, {
         .name       = nxt_string("application"),
         .type       = NXT_CONF_VLDT_STRING,
@@ -692,30 +675,13 @@ nxt_int_t
 nxt_conf_validate(nxt_conf_validation_t *vldt)
 {
     nxt_int_t  ret;
-    u_char     error[NXT_MAX_ERROR_STR];
-
-    vldt->tstr_state = nxt_tstr_state_new(vldt->pool, 1);
-    if (nxt_slow_path(vldt->tstr_state == NULL)) {
-        return NXT_ERROR;
-    }
 
     ret = nxt_conf_vldt_type(vldt, NULL, vldt->conf, NXT_CONF_VLDT_OBJECT);
     if (ret != NXT_OK) {
         return ret;
     }
 
-    ret = nxt_conf_vldt_object(vldt, vldt->conf, nxt_conf_vldt_root_members);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    ret = nxt_tstr_state_done(vldt->tstr_state, error);
-    if (ret != NXT_OK) {
-        ret = nxt_conf_vldt_error(vldt, "%s", error);
-        return ret;
-    }
-
-    return NXT_OK;
+    return nxt_conf_vldt_object(vldt, vldt->conf, nxt_conf_vldt_root_members);
 }
 
 
@@ -833,21 +799,6 @@ nxt_conf_vldt_unsupported(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
 {
     return nxt_conf_vldt_error(vldt, "Worker is built without the \"%s\" "
                                      "option support.", data);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_var(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_str_t *value)
-{
-    u_char  error[NXT_MAX_ERROR_STR];
-
-    if (nxt_tstr_test(vldt->tstr_state, value, error) != NXT_OK) {
-        return nxt_conf_vldt_error(vldt, "%s in the \"%V\" value.",
-                                   error, name);
-    }
-
-    return NXT_OK;
 }
 
 
@@ -1150,7 +1101,7 @@ nxt_conf_vldt_object(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
 {
     uint32_t                index;
     nxt_int_t               ret;
-    nxt_str_t               name, var;
+    nxt_str_t               name;
     nxt_conf_value_t        *member;
     nxt_conf_vldt_object_t  *vals;
 
@@ -1206,21 +1157,6 @@ nxt_conf_vldt_object(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
                 vals++;
                 continue;
             }
-
-            if (vals->flags & NXT_CONF_VLDT_TSTR
-                && nxt_conf_type(member) == NXT_CONF_STRING)
-            {
-                nxt_conf_get_string(member, &var);
-
-                if (nxt_is_tstr(&var)) {
-                    ret = nxt_conf_vldt_var(vldt, &name, &var);
-                    if (ret != NXT_OK) {
-                        return ret;
-                    }
-
-                    break;
-                }
-           }
 
             ret = nxt_conf_vldt_type(vldt, &name, member, vals->type);
             if (ret != NXT_OK) {
@@ -1676,46 +1612,3 @@ nxt_conf_vldt_php_option(nxt_conf_validation_t *vldt, nxt_str_t *name,
 
     return NXT_OK;
 }
-
-
-#if (NXT_HAVE_NJS)
-
-static nxt_int_t
-nxt_conf_vldt_js_module(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        return nxt_conf_vldt_array_iterator(vldt, value,
-                                            &nxt_conf_vldt_js_module_element);
-    }
-
-    /* NXT_CONF_STRING */
-
-    return nxt_conf_vldt_js_module_element(vldt, value);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_js_module_element(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value)
-{
-    nxt_str_t         name;
-    nxt_conf_value_t  *module;
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "The \"js_module\" array must "
-                                   "contain only string values.");
-    }
-
-    nxt_conf_get_string(value, &name);
-
-    module = nxt_script_info_get(&name);
-    if (module == NULL) {
-        return nxt_conf_vldt_error(vldt, "JS module \"%V\" is not found.",
-                                   &name);
-    }
-
-    return NXT_OK;
-}
-
-#endif

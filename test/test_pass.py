@@ -14,7 +14,9 @@ def setup_method_fixture():
     client.load('empty')
 
 
-@pytest.mark.parametrize('name', ['plain', 'one/two', 'a b', 'a%b', 'routes', '\u5e94\u7528'])
+@pytest.mark.parametrize('name', [
+    'plain', 'one/two', 'a b', 'a%b', 'routes', '\u5e94\u7528', '$arg_app', '`app`',
+])
 def test_pass_application_name(name):
     app = client.conf_get('applications/empty')
     assert 'success' in client.conf(
@@ -26,14 +28,14 @@ def test_pass_application_name(name):
     assert client.get()['status'] == 200
 
 
-def test_pass_application_variable():
+def test_pass_application_literal():
+    client.load('empty', name='$arg_app')
     assert 'success' in client.conf(
         {'pass': 'applications/$arg_app'}, 'listeners/*:8080',
     )
     assert client.get(url='/?app=empty')['status'] == 200
-    assert client.get(url='/?app=missing')['status'] == 404
-    assert client.get()['status'] == 404
-    assert client.get(url='/?app=empty')['status'] == 200
+    assert client.get(url='/?app=missing')['status'] == 200
+    assert client.get()['status'] == 200
 
 
 def test_pass_legacy_application():
@@ -43,29 +45,36 @@ def test_pass_legacy_application():
     assert client.get()['status'] == 200
 
 
-def test_pass_target_variable():
+def test_pass_target_literal():
     app = client.conf_get('applications/empty')
     app['path'] = option.test_dir + '/python/targets'
     del app['module']
     app['targets'] = {
         'first': {'module': 'wsgi', 'callable': 'wsgi_target_a'},
         'second': {'module': 'wsgi', 'callable': 'wsgi_target_b'},
+        '$arg_target': {'module': 'wsgi', 'callable': 'wsgi_target_a'},
     }
     assert 'success' in client.conf(app, 'applications/targets')
-    assert 'success' in client.conf(
-        {'pass': 'applications/$arg_app/$arg_target'}, 'listeners/*:8080',
+    for target, body in [('first', '1'), ('second', '2'), ('$arg_target', '1')]:
+        assert 'success' in client.conf(
+            {'pass': 'applications/targets/' + target}, 'listeners/*:8080',
+        )
+        assert client.get(url='/?target=second')['body'] == body
+
+    before = client.conf_get()
+    assert 'error' in client.conf(
+        {'pass': 'applications/targets/missing'}, 'listeners/*:8080',
     )
-    assert client.get(url='/?app=targets&target=first')['body'] == '1'
-    assert client.get(url='/?app=targets&target=second')['body'] == '2'
-    assert client.get(url='/?app=targets&target=missing')['status'] == 404
-    assert client.get(url='/?app=empty&target=first')['status'] == 404
-    assert client.get(url='/?app=targets&target=first')['body'] == '1'
+    assert client.conf_get() == before
+    assert client.get()['body'] == '1'
 
 
 @pytest.mark.parametrize('target', [
     '', 'applications', 'applications/missing', 'applications/empty/missing',
     'applications//empty', 'applications/empty/extra/path', 'applications/%',
     'routes', 'routes/main', 'r%6futes/main',
+    'applications/$arg_app', 'applications/${arg_app}',
+    'applications/empty/$arg_target', '`applications/${args.app}`',
 ])
 def test_pass_invalid_preserves_configuration(target):
     before = client.conf_get()

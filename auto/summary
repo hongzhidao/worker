@@ -28,7 +28,6 @@ Worker configuration summary:
   IPv6 support: .............. $NXT_INET6
   Unix domain sockets support: $NXT_UNIX_DOMAIN
   Regex support: ............. $NXT_REGEX
-  NJS support: ............... $NXT_NJS
 
   process isolation: ......... $NXT_ISOLATION
 

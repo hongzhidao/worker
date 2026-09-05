@@ -19,9 +19,7 @@ struct nxt_port_handlers_s {
     nxt_port_handler_t  modules;
     nxt_port_handler_t  conf_store;
     /* Reserved to preserve application protocol message numbers. */
-    nxt_port_handler_t  reserved[2];
-    nxt_port_handler_t  script_get;
-    nxt_port_handler_t  script_delete;
+    nxt_port_handler_t  reserved[4];
     nxt_port_handler_t  reserved_access;  /* Preserve application message IDs. */
 
     /* File descriptor exchange. */
@@ -85,8 +83,6 @@ typedef enum {
     _NXT_PORT_MSG_SOCKET          = nxt_port_handler_idx(socket),
     _NXT_PORT_MSG_MODULES         = nxt_port_handler_idx(modules),
     _NXT_PORT_MSG_CONF_STORE      = nxt_port_handler_idx(conf_store),
-    _NXT_PORT_MSG_SCRIPT_GET      = nxt_port_handler_idx(script_get),
-    _NXT_PORT_MSG_SCRIPT_DELETE   = nxt_port_handler_idx(script_delete),
 
     _NXT_PORT_MSG_CHANGE_FILE     = nxt_port_handler_idx(change_file),
     _NXT_PORT_MSG_NEW_PORT        = nxt_port_handler_idx(new_port),
@@ -125,8 +121,6 @@ typedef enum {
     NXT_PORT_MSG_SOCKET           = nxt_msg_last(_NXT_PORT_MSG_SOCKET),
     NXT_PORT_MSG_MODULES          = nxt_msg_last(_NXT_PORT_MSG_MODULES),
     NXT_PORT_MSG_CONF_STORE       = nxt_msg_last(_NXT_PORT_MSG_CONF_STORE),
-    NXT_PORT_MSG_SCRIPT_GET       = nxt_msg_last(_NXT_PORT_MSG_SCRIPT_GET),
-    NXT_PORT_MSG_SCRIPT_DELETE    = nxt_msg_last(_NXT_PORT_MSG_SCRIPT_DELETE),
     NXT_PORT_MSG_CHANGE_FILE      = nxt_msg_last(_NXT_PORT_MSG_CHANGE_FILE),
     NXT_PORT_MSG_NEW_PORT         = nxt_msg_last(_NXT_PORT_MSG_NEW_PORT),
     NXT_PORT_MSG_GET_PORT         = nxt_msg_last(_NXT_PORT_MSG_GET_PORT),

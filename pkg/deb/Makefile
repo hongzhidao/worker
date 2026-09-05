@@ -14,7 +14,7 @@ SRCDIR=	worker-$(VERSION)
 
 CODENAME = $(shell lsb_release -cs)
 
-BUILD_DEPENDS_worker = build-essential debhelper devscripts fakeroot libxml2-utils lintian lsb-release xsltproc libssl-dev
+BUILD_DEPENDS_worker = build-essential debhelper devscripts fakeroot libxml2-utils lintian lsb-release xsltproc
 BUILD_DEPENDS = $(BUILD_DEPENDS_worker)
 
 MODULES=
@@ -87,9 +87,7 @@ CONFIGURE_ARGS_COMMON=\
 	--group=worker \
 	--tests
 
-CONFIGURE_ARGS=\
-	$(CONFIGURE_ARGS_COMMON) \
-	--njs
+CONFIGURE_ARGS=$(CONFIGURE_ARGS_COMMON)
 
 export CR=\\n
 
@@ -161,7 +159,7 @@ endif
 debuild/worker_$(VERSION).orig.tar.gz: | debuild/$(SRCDIR)/debian
 	cd ../.. && tar -czf pkg/deb/debuild/$(SRCDIR).tar.gz \
 		--transform "s#^#$(SRCDIR)/#" \
-		LICENSE NOTICE CHANGES README configure auto src test version go pkg/contrib docs/man/workerd.8.in
+		LICENSE NOTICE CHANGES README configure auto src test version go docs/man/workerd.8.in
 	mv debuild/$(SRCDIR).tar.gz debuild/worker_$(VERSION).orig.tar.gz
 	cd debuild && tar zxf worker_$(VERSION).orig.tar.gz
 

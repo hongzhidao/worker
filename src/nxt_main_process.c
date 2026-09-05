@@ -11,9 +11,6 @@
 #include <nxt_conf.h>
 #include <nxt_router.h>
 #include <nxt_port_queue.h>
-#if (NXT_HAVE_NJS)
-#include <nxt_script.h>
-#endif
 
 #include <sys/mount.h>
 
@@ -519,10 +516,6 @@ static nxt_port_handlers_t  nxt_main_process_port_handlers = {
     .socket           = nxt_main_port_socket_handler,
     .modules          = nxt_main_port_modules_handler,
     .conf_store       = nxt_main_port_conf_store_handler,
-#if (NXT_HAVE_NJS)
-    .script_get       = nxt_script_store_get_handler,
-    .script_delete    = nxt_script_store_delete_handler,
-#endif
     .rpc_ready        = nxt_port_rpc_handler,
     .rpc_error        = nxt_port_rpc_handler,
 };

@@ -36,7 +36,6 @@ typedef struct {
     uint32_t                        threads;
 
     nxt_mp_t                        *mem_pool;
-    nxt_tstr_state_t                *tstr_state;
 
     nxt_router_t                    *router;
 
@@ -58,9 +57,6 @@ typedef struct {
 
 typedef struct {
 
-#if (NXT_HAVE_NJS)
-    nxt_queue_t            js_modules;
-#endif
 
     nxt_queue_t            apps;       /* of nxt_app_t */
     nxt_queue_t            previous;   /* of nxt_app_t */

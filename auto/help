@@ -42,7 +42,6 @@ cat << END
   --no-regex           disable regular expression support
   --no-pcre2           force using PCRE library
 
-  --njs                enable NJS library usage
 
   --debug              enable debug logging
 

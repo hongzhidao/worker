@@ -121,8 +121,6 @@ struct nxt_http_request_s {
     nxt_buf_t                       *out;
     const nxt_http_request_state_t  *state;
 
-    nxt_nsec_t                      start_time;
-
     nxt_str_t                       host;
     nxt_str_t                       server_name;
     nxt_str_t                       target;
@@ -131,15 +129,10 @@ struct nxt_http_request_s {
     nxt_str_t                       *path;
     nxt_str_t                       *args;
 
-    nxt_str_t                       args_decoded;
-    nxt_array_t                     *arguments;  /* of nxt_http_name_value_t */
-    nxt_array_t                     *cookies;    /* of nxt_http_name_value_t */
     nxt_list_t                      *fields;
     nxt_http_field_t                *content_type;
     nxt_http_field_t                *content_length;
     nxt_http_field_t                *cookie;
-    nxt_http_field_t                *referer;
-    nxt_http_field_t                *user_agent;
     nxt_http_field_t                *authorization;
     nxt_off_t                       content_length_n;
 
@@ -149,9 +142,6 @@ struct nxt_http_request_s {
 
     nxt_timer_t                     timer;
     void                            *timer_data;
-
-    nxt_tstr_query_t                *tstr_query;
-    nxt_tstr_cache_t                tstr_cache;
 
     void                            *req_rpc_data;
 
@@ -175,31 +165,11 @@ struct nxt_http_request_s {
 };
 
 
-typedef struct {
-    uint16_t                        hash;
-    uint16_t                        name_length;
-    uint32_t                        value_length;
-    u_char                          *name;
-    u_char                          *value;
-} nxt_http_name_value_t;
-
-
-typedef enum {
-    NXT_HTTP_URI_ENCODING_NONE = 0,
-    NXT_HTTP_URI_ENCODING,
-    NXT_HTTP_URI_ENCODING_PLUS
-} nxt_http_uri_encoding_t;
-
-
 struct nxt_http_action_s {
     nxt_http_action_t               *(*handler)(nxt_task_t *task,
                                         nxt_http_request_t *r,
                                         nxt_http_action_t *action);
-    union {
-        void                        *conf;
-        nxt_tstr_t                  *tstr;
-        nxt_str_t                   *pass;
-    } u;
+    void                           *conf;
 };
 
 
@@ -265,15 +235,6 @@ nxt_int_t nxt_http_request_field(void *ctx, nxt_http_field_t *field,
     uintptr_t offset);
 nxt_int_t nxt_http_request_content_length(void *ctx, nxt_http_field_t *field,
     uintptr_t data);
-
-nxt_array_t *nxt_http_arguments_parse(nxt_http_request_t *r);
-nxt_array_t *nxt_http_cookies_parse(nxt_http_request_t *r);
-
-int64_t nxt_http_field_hash(nxt_mp_t *mp, nxt_str_t *name,
-    nxt_bool_t case_sensitive, uint8_t encoding);
-int64_t nxt_http_argument_hash(nxt_mp_t *mp, nxt_str_t *name);
-int64_t nxt_http_header_hash(nxt_mp_t *mp, nxt_str_t *name);
-int64_t nxt_http_cookie_hash(nxt_mp_t *mp, nxt_str_t *name);
 
 nxt_http_action_t *nxt_http_action_create(nxt_task_t *task,
     nxt_router_temp_conf_t *tmcf, nxt_str_t *pass);

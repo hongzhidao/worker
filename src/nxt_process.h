@@ -38,9 +38,6 @@ typedef struct {
 
 typedef struct {
     nxt_str_t                  conf;
-#if (NXT_HAVE_NJS)
-    nxt_array_t                *scripts;
-#endif
 } nxt_controller_init_t;
 
 

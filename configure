@@ -166,9 +166,5 @@ END
 NXT_LIB_AUX_CFLAGS="$NXT_PCRE_CFLAGS"
 NXT_LIB_AUX_LIBS="$NXT_PCRE_LIB"
 
-if [ $NXT_NJS != NO ]; then
-    . auto/njs
-fi
-
 . auto/make
 . auto/summary

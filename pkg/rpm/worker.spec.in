@@ -4,21 +4,12 @@
 
 %if 0%{?rhel}%{?fedora}
 BuildRequires: gcc
-%if 0%{?amzn2}
-BuildRequires: openssl11-devel
-%else
-BuildRequires: openssl-devel
-%endif
 %endif
 
 %if 0%{?rhel}
 %if 0%{?amzn} == 0
 %define dist .el%{?rhel}
 %endif
-%endif
-
-%if 0%{?suse_version} >= 1315
-BuildRequires: libopenssl-devel
 %endif
 
 %define CC_OPT %{optflags} -fPIC
@@ -80,9 +71,6 @@ Library and include files required for Worker modules development.
 %setup -q
 
 %build
-%{__make} %{?_smp_mflags} -C pkg/contrib .njs
-
-PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
 ./configure \
 	%{CONFIGURE_ARGS} \
 	--modules=%{_libdir}/worker/debug-modules \
@@ -96,7 +84,6 @@ PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
 %{__make} %{?_smp_mflags} build/libworker.a
 %{__mv} build build-debug
 
-PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
 ./configure \
 	%{CONFIGURE_ARGS} \
 	--modules=%{_libdir}/worker/modules \

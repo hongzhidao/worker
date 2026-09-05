@@ -33,8 +33,6 @@ NXT_LIB_SRCS=" \
     src/nxt_utf8.c \
     src/nxt_parse.c \
     src/nxt_sprintf.c \
-    src/nxt_var.c \
-    src/nxt_tstr.c \
     src/nxt_file_name.c \
     src/nxt_log.c \
     src/nxt_djb_hash.c \
@@ -87,7 +85,6 @@ NXT_LIB_SRCS=" \
     src/nxt_http_error.c \
     src/nxt_http_pass.c \
     src/nxt_http_chunk_parse.c \
-    src/nxt_http_variables.c \
     src/nxt_application.c \
     src/nxt_external.c \
     src/nxt_port_hash.c \
@@ -115,10 +112,6 @@ NXT_LIB_UNIT_SRCS="src/nxt_unit.c"
 
 NXT_LIB_PCRE_SRCS="src/nxt_pcre.c"
 NXT_LIB_PCRE2_SRCS="src/nxt_pcre2.c"
-
-if [ "$NXT_NJS" != "NO" ]; then
-    NXT_LIB_SRCS="$NXT_LIB_SRCS src/nxt_js.c src/nxt_http_js.c src/nxt_script.c"
-fi
 
 NXT_LIB_EPOLL_SRCS="src/nxt_epoll_engine.c"
 NXT_LIB_KQUEUE_SRCS="src/nxt_kqueue_engine.c"

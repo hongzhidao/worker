@@ -440,7 +440,7 @@ $NXT_BUILD_DIR/share/pkgconfig/worker.pc: src/worker.pc.in
 		-e "s|@CFLAGS@|-I$NXT_INCDIR|" \\
 		-e "s|@VERSION@|\$(NXT_VERSION)|" \\
 		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS|" \\
-		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||' -e 's| --njs||')|" \\
+		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||')|" \\
 		-e "s|@MODULESDIR@|$NXT_MODULES|" \\
 	< src/worker.pc.in > \$@
 
@@ -450,7 +450,7 @@ $NXT_BUILD_DIR/share/pkgconfig/worker-uninstalled.pc: src/worker.pc.in
 		-e "s|@CFLAGS@|-I$(pwd)/src -I$(pwd)/$NXT_BUILD_DIR|" \\
 		-e "s|@VERSION@|\$(NXT_VERSION)|" \\
 		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS|" \\
-		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||' -e 's| --njs||')|" \\
+		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||')|" \\
 	< src/worker.pc.in > \$@
 
 END

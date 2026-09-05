@@ -8,117 +8,6 @@
 #include <nxt_http.h>
 
 
-static nxt_int_t nxt_http_action_resolve(nxt_task_t *task,
-    nxt_router_temp_conf_t *tmcf, nxt_http_action_t *action);
-static nxt_http_action_t *nxt_http_pass_var(nxt_task_t *task,
-    nxt_http_request_t *r, nxt_http_action_t *action);
-static void nxt_http_pass_query(nxt_task_t *task, nxt_http_request_t *r,
-    nxt_http_action_t *action);
-static nxt_int_t nxt_http_pass_find(nxt_mp_t *mp, nxt_router_conf_t *rtcf,
-    nxt_str_t *pass, nxt_http_action_t *action);
-
-
-static nxt_int_t
-nxt_http_action_resolve(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
-    nxt_http_action_t *action)
-{
-    nxt_int_t  ret;
-    nxt_str_t  pass;
-
-    if (action->handler != NULL) {
-        return NXT_OK;
-    }
-
-    if (nxt_tstr_is_const(action->u.tstr)) {
-        nxt_tstr_str(action->u.tstr, &pass);
-
-        ret = nxt_http_pass_find(tmcf->router_conf->mem_pool,
-                                 tmcf->router_conf, &pass, action);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
-        }
-
-    } else {
-        action->handler = nxt_http_pass_var;
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_http_action_t *
-nxt_http_pass_var(nxt_task_t *task, nxt_http_request_t *r,
-    nxt_http_action_t *action)
-{
-    nxt_int_t          ret;
-    nxt_str_t          str;
-    nxt_tstr_t         *tstr;
-    nxt_router_conf_t  *rtcf;
-
-    tstr = action->u.tstr;
-
-    nxt_tstr_str(tstr, &str);
-
-    nxt_debug(task, "http pass: \"%V\"", &str);
-
-    rtcf = r->conf->socket_conf->router_conf;
-
-    ret = nxt_tstr_query_init(&r->tstr_query, rtcf->tstr_state, &r->tstr_cache,
-                              r, r->mem_pool);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        goto fail;
-    }
-
-    action = nxt_mp_zget(r->mem_pool,
-                         sizeof(nxt_http_action_t) + sizeof(nxt_str_t));
-    if (nxt_slow_path(action == NULL)) {
-        goto fail;
-    }
-
-    action->u.pass = nxt_pointer_to(action, sizeof(nxt_http_action_t));
-
-    ret = nxt_tstr_query(task, r->tstr_query, tstr, action->u.pass);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        goto fail;
-    }
-
-    nxt_http_pass_query(task, r, action);
-
-    return NULL;
-
-fail:
-
-    nxt_http_request_error(task, r, NXT_HTTP_INTERNAL_SERVER_ERROR);
-    return NULL;
-}
-
-
-static void
-nxt_http_pass_query(nxt_task_t *task, nxt_http_request_t *r,
-    nxt_http_action_t *action)
-{
-    nxt_int_t          ret;
-    nxt_router_conf_t  *rtcf;
-    nxt_http_status_t  status;
-
-    rtcf = r->conf->socket_conf->router_conf;
-
-    nxt_debug(task, "http pass lookup: %V", action->u.pass);
-
-    ret = nxt_http_pass_find(r->mem_pool, rtcf, action->u.pass, action);
-
-    if (ret != NXT_OK) {
-        status = (ret == NXT_DECLINED) ? NXT_HTTP_NOT_FOUND
-                                       : NXT_HTTP_INTERNAL_SERVER_ERROR;
-
-        nxt_http_request_error(task, r, status);
-        return;
-    }
-
-    nxt_http_request_action(task, r, action);
-}
-
-
 static nxt_int_t
 nxt_http_pass_find(nxt_mp_t *mp, nxt_router_conf_t *rtcf, nxt_str_t *pass,
     nxt_http_action_t *action)
@@ -209,14 +98,7 @@ nxt_http_action_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
         return NULL;
     }
 
-    action->u.tstr = nxt_tstr_compile(rtcf->tstr_state, pass, 0);
-    if (nxt_slow_path(action->u.tstr == NULL)) {
-        return NULL;
-    }
-
-    action->handler = NULL;
-
-    ret = nxt_http_action_resolve(task, tmcf, action);
+    ret = nxt_http_pass_find(mp, rtcf, pass, action);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NULL;
     }

@@ -25,12 +25,7 @@ BASEDIR = $(CURDIR)
 
 DOTESTS = 0
 
-njs:
-	dh_testdir
-	cd pkg/contrib && make .njs
-	touch $@
-
-config.env.%: njs
+config.env.%:
 	dh_testdir
 	mkdir -p $(BUILDDIR_$*)
 	cp -Pa $(CURDIR)/auto $(BUILDDIR_$*)/
@@ -49,7 +44,6 @@ config.env.%: njs
 
 configure.worker: config.env.worker
 	cd $(BUILDDIR_worker) && \
-	PKG_CONFIG_PATH=$(CURDIR)/pkg/contrib/njs/build \
 	CFLAGS= ./configure \
 		%%CONFIGURE_ARGS%% \
 		--modules=/usr/lib/worker/modules \
@@ -61,7 +55,6 @@ configure.worker: config.env.worker
 
 configure.worker_debug: config.env.worker_debug
 	cd $(BUILDDIR_worker_debug) && \
-	PKG_CONFIG_PATH=$(CURDIR)/pkg/contrib/njs/build \
 	CFLAGS= ./configure \
 		%%CONFIGURE_ARGS%% \
 		--modules=/usr/lib/worker/debug-modules \

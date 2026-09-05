@@ -371,25 +371,6 @@ def _clear_conf(*, log=None):
 
     assert 'success' in resp, 'clear conf'
 
-    def get(url):
-        return http.get(url=url, sock_type='unix', addr=sock)['body']
-
-    def delete(url):
-        return http.delete(url=url, sock_type='unix', addr=sock)['body']
-
-    if (
-        'njs' in option.available['modules']
-        and option.available['modules']['njs']
-    ):
-        try:
-            scripts = json.loads(get('/js_modules')).keys()
-
-        except json.JSONDecodeError:
-            pytest.fail("Can't parse njs modules list.")
-
-        for script in scripts:
-            assert 'success' in delete(f'/js_modules/{script}'), 'delete script'
-
 
 def _clear_temp_dir():
     temp_dir = worker_instance['temp_dir']

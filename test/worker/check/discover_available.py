@@ -3,7 +3,6 @@ import sys
 
 from worker.check.go import check_go
 from worker.check.isolation import check_isolation
-from worker.check.njs import check_njs
 from worker.check.regex import check_regex
 from worker.log import Log
 from worker.option import option
@@ -30,7 +29,6 @@ def discover_available(worker):
     # discover modules using check
 
     option.available['modules']['go'] = check_go()
-    option.available['modules']['njs'] = check_njs(output_version)
     option.available['modules']['regex'] = check_regex(output_version)
 
     # Discover features using check. Features should be discovered after

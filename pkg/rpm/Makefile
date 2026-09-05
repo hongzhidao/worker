@@ -43,13 +43,9 @@ BUILD_DEPENDS_worker += system-rpm-config
 endif
 
 ifneq (,$(findstring $(OSVER),opensuse-leap opensuse-tumbleweed sles))
-BUILD_DEPENDS_worker += libxml2-tools libxslt1 libopenssl-devel
+BUILD_DEPENDS_worker += libxml2-tools libxslt1
 else
-ifneq (,$(findstring $(OSVER),amazonlinux2))
-BUILD_DEPENDS_worker += libxml2 libxslt openssl11-devel
-else
-BUILD_DEPENDS_worker += libxml2 libxslt openssl-devel
-endif
+BUILD_DEPENDS_worker += libxml2 libxslt
 endif
 
 BUILD_DEPENDS = $(BUILD_DEPENDS_worker)
@@ -149,9 +145,7 @@ CONFIGURE_ARGS_COMMON=\
 	--group=worker \
 	--tests
 
-CONFIGURE_ARGS=\
-	$(CONFIGURE_ARGS_COMMON) \
-	--njs
+CONFIGURE_ARGS=$(CONFIGURE_ARGS_COMMON)
 
 export CR=\\n
 
@@ -211,7 +205,7 @@ endif
 rpmbuild/SOURCES/worker-$(VERSION).tar.gz:
 	cd ../.. && tar -czf pkg/rpm/rpmbuild/SOURCES/worker-$(VERSION).tar.gz \
 		--transform "s#^#worker-$(VERSION)/#" \
-		LICENSE NOTICE CHANGES README configure auto src test version go pkg/contrib docs/man/workerd.8.in
+		LICENSE NOTICE CHANGES README configure auto src test version go docs/man/workerd.8.in
 
 worker: check-build-depends-worker rpmbuild/SPECS/worker.spec rpmbuild/SOURCES/worker-$(VERSION).tar.gz
 	@echo "===> Building $@ package" ; \

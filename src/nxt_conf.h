@@ -72,7 +72,6 @@ typedef struct {
     nxt_mp_t             *pool;
     nxt_str_t            error;
     void                 *ctx;
-    nxt_tstr_state_t     *tstr_state;
     nxt_mp_t             *conf_pool;
     nxt_uint_t           ver;
 } nxt_conf_validation_t;

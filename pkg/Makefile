@@ -27,14 +27,10 @@ deb:
 docker:
 	@cd docker && VERSION=$(VERSION) RELEASE=$(RELEASE) make all
 
-njs:
-	@cd contrib && make .njs
-
 clean:
 	@cd rpm && make clean
 	@cd deb && make clean
 	@cd docker && make clean
-	@cd contrib && make clean
 	rm -f worker-$(VERSION).tar.gz
 	rm -f worker-$(VERSION).tar.gz.sha512
 
