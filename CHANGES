@@ -1,5 +1,5 @@
 
-Changes with Worker 0.1.0                                        04 Sep 2026
+Changes with Worker 0.1.0                                        05 Sep 2026
 
     *) initial release of Worker, an application server for PHP, Python, Go,
        and Ruby.
