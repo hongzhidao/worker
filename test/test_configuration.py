@@ -24,6 +24,18 @@ def test_json_empty():
 def test_json_leading_zero():
     assert 'error' in client.conf('00'), 'leading zero'
 
+@pytest.mark.parametrize(
+    'upstreams',
+    [{}, {"backend": {"servers": {"127.0.0.1:8081": {}}}}],
+)
+def test_configuration_upstreams_unsupported(upstreams):
+    before = client.conf_get()
+    resp = client.conf(upstreams, 'upstreams')
+
+    assert resp.get('detail') == 'Unknown parameter "upstreams".'
+    assert client.conf_get() == before
+
+
 def test_json_unicode():
     assert 'success' in client.conf(
         """

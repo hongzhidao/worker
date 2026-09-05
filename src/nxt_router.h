@@ -19,8 +19,6 @@ typedef struct nxt_http_request_s  nxt_http_request_t;
 typedef struct nxt_http_action_s               nxt_http_action_t;
 typedef struct nxt_http_routes_s               nxt_http_routes_t;
 typedef struct nxt_http_forward_s              nxt_http_forward_t;
-typedef struct nxt_upstream_s                  nxt_upstream_t;
-typedef struct nxt_upstreams_s                 nxt_upstreams_t;
 typedef struct nxt_router_access_log_s         nxt_router_access_log_t;
 typedef struct nxt_router_access_log_format_s  nxt_router_access_log_format_t;
 
@@ -48,7 +46,6 @@ typedef struct {
 
     nxt_router_t                    *router;
     nxt_http_routes_t               *routes;
-    nxt_upstreams_t                 *upstreams;
 
     nxt_lvlhsh_t                    apps_hash;
 
@@ -186,17 +183,11 @@ typedef struct {
     size_t                 large_header_buffers;
     size_t                 body_buffer_size;
     size_t                 max_body_size;
-    size_t                 proxy_header_buffer_size;
-    size_t                 proxy_buffer_size;
-    size_t                 proxy_buffers;
 
     nxt_msec_t             idle_timeout;
     nxt_msec_t             header_read_timeout;
     nxt_msec_t             body_read_timeout;
     nxt_msec_t             send_timeout;
-    nxt_msec_t             proxy_timeout;
-    nxt_msec_t             proxy_send_timeout;
-    nxt_msec_t             proxy_read_timeout;
 
     nxt_websocket_conf_t   websocket_conf;
 
@@ -220,10 +211,6 @@ typedef struct {
     nxt_socket_conf_t      *socket_conf;
 
     nxt_joint_job_t        *close_job;
-
-    nxt_upstream_t         **upstreams;
-
-    /* Modules configuraitons. */
 } nxt_socket_conf_joint_t;
 
 

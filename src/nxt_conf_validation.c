@@ -110,8 +110,6 @@ static nxt_int_t nxt_conf_vldt_pass(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_return(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_proxy(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_python(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_python_path(nxt_conf_validation_t *vldt,
@@ -184,12 +182,6 @@ static nxt_int_t nxt_conf_vldt_php(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_php_option(nxt_conf_validation_t *vldt,
     nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_upstream(nxt_conf_validation_t *vldt,
-     nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_server(nxt_conf_validation_t *vldt,
-    nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_server_weight(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_access_log(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_access_log_format(nxt_conf_validation_t *vldt,
@@ -264,11 +256,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_root_members[] = {
         .type       = NXT_CONF_VLDT_OBJECT,
         .validator  = nxt_conf_vldt_object_iterator,
         .u.object   = nxt_conf_vldt_app,
-    }, {
-        .name       = nxt_string("upstreams"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object_iterator,
-        .u.object   = nxt_conf_vldt_upstream,
     }, {
         .name       = nxt_string("access_log"),
         .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_OBJECT,
@@ -659,17 +646,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_return_action_members[] = {
     }, {
         .name       = nxt_string("location"),
         .type       = NXT_CONF_VLDT_STRING,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_proxy_action_members[] = {
-    {
-        .name       = nxt_string("proxy"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .validator  = nxt_conf_vldt_proxy,
     },
 
     NXT_CONF_VLDT_END
@@ -1093,29 +1069,6 @@ static nxt_conf_vldt_object_t nxt_conf_vldt_app_procmap_members[] = {
 #endif
 
 
-static nxt_conf_vldt_object_t  nxt_conf_vldt_upstream_members[] = {
-    {
-        .name       = nxt_string("servers"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object_iterator,
-        .u.object   = nxt_conf_vldt_server,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_upstream_server_members[] = {
-    {
-        .name       = nxt_string("weight"),
-        .type       = NXT_CONF_VLDT_NUMBER,
-        .validator  = nxt_conf_vldt_server_weight,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
 static nxt_conf_vldt_object_t  nxt_conf_vldt_access_log_members[] = {
     {
         .name       = nxt_string("path"),
@@ -1366,7 +1319,6 @@ nxt_conf_vldt_action(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
     } actions[] = {
         { nxt_string("pass"), nxt_conf_vldt_pass_action_members },
         { nxt_string("return"), nxt_conf_vldt_return_action_members },
-        { nxt_string("proxy"), nxt_conf_vldt_proxy_action_members },
     };
 
     members = NULL;
@@ -1380,8 +1332,8 @@ nxt_conf_vldt_action(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
 
         if (members != NULL) {
             return nxt_conf_vldt_error(vldt, "The \"action\" object must have "
-                                       "just one of \"pass\", \"return\", "
-                                       "or \"proxy\" options set.");
+                                       "just one of \"pass\" or \"return\" "
+                                       "options set.");
         }
 
         members = actions[i].members;
@@ -1389,8 +1341,7 @@ nxt_conf_vldt_action(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
 
     if (members == NULL) {
         return nxt_conf_vldt_error(vldt, "The \"action\" object must have "
-                                   "either \"pass\", \"return\", "
-                                   "or \"proxy\" option set.");
+                                   "either \"pass\" or \"return\" option set.");
     }
 
     return nxt_conf_vldt_object(vldt, value, members);
@@ -1455,27 +1406,6 @@ nxt_conf_vldt_pass(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
         return NXT_OK;
     }
 
-    if (nxt_str_eq(&segments[0], "upstreams", 9)) {
-
-        if (segments[1].length == 0 || segments[2].length != 0) {
-            goto error;
-        }
-
-        value = nxt_conf_get_object_member(vldt->conf, &segments[0], NULL);
-
-        if (value == NULL) {
-            goto error;
-        }
-
-        value = nxt_conf_get_object_member(value, &segments[1], NULL);
-
-        if (value == NULL) {
-            goto error;
-        }
-
-        return NXT_OK;
-    }
-
     if (nxt_str_eq(&segments[0], "routes", 6)) {
 
         if (segments[2].length != 0) {
@@ -1530,30 +1460,6 @@ nxt_conf_vldt_return(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
     }
 
     return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_proxy(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    nxt_str_t       name;
-    nxt_sockaddr_t  *sa;
-
-    nxt_conf_get_string(value, &name);
-
-    if (nxt_str_start(&name, "http://", 7)) {
-        name.length -= 7;
-        name.start += 7;
-
-        sa = nxt_sockaddr_parse(vldt->pool, &name);
-        if (sa != NULL) {
-            return NXT_OK;
-        }
-    }
-
-    return nxt_conf_vldt_error(vldt, "The \"proxy\" address is invalid \"%V\"",
-                               &name);
 }
 
 
@@ -2763,84 +2669,6 @@ nxt_conf_vldt_php_option(nxt_conf_validation_t *vldt, nxt_str_t *name,
     if (nxt_conf_type(value) != NXT_CONF_STRING) {
         return nxt_conf_vldt_error(vldt, "The \"%V\" PHP option must be "
                                    "a string.", name);
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_upstream(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_conf_value_t *value)
-{
-    nxt_int_t         ret;
-    nxt_conf_value_t  *conf;
-
-    static nxt_str_t  servers = nxt_string("servers");
-
-    ret = nxt_conf_vldt_type(vldt, name, value, NXT_CONF_VLDT_OBJECT);
-
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    ret = nxt_conf_vldt_object(vldt, value, nxt_conf_vldt_upstream_members);
-
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    conf = nxt_conf_get_object_member(value, &servers, NULL);
-    if (conf == NULL) {
-        return nxt_conf_vldt_error(vldt, "The \"%V\" upstream must contain "
-                                   "\"servers\" object value.", name);
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_server(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_conf_value_t *value)
-{
-    nxt_int_t       ret;
-    nxt_sockaddr_t  *sa;
-
-    ret = nxt_conf_vldt_type(vldt, name, value, NXT_CONF_VLDT_OBJECT);
-
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    sa = nxt_sockaddr_parse(vldt->pool, name);
-
-    if (sa == NULL) {
-        return nxt_conf_vldt_error(vldt, "The \"%V\" is not valid "
-                                   "server address.", name);
-    }
-
-    return nxt_conf_vldt_object(vldt, value,
-                                nxt_conf_vldt_upstream_server_members);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_server_weight(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    double  num_value;
-
-    num_value = nxt_conf_get_number(value);
-
-    if (num_value < 0) {
-        return nxt_conf_vldt_error(vldt, "The \"weight\" number must be "
-                                   "positive.");
-    }
-
-    if (num_value > 1000000) {
-        return nxt_conf_vldt_error(vldt, "The \"weight\" number must "
-                                   "not exceed 1,000,000");
     }
 
     return NXT_OK;

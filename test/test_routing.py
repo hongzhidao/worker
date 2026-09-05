@@ -392,20 +392,6 @@ def test_routes_route_pass():
                     "module": "wsgi",
                 }
             },
-            "upstreams": {
-                "one": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
-                "two": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
-            },
         }
     )
 
@@ -414,9 +400,6 @@ def test_routes_route_pass():
     )
     assert 'success' in client.conf(
         [{"action": {"pass": "applications/app"}}], 'routes'
-    )
-    assert 'success' in client.conf(
-        [{"action": {"pass": "upstreams/one"}}], 'routes'
     )
 
 def test_routes_route_pass_absent():
@@ -434,20 +417,6 @@ def test_routes_route_pass_invalid():
                     "path": "/app",
                     "module": "wsgi",
                 }
-            },
-            "upstreams": {
-                "one": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
-                "two": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
             },
         }
     )
@@ -469,16 +438,16 @@ def test_routes_route_pass_invalid():
     'action',
     [
         {"return": 200},
-        {"proxy": "http://127.0.0.1:8081"},
         {"pass": "routes"},
     ],
-    ids=['return', 'proxy', 'pass'],
+    ids=['return', 'pass'],
 )
 @pytest.mark.parametrize(
     'name,value',
     [
         ('response_headers', {"X-Test": "value"}),
         ('rewrite', '/new'),
+        ('proxy', 'http://127.0.0.1:8081'),
         ('share', '/missing'),
         ('share', ['/missing']),
         ('fallback', {"return": 200}),
@@ -488,7 +457,7 @@ def test_routes_route_pass_invalid():
         ('traverse_mounts', False),
     ],
     ids=[
-        'response_headers', 'rewrite', 'share-string', 'share-array',
+        'response_headers', 'rewrite', 'proxy', 'share-string', 'share-array',
         'fallback', 'types', 'chroot', 'follow_symlinks', 'traverse_mounts',
     ],
 )
@@ -504,49 +473,35 @@ def test_routes_action_option_unsupported(action, name, value):
     assert client.get()['status'] == 200
 
 
-@pytest.mark.parametrize('share', ['/missing', ['/missing']])
-def test_routes_share_unsupported(share):
+@pytest.mark.parametrize(
+    'action',
+    [
+        {"share": "/missing"},
+        {"share": ["/missing"]},
+        {"proxy": "http://127.0.0.1:8081"},
+    ],
+    ids=['share-string', 'share-array', 'proxy'],
+)
+def test_routes_action_unsupported(action):
     before = client.conf_get()
-    resp = client.conf({"share": share}, 'routes/0/action')
+    resp = client.conf(action, 'routes/0/action')
 
     assert resp.get('detail') == (
-        'The "action" object must have either "pass", "return", '
-        'or "proxy" option set.'
+        'The "action" object must have either "pass" or "return" option set.'
     )
     assert client.conf_get() == before
     assert client.get()['status'] == 200
 
 
 def test_routes_action_unique():
-    assert 'success' in client.conf(
-        {
-            "listeners": {
-                "*:8080": {"pass": "routes"},
-                "*:8081": {"pass": "applications/app"},
-            },
-            "routes": [{"action": {"proxy": "http://127.0.0.1:8081"}}],
-            "applications": {
-                "app": {
-                    "type": "python",
-                    "processes": {"spare": 0},
-                    "path": "/app",
-                    "module": "wsgi",
-                }
-            },
-        }
-    )
+    before = client.conf_get()
+    resp = client.conf({"return": 200, "pass": "routes"}, 'routes/0/action')
 
-    assert 'error' in client.conf(
-        {"proxy": "http://127.0.0.1:8081", "return": 200},
-        'routes/0/action',
-    ), 'proxy return'
-    assert 'error' in client.conf(
-        {"proxy": "http://127.0.0.1:8081", "pass": "applications/app",},
-        'routes/0/action',
-    ), 'proxy pass'
-    assert 'error' in client.conf(
-        {"return": 200, "pass": "applications/app"}, 'routes/0/action',
-    ), 'return pass'
+    assert resp.get('detail') == (
+        'The "action" object must have just one of "pass" or "return" options set.'
+    )
+    assert client.conf_get() == before
+    assert client.get()['status'] == 200
 
 def test_routes_rules_two():
     assert 'success' in client.conf(
@@ -1932,27 +1887,26 @@ def test_routes_match_destination():
     assert client.get()['status'] == 404, 'dest neg 16'
     assert client.get(port=8081)['status'] == 404, 'dest neg 17'
 
-def test_routes_match_destination_proxy():
+def test_routes_match_destination_pass():
     assert 'success' in client.conf(
         {
             "listeners": {
                 "*:8080": {"pass": "routes/first"},
-                "*:8081": {"pass": "routes/second"},
             },
             "routes": {
-                "first": [{"action": {"proxy": "http://127.0.0.1:8081"}}],
+                "first": [{"action": {"pass": "routes/second"}}],
                 "second": [
                     {
-                        "match": {"destination": ["127.0.0.1:8081"]},
+                        "match": {"destination": ["127.0.0.1:8080"]},
                         "action": {"return": 200},
                     }
                 ],
             },
             "applications": {},
         }
-    ), 'proxy configure'
+    ), 'route pass configure'
 
-    assert client.get()['status'] == 200, 'proxy'
+    assert client.get()['status'] == 200, 'route pass'
 
 
 def set_if(condition):

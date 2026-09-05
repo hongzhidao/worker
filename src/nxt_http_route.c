@@ -625,11 +625,6 @@ static nxt_conf_map_t  nxt_http_route_action_conf[] = {
         NXT_CONF_MAP_STR,
         offsetof(nxt_http_action_conf_t, location)
     },
-    {
-        nxt_string("proxy"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_http_action_conf_t, proxy)
-    },
 };
 
 
@@ -637,7 +632,6 @@ nxt_int_t
 nxt_http_action_init(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_conf_value_t *cv, nxt_http_action_t *action)
 {
-    nxt_mp_t                *mp;
     nxt_int_t               ret;
     nxt_str_t               pass;
     nxt_router_conf_t       *rtcf;
@@ -654,14 +648,9 @@ nxt_http_action_init(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_memzero(action, sizeof(nxt_http_action_t));
 
     rtcf = tmcf->router_conf;
-    mp = rtcf->mem_pool;
 
     if (acf.ret != NULL) {
         return nxt_http_return_init(rtcf, action, &acf);
-    }
-
-    if (acf.proxy != NULL) {
-        return nxt_http_proxy_init(mp, action, &acf);
     }
 
     nxt_conf_get_string(acf.pass, &pass);
@@ -1398,10 +1387,6 @@ nxt_http_pass_find(nxt_mp_t *mp, nxt_router_conf_t *rtcf, nxt_str_t *pass,
     }
 
     if (segments[2].length == 0) {
-        if (nxt_str_eq(&segments[0], "upstreams", 9)) {
-            return nxt_upstream_find(rtcf->upstreams, &segments[1], action);
-        }
-
         if (nxt_str_eq(&segments[0], "routes", 6)) {
             return nxt_http_route_find(rtcf->routes, &segments[1], action);
         }

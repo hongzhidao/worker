@@ -5,8 +5,8 @@ Worker is a dynamically configured application server.  It runs application
 code in multiple language runtimes and manages application processes through a
 JSON control API.
 
-Worker can serve HTTP and HTTPS traffic directly with request routing and
-proxying, or run behind a reverse proxy.
+Worker can serve HTTP and HTTPS traffic directly with request routing,
+or run behind a reverse proxy.
 
 Building
 --------

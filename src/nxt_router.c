@@ -1898,11 +1898,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
         rtcf->routes = routes;
     }
 
-    ret = nxt_upstreams_create(task, tmcf, root);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return ret;
-    }
-
     http = nxt_conf_get_path(root, &http_path);
 #if 0
     if (http == NULL) {
@@ -1948,16 +1943,10 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
             skcf->discard_unsafe_fields = 1;
             skcf->body_buffer_size = 16 * 1024;
             skcf->max_body_size = 8 * 1024 * 1024;
-            skcf->proxy_header_buffer_size = 64 * 1024;
-            skcf->proxy_buffer_size = 4096;
-            skcf->proxy_buffers = 256;
             skcf->idle_timeout = 180 * 1000;
             skcf->header_read_timeout = 30 * 1000;
             skcf->body_read_timeout = 30 * 1000;
             skcf->send_timeout = 30 * 1000;
-            skcf->proxy_timeout = 60 * 1000;
-            skcf->proxy_send_timeout = 30 * 1000;
-            skcf->proxy_read_timeout = 30 * 1000;
 
             skcf->websocket_conf.max_frame_size = 1024 * 1024;
             skcf->websocket_conf.read_timeout = 60 * 1000;
@@ -3231,7 +3220,6 @@ nxt_router_engine_joints_create(nxt_router_temp_conf_t *tmcf,
     nxt_router_engine_conf_t *recf, nxt_queue_t *sockets,
     nxt_work_handler_t handler)
 {
-    nxt_int_t                ret;
     nxt_joint_job_t          *job;
     nxt_queue_link_t         *qlk;
     nxt_socket_conf_t        *skcf;
@@ -3264,11 +3252,6 @@ nxt_router_engine_joints_create(nxt_router_temp_conf_t *tmcf,
         }
 
         job->work.data = joint;
-
-        ret = nxt_upstreams_joint_create(tmcf, &joint->upstreams);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return ret;
-        }
 
         joint->count = 1;
 
