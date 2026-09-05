@@ -50,7 +50,6 @@ typedef struct {
     nxt_http_routes_t               *routes;
     nxt_upstreams_t                 *upstreams;
 
-    nxt_lvlhsh_t                    mtypes_hash;
     nxt_lvlhsh_t                    apps_hash;
 
     nxt_tstr_cond_t                 log_cond;

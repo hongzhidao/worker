@@ -630,36 +630,6 @@ static nxt_conf_map_t  nxt_http_route_action_conf[] = {
         NXT_CONF_MAP_PTR,
         offsetof(nxt_http_action_conf_t, proxy)
     },
-    {
-        nxt_string("share"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_http_action_conf_t, share)
-    },
-    {
-        nxt_string("chroot"),
-        NXT_CONF_MAP_STR,
-        offsetof(nxt_http_action_conf_t, chroot)
-    },
-    {
-        nxt_string("follow_symlinks"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_http_action_conf_t, follow_symlinks)
-    },
-    {
-        nxt_string("traverse_mounts"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_http_action_conf_t, traverse_mounts)
-    },
-    {
-        nxt_string("types"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_http_action_conf_t, types)
-    },
-    {
-        nxt_string("fallback"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_http_action_conf_t, fallback)
-    },
 };
 
 
@@ -688,10 +658,6 @@ nxt_http_action_init(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
 
     if (acf.ret != NULL) {
         return nxt_http_return_init(rtcf, action, &acf);
-    }
-
-    if (acf.share != NULL) {
-        return nxt_http_static_init(task, tmcf, action, &acf);
     }
 
     if (acf.proxy != NULL) {
@@ -943,16 +909,6 @@ nxt_http_route_addr_rule_create(nxt_task_t *task, nxt_mp_t *mp,
     }
 
     return addr_rule;
-}
-
-
-nxt_http_route_rule_t *
-nxt_http_route_types_rule_create(nxt_task_t *task, nxt_mp_t *mp,
-    nxt_conf_value_t *types)
-{
-    return nxt_http_route_rule_create(task, mp, types, 0,
-                                      NXT_HTTP_ROUTE_PATTERN_LOWCASE,
-                                      NXT_HTTP_URI_ENCODING_NONE);
 }
 
 
@@ -1331,10 +1287,6 @@ nxt_http_action_resolve(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_str_t  pass;
 
     if (action->handler != NULL) {
-        if (action->fallback != NULL) {
-            return nxt_http_action_resolve(task, tmcf, action->fallback);
-        }
-
         return NXT_OK;
     }
 

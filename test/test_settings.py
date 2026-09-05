@@ -21,6 +21,15 @@ def sysctl():
 
     return out
 
+@pytest.mark.parametrize('settings', [{}, {'mime_types': {'text/plain': ['txt']}}])
+def test_settings_static_unsupported(settings):
+    before = client.conf_get()
+    resp = client.conf({'http': {'static': settings}}, 'settings')
+
+    assert resp.get('detail') == 'Unknown parameter "static".'
+    assert client.conf_get() == before
+
+
 def test_settings_header_read_timeout():
     client.load('empty')
 

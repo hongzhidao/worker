@@ -1,4 +1,3 @@
-from pathlib import Path
 import re
 import time
 
@@ -379,7 +378,7 @@ def test_variables_dynamic_cookies(search_in_file, wait_for_record):
     check_no_cookie('fOo_bar=0')
     check_no_cookie('foo_bar=')
 
-def test_variables_response_header(temp_dir, wait_for_record):
+def test_variables_response_header(wait_for_record):
     # If response has two headers with the same name then first value
     # will be stored in variable.
     # $response_header_transfer_encoding value can be 'chunked' or null only.
@@ -397,40 +396,11 @@ def test_variables_response_header(temp_dir, wait_for_record):
         is not None
     )
 
-    # share
-
-    Path(f'{temp_dir}/foo').mkdir()
-    Path(f'{temp_dir}/foo/index.html').write_text('index')
+    # redirect
 
     assert 'success' in client.conf(
-        {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "action": {
-                        "share": f'{temp_dir}$uri',
-                    }
-                }
-            ],
-        }
+        {"return": 301, "location": "/foo/"}, 'routes/0/action'
     )
-
-    set_format(
-        'share@$response_header_last_modified@$response_header_etag@'
-        '$response_header_content_type@$response_header_server@'
-        '$response_header_date@$response_header_content_length@'
-        '$response_header_connection'
-    )
-
-    assert client.get(url='/foo/index.html')['status'] == 200
-    assert (
-        wait_for_record(
-            r'share@.*GMT@".*"@text/html@Worker/.*@.*GMT@5@close', 'access.log'
-        )
-        is not None
-    )
-
-    # redirect
 
     set_format(
         'redirect@$response_header_location@$response_header_server@'
@@ -445,6 +415,8 @@ def test_variables_response_header(temp_dir, wait_for_record):
     )
 
     # error
+
+    assert 'success' in client.conf({"return": 404}, 'routes/0/action')
 
     set_format(
         'error@$response_header_content_type@$response_header_server@'

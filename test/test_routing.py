@@ -469,24 +469,33 @@ def test_routes_route_pass_invalid():
     'action',
     [
         {"return": 200},
-        {"share": "/missing"},
         {"proxy": "http://127.0.0.1:8081"},
         {"pass": "routes"},
     ],
-    ids=['return', 'share', 'proxy', 'pass'],
+    ids=['return', 'proxy', 'pass'],
 )
-@pytest.mark.parametrize('fallback', [False, True], ids=['route', 'fallback'])
 @pytest.mark.parametrize(
     'name,value',
-    [('response_headers', {"X-Test": "value"}), ('rewrite', '/new')],
-    ids=['response_headers', 'rewrite'],
+    [
+        ('response_headers', {"X-Test": "value"}),
+        ('rewrite', '/new'),
+        ('share', '/missing'),
+        ('share', ['/missing']),
+        ('fallback', {"return": 200}),
+        ('types', ['text/plain']),
+        ('chroot', '/'),
+        ('follow_symlinks', False),
+        ('traverse_mounts', False),
+    ],
+    ids=[
+        'response_headers', 'rewrite', 'share-string', 'share-array',
+        'fallback', 'types', 'chroot', 'follow_symlinks', 'traverse_mounts',
+    ],
 )
-def test_routes_action_option_unsupported(action, fallback, name, value):
+def test_routes_action_option_unsupported(action, name, value):
     before = client.conf_get()
     action = dict(action)
     action[name] = value
-    if fallback:
-        action = {"share": "/missing", "fallback": action}
 
     resp = client.conf(action, 'routes/0/action')
 
@@ -495,7 +504,20 @@ def test_routes_action_option_unsupported(action, fallback, name, value):
     assert client.get()['status'] == 200
 
 
-def test_routes_action_unique(temp_dir):
+@pytest.mark.parametrize('share', ['/missing', ['/missing']])
+def test_routes_share_unsupported(share):
+    before = client.conf_get()
+    resp = client.conf({"share": share}, 'routes/0/action')
+
+    assert resp.get('detail') == (
+        'The "action" object must have either "pass", "return", '
+        'or "proxy" option set.'
+    )
+    assert client.conf_get() == before
+    assert client.get()['status'] == 200
+
+
+def test_routes_action_unique():
     assert 'success' in client.conf(
         {
             "listeners": {
@@ -515,16 +537,16 @@ def test_routes_action_unique(temp_dir):
     )
 
     assert 'error' in client.conf(
-        {"proxy": "http://127.0.0.1:8081", "share": temp_dir},
+        {"proxy": "http://127.0.0.1:8081", "return": 200},
         'routes/0/action',
-    ), 'proxy share'
+    ), 'proxy return'
     assert 'error' in client.conf(
         {"proxy": "http://127.0.0.1:8081", "pass": "applications/app",},
         'routes/0/action',
     ), 'proxy pass'
     assert 'error' in client.conf(
-        {"share": temp_dir, "pass": "applications/app"}, 'routes/0/action',
-    ), 'share pass'
+        {"return": 200, "pass": "applications/app"}, 'routes/0/action',
+    ), 'return pass'
 
 def test_routes_rules_two():
     assert 'success' in client.conf(
