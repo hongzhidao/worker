@@ -20,7 +20,7 @@ struct nxt_unit_request_s {
     uint8_t               remote_length;
     uint8_t               local_length;
     uint8_t               local_port_length;
-    uint8_t               tls;
+    uint8_t               reserved;  /* Keep the application protocol layout. */
     uint8_t               websocket_handshake;
     uint8_t               app_target;
     uint32_t              server_name_length;
@@ -52,4 +52,3 @@ struct nxt_unit_request_s {
 
 
 #endif /* _NXT_UNIT_REQUEST_H_INCLUDED_ */
-

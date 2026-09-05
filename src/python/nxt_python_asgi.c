@@ -635,11 +635,11 @@ nxt_py_asgi_create_http_scope(nxt_unit_request_info_t *req)
 
     if (r->websocket_handshake) {
         type = nxt_py_websocket_str;
-        scheme = r->tls ? nxt_py_wss_str : nxt_py_ws_str;
+        scheme = nxt_py_ws_str;
 
     } else {
         type = nxt_py_http_str;
-        scheme = r->tls ? nxt_py_https_str : nxt_py_http_str;
+        scheme = nxt_py_http_str;
     }
 
     scope = nxt_py_asgi_new_scope(req, type, nxt_py_2_1_str);

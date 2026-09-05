@@ -562,7 +562,7 @@ nxt_script_store_get_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 
     rt = task->thread->runtime;
 
-    if (nxt_slow_path(rt->certs.start == NULL)) {
+    if (nxt_slow_path(rt->scripts.start == NULL)) {
         nxt_alert(task, "no scripts storage directory");
         goto error;
     }

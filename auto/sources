@@ -116,13 +116,6 @@ NXT_LIB_SRC0=" \
 NXT_LIB_UNIT_SRCS="src/nxt_unit.c"
 
 
-NXT_LIB_TLS_DEPS="src/nxt_tls.h"
-NXT_LIB_TLS_SRCS="src/nxt_cert.c"
-NXT_LIB_OPENSSL_SRCS="src/nxt_openssl.c"
-NXT_LIB_GNUTLS_SRCS="src/nxt_gnutls.c"
-NXT_LIB_CYASSL_SRCS="src/nxt_cyassl.c"
-NXT_LIB_POLARSSL_SRCS="src/nxt_polarssl.c"
-
 NXT_LIB_PCRE_SRCS="src/nxt_pcre.c"
 NXT_LIB_PCRE2_SRCS="src/nxt_pcre2.c"
 
@@ -185,32 +178,6 @@ NXT_LIB_UTF8_FILE_NAME_TEST_SRCS=" \
 
 if [ $NXT_HAVE_ROOTFS = YES ]; then
     NXT_LIB_SRCS="$NXT_LIB_SRCS src/nxt_fs.c"
-fi
-
-
-if [ $NXT_TLS = YES ]; then
-    nxt_have=NXT_TLS . auto/have
-    NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_TLS_SRCS"
-fi
-
-
-if [ $NXT_OPENSSL = YES ]; then
-    NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_OPENSSL_SRCS"
-fi
-
-
-if [ $NXT_GNUTLS = YES ]; then
-    NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_GNUTLS_SRCS"
-fi
-
-
-if [ $NXT_CYASSL = YES ]; then
-    NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_CYASSL_SRCS"
-fi
-
-
-if [ $NXT_POLARSSL = YES ]; then
-    NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_POLARSSL_SRCS"
 fi
 
 

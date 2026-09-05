@@ -378,19 +378,6 @@ def _clear_conf(*, log=None):
         return http.delete(url=url, sock_type='unix', addr=sock)['body']
 
     if (
-        'openssl' in option.available['modules']
-        and option.available['modules']['openssl']
-    ):
-        try:
-            certs = json.loads(get('/certificates')).keys()
-
-        except json.JSONDecodeError:
-            pytest.fail("Can't parse certificates list.")
-
-        for cert in certs:
-            assert 'success' in delete(f'/certificates/{cert}'), 'delete cert'
-
-    if (
         'njs' in option.available['modules']
         and option.available['modules']['njs']
     ):

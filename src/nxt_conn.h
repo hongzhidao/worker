@@ -77,8 +77,7 @@ typedef struct {
     ssize_t                       (*writev)(nxt_conn_t *c,
                                       nxt_iobuf_t *iob, nxt_uint_t niob);
     /*
-     * The send() is an interface to write a single buffer.  SSL/TLS
-     * libraries' send() interface handles also the libraries' errors.
+     * The send() is an interface to write a single buffer.
      */
     ssize_t                       (*send)(nxt_conn_t *c, void *buf,
                                       size_t size);
@@ -139,11 +138,6 @@ struct nxt_conn_s {
 
     nxt_conn_io_t                 *io;
 
-#if (NXT_TLS)
-    union {
-        void                      *tls;
-    } u;
-#endif
 
     nxt_mp_t                      *mem_pool;
 

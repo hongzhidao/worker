@@ -130,7 +130,6 @@ static PyObject  *nxt_py_close_str;
 static PyObject  *nxt_py_content_length_str;
 static PyObject  *nxt_py_content_type_str;
 static PyObject  *nxt_py_http_str;
-static PyObject  *nxt_py_https_str;
 static PyObject  *nxt_py_path_info_str;
 static PyObject  *nxt_py_query_string_str;
 static PyObject  *nxt_py_remote_addr_str;
@@ -148,7 +147,6 @@ static nxt_python_string_t nxt_python_strings[] = {
     { nxt_string("CONTENT_LENGTH"), &nxt_py_content_length_str },
     { nxt_string("CONTENT_TYPE"), &nxt_py_content_type_str },
     { nxt_string("http"), &nxt_py_http_str },
-    { nxt_string("https"), &nxt_py_https_str },
     { nxt_string("PATH_INFO"), &nxt_py_path_info_str },
     { nxt_string("QUERY_STRING"), &nxt_py_query_string_str },
     { nxt_string("REMOTE_ADDR"), &nxt_py_remote_addr_str },
@@ -612,13 +610,7 @@ nxt_python_get_environ(nxt_python_ctx_t *pctx)
     RC(nxt_python_add_sptr(pctx, nxt_py_server_port_str, &r->local_port,
                            r->local_port_length));
 
-    if (r->tls) {
-        RC(nxt_python_add_obj(pctx, nxt_py_wsgi_uri_scheme_str,
-                              nxt_py_https_str));
-    } else {
-        RC(nxt_python_add_obj(pctx, nxt_py_wsgi_uri_scheme_str,
-                              nxt_py_http_str));
-    }
+    RC(nxt_python_add_obj(pctx, nxt_py_wsgi_uri_scheme_str, nxt_py_http_str));
 
     RC(nxt_python_add_sptr(pctx, nxt_py_server_protocol_str, &r->version,
                            r->version_length));

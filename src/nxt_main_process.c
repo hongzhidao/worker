@@ -11,9 +11,6 @@
 #include <nxt_conf.h>
 #include <nxt_router.h>
 #include <nxt_port_queue.h>
-#if (NXT_TLS)
-#include <nxt_cert.h>
-#endif
 #if (NXT_HAVE_NJS)
 #include <nxt_script.h>
 #endif
@@ -524,10 +521,6 @@ static nxt_port_handlers_t  nxt_main_process_port_handlers = {
     .socket           = nxt_main_port_socket_handler,
     .modules          = nxt_main_port_modules_handler,
     .conf_store       = nxt_main_port_conf_store_handler,
-#if (NXT_TLS)
-    .cert_get         = nxt_cert_store_get_handler,
-    .cert_delete      = nxt_cert_store_delete_handler,
-#endif
 #if (NXT_HAVE_NJS)
     .script_get       = nxt_script_store_get_handler,
     .script_delete    = nxt_script_store_delete_handler,

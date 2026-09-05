@@ -67,9 +67,6 @@ typedef struct {
 
 
 typedef struct {
-#if (NXT_TLS)
-    nxt_queue_t            tls;        /* of nxt_router_tlssock_t */
-#endif
 
 #if (NXT_HAVE_NJS)
     nxt_queue_t            js_modules;
@@ -194,9 +191,6 @@ typedef struct {
 
     uint8_t                discard_unsafe_fields;  /* 1 bit */
 
-#if (NXT_TLS)
-    nxt_tls_conf_t         *tls;
-#endif
 } nxt_socket_conf_t;
 
 

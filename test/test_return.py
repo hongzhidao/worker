@@ -59,6 +59,11 @@ def test_return():
     assert 'Connection' not in resp['headers']
     assert resp['body'] == '', 'body'
 
+def test_return_status_497():
+    assert 'success' in client.conf('497', 'routes/0/action/return')
+    assert client.get()['status'] == 497
+
+
 def test_return_update():
     assert 'success' in client.conf('0', 'routes/0/action/return')
 

@@ -39,8 +39,6 @@ typedef enum {
     NXT_HTTP_UPGRADE_REQUIRED = 426,
     NXT_HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE = 431,
 
-    NXT_HTTP_TO_HTTPS = 497,
-
     NXT_HTTP_INTERNAL_SERVER_ERROR = 500,
     NXT_HTTP_NOT_IMPLEMENTED = 501,
     NXT_HTTP_BAD_GATEWAY = 502,
@@ -175,7 +173,6 @@ struct nxt_http_request_s {
     uint8_t                         pass_count;   /* 8 bits */
     uint8_t                         app_target;
     nxt_http_protocol_t             protocol:8;   /* 2 bits */
-    uint8_t                         tls;          /* 1 bit  */
     uint8_t                         logged;       /* 1 bit  */
     uint8_t                         header_sent;  /* 1 bit  */
     uint8_t                         inconsistent; /* 1 bit  */

@@ -10,7 +10,6 @@
 #include <nxt_main_process.h>
 #include <nxt_conf.h>
 #include <nxt_status.h>
-#include <nxt_cert.h>
 #include <nxt_script.h>
 
 
@@ -93,15 +92,6 @@ static void nxt_controller_status_handler(nxt_task_t *task,
     nxt_port_recv_msg_t *msg, void *data);
 static void nxt_controller_status_response(nxt_task_t *task,
     nxt_controller_request_t *req, nxt_str_t *path);
-#if (NXT_TLS)
-static void nxt_controller_process_cert(nxt_task_t *task,
-    nxt_controller_request_t *req, nxt_str_t *path);
-static void nxt_controller_process_cert_save(nxt_task_t *task,
-    nxt_port_recv_msg_t *msg, void *data);
-static nxt_bool_t nxt_controller_cert_in_use(nxt_str_t *name);
-static void nxt_controller_cert_cleanup(nxt_task_t *task, void *obj,
-    void *data);
-#endif
 #if (NXT_HAVE_NJS)
 static void nxt_controller_process_script(nxt_task_t *task,
     nxt_controller_request_t *req, nxt_str_t *path);
@@ -217,11 +207,6 @@ nxt_controller_prefork(nxt_task_t *task, nxt_process_t *process, nxt_mp_t *mp)
         }
     }
 
-#if (NXT_TLS)
-    ctrl_init.certs = nxt_cert_store_load(task, mp);
-
-    nxt_mp_cleanup(mp, nxt_controller_cert_cleanup, task, ctrl_init.certs, rt);
-#endif
 
 #if (NXT_HAVE_NJS)
     ctrl_init.scripts = nxt_script_store_load(task, mp);
@@ -287,26 +272,6 @@ fail:
 }
 
 
-#if (NXT_TLS)
-
-static void
-nxt_controller_cert_cleanup(nxt_task_t *task, void *obj, void *data)
-{
-    pid_t          main_pid;
-    nxt_array_t    *certs;
-    nxt_runtime_t  *rt;
-
-    certs = obj;
-    rt = data;
-
-    main_pid = rt->port_by_type[NXT_PROCESS_MAIN]->pid;
-
-    if (nxt_pid == main_pid && certs != NULL) {
-        nxt_cert_store_release(certs);
-    }
-}
-
-#endif
 
 
 static nxt_int_t
@@ -331,12 +296,6 @@ nxt_controller_start(nxt_task_t *task, nxt_process_data_t *data)
 
     init = &data->controller;
 
-#if (NXT_TLS)
-    if (init->certs != NULL) {
-        nxt_cert_info_init(task, init->certs);
-        nxt_cert_store_release(init->certs);
-    }
-#endif
 
 #if (NXT_HAVE_NJS)
     if (init->scripts != NULL) {
@@ -1061,16 +1020,10 @@ nxt_controller_process_request(nxt_task_t *task, nxt_controller_request_t *req)
     nxt_conn_t                 *c;
     nxt_conf_value_t           *value;
     nxt_controller_response_t  resp;
-#if (NXT_TLS)
-    nxt_conf_value_t           *certs;
-#endif
 #if (NXT_HAVE_NJS)
     nxt_conf_value_t           *scripts;
 #endif
 
-#if (NXT_TLS)
-    static nxt_str_t certificates = nxt_string("certificates");
-#endif
 
 #if (NXT_HAVE_NJS)
     static nxt_str_t scripts_str = nxt_string("js_modules");
@@ -1127,24 +1080,6 @@ nxt_controller_process_request(nxt_task_t *task, nxt_controller_request_t *req)
         return;
     }
 
-#if (NXT_TLS)
-
-    if (nxt_str_start(&path, "/certificates", 13)
-        && (path.length == 13 || path.start[13] == '/'))
-    {
-        if (path.length == 13) {
-            path.length = 1;
-
-        } else {
-            path.length -= 13;
-            path.start += 13;
-        }
-
-        nxt_controller_process_cert(task, req, &path);
-        return;
-    }
-
-#endif
 
 #if (NXT_HAVE_NJS)
 
@@ -1185,9 +1120,6 @@ nxt_controller_process_request(nxt_task_t *task, nxt_controller_request_t *req)
         }
 
         count = 2;
-#if (NXT_TLS)
-        count++;
-#endif
 #if (NXT_HAVE_NJS)
         count++;
 #endif
@@ -1199,14 +1131,6 @@ nxt_controller_process_request(nxt_task_t *task, nxt_controller_request_t *req)
 
         i = 0;
 
-#if (NXT_TLS)
-        certs = nxt_cert_info_get_all(c->mem_pool);
-        if (nxt_slow_path(certs == NULL)) {
-            goto alloc_fail;
-        }
-
-        nxt_conf_set_member(value, &certificates, certs, i++);
-#endif
 
 #if (NXT_HAVE_NJS)
         scripts = nxt_script_info_get_all(c->mem_pool);
@@ -1677,280 +1601,6 @@ nxt_controller_status_response(nxt_task_t *task, nxt_controller_request_t *req,
 }
 
 
-#if (NXT_TLS)
-
-static void
-nxt_controller_process_cert(nxt_task_t *task,
-    nxt_controller_request_t *req, nxt_str_t *path)
-{
-    u_char                     *p;
-    nxt_str_t                  name;
-    nxt_int_t                  ret;
-    nxt_conn_t                 *c;
-    nxt_cert_t                 *cert;
-    nxt_conf_value_t           *value;
-    nxt_controller_response_t  resp;
-
-    name.length = path->length - 1;
-    name.start = path->start + 1;
-
-    p = nxt_memchr(name.start, '/', name.length);
-
-    if (p != NULL) {
-        name.length = p - name.start;
-
-        path->length -= p - path->start;
-        path->start = p;
-
-    } else {
-        path = NULL;
-    }
-
-    nxt_memzero(&resp, sizeof(nxt_controller_response_t));
-
-    c = req->conn;
-
-    if (nxt_str_eq(&req->parser.method, "GET", 3)) {
-
-        if (name.length != 0) {
-            value = nxt_cert_info_get(&name);
-            if (value == NULL) {
-                goto cert_not_found;
-            }
-
-            if (path != NULL) {
-                value = nxt_conf_get_path(value, path);
-                if (value == NULL) {
-                    goto not_found;
-                }
-            }
-
-        } else {
-            value = nxt_cert_info_get_all(c->mem_pool);
-            if (value == NULL) {
-                goto alloc_fail;
-            }
-        }
-
-        resp.status = 200;
-        resp.conf = value;
-
-        nxt_controller_response(task, req, &resp);
-        return;
-    }
-
-    if (name.length == 0 || path != NULL) {
-        goto invalid_name;
-    }
-
-    if (nxt_str_eq(&req->parser.method, "PUT", 3)) {
-        value = nxt_cert_info_get(&name);
-        if (value != NULL) {
-            goto exists_cert;
-        }
-
-        cert = nxt_cert_mem(task, &c->read->mem);
-        if (cert == NULL) {
-            goto invalid_cert;
-        }
-
-        ret = nxt_cert_info_save(&name, cert);
-
-        nxt_cert_destroy(cert);
-
-        if (nxt_slow_path(ret != NXT_OK)) {
-            goto alloc_fail;
-        }
-
-        nxt_cert_store_get(task, &name, c->mem_pool,
-                           nxt_controller_process_cert_save, req);
-        return;
-    }
-
-    if (nxt_str_eq(&req->parser.method, "DELETE", 6)) {
-
-        if (nxt_controller_cert_in_use(&name)) {
-            goto cert_in_use;
-        }
-
-        if (nxt_cert_info_delete(&name) != NXT_OK) {
-            goto cert_not_found;
-        }
-
-        nxt_cert_store_delete(task, &name, c->mem_pool);
-
-        resp.status = 200;
-        resp.title = (u_char *) "Certificate deleted.";
-
-        nxt_controller_response(task, req, &resp);
-        return;
-    }
-
-    resp.status = 405;
-    resp.title = (u_char *) "Invalid method.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-
-invalid_name:
-
-    resp.status = 400;
-    resp.title = (u_char *) "Invalid certificate name.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-
-invalid_cert:
-
-    resp.status = 400;
-    resp.title = (u_char *) "Invalid certificate.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-
-exists_cert:
-
-    resp.status = 400;
-    resp.title = (u_char *) "Certificate already exists.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-
-cert_in_use:
-
-    resp.status = 400;
-    resp.title = (u_char *) "Certificate is used in the configuration.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-
-cert_not_found:
-
-    resp.status = 404;
-    resp.title = (u_char *) "Certificate doesn't exist.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-
-not_found:
-
-    resp.status = 404;
-    resp.title = (u_char *) "Invalid path.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-
-alloc_fail:
-
-    resp.status = 500;
-    resp.title = (u_char *) "Memory allocation failed.";
-    resp.offset = -1;
-
-    nxt_controller_response(task, req, &resp);
-    return;
-}
-
-
-static void
-nxt_controller_process_cert_save(nxt_task_t *task, nxt_port_recv_msg_t *msg,
-    void *data)
-{
-    nxt_conn_t                *c;
-    nxt_buf_mem_t             *mbuf;
-    nxt_controller_request_t  *req;
-    nxt_controller_response_t  resp;
-
-    req = data;
-
-    nxt_memzero(&resp, sizeof(nxt_controller_response_t));
-
-    if (msg == NULL || msg->port_msg.type == _NXT_PORT_MSG_RPC_ERROR) {
-        resp.status = 500;
-        resp.title = (u_char *) "Failed to store certificate.";
-
-        nxt_controller_response(task, req, &resp);
-        return;
-    }
-
-    c = req->conn;
-
-    mbuf = &c->read->mem;
-
-    nxt_fd_write(msg->fd[0], mbuf->pos, nxt_buf_mem_used_size(mbuf));
-
-    nxt_fd_close(msg->fd[0]);
-
-    nxt_memzero(&resp, sizeof(nxt_controller_response_t));
-
-    resp.status = 200;
-    resp.title = (u_char *) "Certificate chain uploaded.";
-
-    nxt_controller_response(task, req, &resp);
-}
-
-
-static nxt_bool_t
-nxt_controller_cert_in_use(nxt_str_t *name)
-{
-    uint32_t          i, n, next;
-    nxt_str_t         str;
-    nxt_conf_value_t  *listeners, *listener, *value, *element;
-
-    static nxt_str_t  listeners_path = nxt_string("/listeners");
-    static nxt_str_t  certificate_path = nxt_string("/tls/certificate");
-
-    listeners = nxt_conf_get_path(nxt_controller_conf.root, &listeners_path);
-
-    if (listeners != NULL) {
-        next = 0;
-
-        for ( ;; ) {
-            listener = nxt_conf_next_object_member(listeners, &str, &next);
-            if (listener == NULL) {
-                break;
-            }
-
-            value = nxt_conf_get_path(listener, &certificate_path);
-            if (value == NULL) {
-                continue;
-            }
-
-            if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-                n = nxt_conf_array_elements_count(value);
-
-                for (i = 0; i < n; i++) {
-                    element = nxt_conf_get_array_element(value, i);
-
-                    nxt_conf_get_string(element, &str);
-
-                    if (nxt_strstr_eq(&str, name)) {
-                        return 1;
-                    }
-                }
-
-            } else {
-                /* NXT_CONF_STRING */
-
-                nxt_conf_get_string(value, &str);
-
-                if (nxt_strstr_eq(&str, name)) {
-                    return 1;
-                }
-            }
-        }
-    }
-
-    return 0;
-}
-
-#endif
 
 
 #if (NXT_HAVE_NJS)

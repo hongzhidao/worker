@@ -14,7 +14,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"crypto/tls"
 	"unsafe"
 )
 
@@ -69,13 +68,7 @@ func new_request(c_req *C.nxt_unit_request_info_t) (r *request, err error) {
 
 	r.req.Body = r
 
-	if req.tls != 0 {
-		r.req.TLS = &tls.ConnectionState{ }
-		r.req.URL.Scheme = "https"
-
-	} else {
-		r.req.URL.Scheme = "http"
-	}
+	r.req.URL.Scheme = "http"
 
 	fields := get_fields(req)
 

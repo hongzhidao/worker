@@ -32,7 +32,6 @@ PyObject  *nxt_py_http_str;
 PyObject  *nxt_py_http_disconnect_str;
 PyObject  *nxt_py_http_request_str;
 PyObject  *nxt_py_http_version_str;
-PyObject  *nxt_py_https_str;
 PyObject  *nxt_py_lifespan_str;
 PyObject  *nxt_py_lifespan_shutdown_str;
 PyObject  *nxt_py_lifespan_startup_str;
@@ -64,7 +63,6 @@ PyObject  *nxt_py_websocket_disconnect_str;
 PyObject  *nxt_py_websocket_receive_str;
 PyObject  *nxt_py_websocket_send_str;
 PyObject  *nxt_py_ws_str;
-PyObject  *nxt_py_wss_str;
 
 static nxt_python_string_t nxt_py_asgi_strings[] = {
     { nxt_string("1.0"), &nxt_py_1_0_str },
@@ -87,7 +85,6 @@ static nxt_python_string_t nxt_py_asgi_strings[] = {
     { nxt_string("http.disconnect"), &nxt_py_http_disconnect_str },
     { nxt_string("http.request"), &nxt_py_http_request_str },
     { nxt_string("http_version"), &nxt_py_http_version_str },
-    { nxt_string("https"), &nxt_py_https_str },
     { nxt_string("lifespan"), &nxt_py_lifespan_str },
     { nxt_string("lifespan.shutdown"), &nxt_py_lifespan_shutdown_str },
     { nxt_string("lifespan.startup"), &nxt_py_lifespan_startup_str },
@@ -119,7 +116,6 @@ static nxt_python_string_t nxt_py_asgi_strings[] = {
     { nxt_string("websocket.receive"), &nxt_py_websocket_receive_str },
     { nxt_string("websocket.send"), &nxt_py_websocket_send_str },
     { nxt_string("ws"), &nxt_py_ws_str },
-    { nxt_string("wss"), &nxt_py_wss_str },
     { nxt_null_string, NULL },
 };
 

@@ -356,15 +356,6 @@ nxt_listen_socket_pool_min_size(nxt_listen_socket_t *ls)
         break;
     }
 
-#if (NXT_TLS)
-
-    if (ls->tls) {
-        size += 4 * sizeof(void *)       /* SSL/TLS connection */
-                + sizeof(nxt_buf_mem_t)
-                + sizeof(nxt_work_t);    /* nxt_mp_cleanup */
-    }
-
-#endif
 
     return size // + sizeof(nxt_mem_pool_t)
                 + sizeof(nxt_conn_t)

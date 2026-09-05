@@ -47,9 +47,6 @@ nxt_conn_io_write(nxt_task_t *task, void *obj, void *data)
     sb.sent = 0;
     sb.size = 0;
     sb.buf = b;
-#if (NXT_TLS)
-    sb.tls = c->u.tls;
-#endif
     sb.limit = 10 * 1024 * 1024;
     sb.ready = 1;
     sb.sync = 0;
@@ -103,13 +100,6 @@ nxt_conn_io_write(nxt_task_t *task, void *obj, void *data)
             nxt_timer_add(engine, &c->write_timer, 0);
 
         } else if (ret == NXT_AGAIN) {
-            /*
-             * SSL libraries can require to toggle either write or read
-             * event if renegotiation occurs during SSL write operation.
-             * This case is handled on the c->io->send() level.  Timer
-             * can be set here because it should be set only for write
-             * direction.
-             */
             nxt_conn_timer(engine, c, c->write_state, &c->write_timer);
 
             if (nxt_fd_event_is_disabled(c->socket.write)) {

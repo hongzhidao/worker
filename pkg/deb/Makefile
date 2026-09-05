@@ -85,8 +85,7 @@ CONFIGURE_ARGS_COMMON=\
 	--tmp=/var/tmp \
 	--user=worker \
 	--group=worker \
-	--tests \
-	--openssl
+	--tests
 
 CONFIGURE_ARGS=\
 	$(CONFIGURE_ARGS_COMMON) \

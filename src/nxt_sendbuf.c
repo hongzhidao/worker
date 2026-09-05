@@ -7,8 +7,6 @@
 #include <nxt_main.h>
 
 
-static nxt_bool_t nxt_sendbuf_copy(nxt_buf_mem_t *bm, nxt_buf_t *b,
-    size_t *copied);
 static nxt_buf_t *nxt_sendbuf_coalesce_completion(nxt_task_t *task,
     nxt_work_queue_t *wq, nxt_buf_t *start);
 
@@ -204,126 +202,6 @@ nxt_sendbuf_file_coalesce(nxt_sendbuf_coalesce_t *sb)
     sb->size = total;
 
     return total - file_start;
-}
-
-
-ssize_t
-nxt_sendbuf_copy_coalesce(nxt_conn_t *c, nxt_buf_mem_t *bm, nxt_buf_t *b,
-    size_t limit)
-{
-    size_t      size, bsize, copied;
-    ssize_t     n;
-    nxt_bool_t  flush;
-
-    size = nxt_buf_mem_used_size(&b->mem);
-    bsize = nxt_buf_mem_size(bm);
-
-    if (bsize != 0) {
-
-        if (size > bsize && bm->pos == bm->free) {
-            /*
-             * A data buffer size is larger than the internal
-             * buffer size and the internal buffer is empty.
-             */
-            goto no_buffer;
-        }
-
-        if (bm->pos == NULL) {
-            bm->pos = nxt_malloc(bsize);
-            if (nxt_slow_path(bm->pos == NULL)) {
-                return NXT_ERROR;
-            }
-
-            bm->start = bm->pos;
-            bm->free = bm->pos;
-            bm->end += (uintptr_t) bm->pos;
-        }
-
-        copied = 0;
-
-        flush = nxt_sendbuf_copy(bm, b, &copied);
-
-        nxt_log_debug(c->socket.log, "sendbuf copy:%uz fl:%b", copied, flush);
-
-        if (flush == 0) {
-            return copied;
-        }
-
-        size = nxt_buf_mem_used_size(bm);
-
-        if (size == 0 && nxt_buf_is_sync(b)) {
-            goto done;
-        }
-
-        n = c->io->send(c, bm->pos, nxt_min(size, limit));
-
-        nxt_log_debug(c->socket.log, "sendbuf sent:%z", n);
-
-        if (n > 0) {
-            bm->pos += n;
-
-            if (bm->pos == bm->free) {
-                bm->pos = bm->start;
-                bm->free = bm->start;
-            }
-
-            n = 0;
-        }
-
-        return (copied != 0) ? (ssize_t) copied : n;
-    }
-
-    /* No internal buffering. */
-
-    if (size == 0 && nxt_buf_is_sync(b)) {
-        goto done;
-    }
-
-no_buffer:
-
-    return c->io->send(c, b->mem.pos, nxt_min(size, limit));
-
-done:
-
-    nxt_log_debug(c->socket.log, "sendbuf done");
-
-    return 0;
-}
-
-
-static nxt_bool_t
-nxt_sendbuf_copy(nxt_buf_mem_t *bm, nxt_buf_t *b, size_t *copied)
-{
-    size_t      size, bsize;
-    nxt_bool_t  flush;
-
-    flush = 0;
-
-    do {
-        nxt_prefetch(b->next);
-
-        if (nxt_buf_is_mem(b)) {
-            bsize = bm->end - bm->free;
-            size = b->mem.free - b->mem.pos;
-            size = nxt_min(size, bsize);
-
-            nxt_memcpy(bm->free, b->mem.pos, size);
-
-            *copied += size;
-            bm->free += size;
-
-            if (bm->free == bm->end) {
-                return 1;
-            }
-        }
-
-        flush |= nxt_buf_is_flush(b) || nxt_buf_is_last(b);
-
-        b = b->next;
-
-    } while (b != NULL);
-
-    return flush;
 }
 
 

@@ -39,20 +39,8 @@ static const nxt_service_t  nxt_services[] = {
     { "engine", "poll", &nxt_poll_engine },
     { "engine", "select", &nxt_select_engine },
 
-#if (NXT_HAVE_OPENSSL)
-    { "SSL/TLS", "OpenSSL", &nxt_openssl_lib },
-    { "SSL/TLS", "openssl", &nxt_openssl_lib },
-#endif
 
-#if (NXT_HAVE_GNUTLS)
-    { "SSL/TLS", "GnuTLS", &nxt_gnutls_lib },
-    { "SSL/TLS", "gnutls", &nxt_gnutls_lib },
-#endif
 
-#if (NXT_HAVE_CYASSL)
-    { "SSL/TLS", "CyaSSL", &nxt_cyassl_lib },
-    { "SSL/TLS", "cyassl", &nxt_cyassl_lib },
-#endif
 
 };
 

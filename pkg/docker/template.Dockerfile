@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.version="@@VERSION@@"
 
 RUN set -ex \
     && apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential libssl-dev libpcre2-dev \
+    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential libpcre2-dev \
     && mkdir -p /usr/lib/worker/modules /usr/lib/worker/debug-modules \
     && git clone --depth 1 --branch @@VERSION@@ https://github.com/hongzhidao/worker.git worker \
     && cd worker \
@@ -26,7 +26,6 @@ RUN set -ex \
                 --tmp=/var/tmp \
                 --user=worker \
                 --group=worker \
-                --openssl \
                 --libdir=/usr/lib/$DEB_HOST_MULTIARCH" \
     && ./configure $CONFIGURE_ARGS --cc-opt="$CC_OPT" --ld-opt="$LD_OPT" --modules=/usr/lib/worker/debug-modules --debug \
     && make -j $NCPU workerd \

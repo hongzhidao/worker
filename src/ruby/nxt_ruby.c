@@ -109,7 +109,6 @@ typedef struct {
 static VALUE  nxt_rb_content_length_str;
 static VALUE  nxt_rb_content_type_str;
 static VALUE  nxt_rb_http_str;
-static VALUE  nxt_rb_https_str;
 static VALUE  nxt_rb_path_info_str;
 static VALUE  nxt_rb_query_string_str;
 static VALUE  nxt_rb_rack_url_scheme_str;
@@ -129,7 +128,6 @@ static nxt_ruby_string_t nxt_rb_strings[] = {
     { nxt_string("CONTENT_LENGTH"), &nxt_rb_content_length_str },
     { nxt_string("CONTENT_TYPE"), &nxt_rb_content_type_str },
     { nxt_string("http"), &nxt_rb_http_str },
-    { nxt_string("https"), &nxt_rb_https_str },
     { nxt_string("PATH_INFO"), &nxt_rb_path_info_str },
     { nxt_string("QUERY_STRING"), &nxt_rb_query_string_str },
     { nxt_string("rack.url_scheme"), &nxt_rb_rack_url_scheme_str },
@@ -749,8 +747,7 @@ nxt_ruby_read_request(nxt_unit_request_info_t *req, VALUE hash_env)
     nxt_ruby_add_sptr(hash_env, nxt_rb_server_name_str, &r->server_name,
                       r->server_name_length);
 
-    rb_hash_aset(hash_env, nxt_rb_rack_url_scheme_str,
-                 r->tls ? nxt_rb_https_str : nxt_rb_http_str);
+    rb_hash_aset(hash_env, nxt_rb_rack_url_scheme_str, nxt_rb_http_str);
 
     for (i = 0; i < r->fields_count; i++) {
         f = r->fields + i;

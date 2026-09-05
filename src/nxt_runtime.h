@@ -28,9 +28,6 @@ struct nxt_runtime_s {
 
     nxt_file_name_t        *pid_file;
 
-#if (NXT_TLS)
-    const nxt_tls_lib_t    *tls;
-#endif
 
     nxt_array_t            *thread_pools;       /* of nxt_thread_pool_t */
     nxt_runtime_cont_t     continuation;
@@ -73,7 +70,6 @@ struct nxt_runtime_s {
     const char             *control;
     const char             *tmp;
 
-    nxt_str_t              certs;
     nxt_str_t              scripts;
 
     nxt_queue_t            engines;            /* of nxt_event_engine_t */

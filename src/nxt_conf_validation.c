@@ -6,7 +6,6 @@
 
 #include <nxt_main.h>
 #include <nxt_conf.h>
-#include <nxt_cert.h>
 #include <nxt_script.h>
 #include <nxt_router.h>
 #include <nxt_http.h>
@@ -84,26 +83,6 @@ nxt_inline nxt_int_t nxt_conf_vldt_unsupported(nxt_conf_validation_t *vldt,
 
 static nxt_int_t nxt_conf_vldt_listener(nxt_conf_validation_t *vldt,
     nxt_str_t *name, nxt_conf_value_t *value);
-#if (NXT_TLS)
-static nxt_int_t nxt_conf_vldt_certificate(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-#if (NXT_HAVE_OPENSSL_CONF_CMD)
-static nxt_int_t nxt_conf_vldt_object_conf_commands(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-#endif
-static nxt_int_t nxt_conf_vldt_certificate_element(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_tls_cache_size(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_tls_timeout(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-#if (NXT_HAVE_OPENSSL_TLSEXT)
-static nxt_int_t nxt_conf_vldt_ticket_key(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_ticket_key_element(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value);
-#endif
-#endif
 static nxt_int_t nxt_conf_vldt_action(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_pass(nxt_conf_validation_t *vldt,
@@ -212,10 +191,6 @@ static nxt_int_t nxt_conf_vldt_js_module_element(nxt_conf_validation_t *vldt,
 static nxt_conf_vldt_object_t  nxt_conf_vldt_setting_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_http_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_websocket_members[];
-#if (NXT_TLS)
-static nxt_conf_vldt_object_t  nxt_conf_vldt_tls_members[];
-static nxt_conf_vldt_object_t  nxt_conf_vldt_session_members[];
-#endif
 static nxt_conf_vldt_object_t  nxt_conf_vldt_match_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_python_target_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_php_common_members[];
@@ -345,159 +320,12 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_listener_members[] = {
         .validator  = nxt_conf_vldt_app_name,
     },
 
-#if (NXT_TLS)
-    {
-        .name       = nxt_string("tls"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object,
-        .u.members  = nxt_conf_vldt_tls_members,
-    },
-#endif
 
     NXT_CONF_VLDT_END
 };
 
 
-#if (NXT_TLS)
 
-static nxt_conf_vldt_object_t  nxt_conf_vldt_tls_members[] = {
-    {
-        .name       = nxt_string("certificate"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
-        .flags      = NXT_CONF_VLDT_REQUIRED,
-        .validator  = nxt_conf_vldt_certificate,
-    }, {
-        .name       = nxt_string("conf_commands"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-#if (NXT_HAVE_OPENSSL_CONF_CMD)
-        .validator  = nxt_conf_vldt_object_conf_commands,
-#else
-        .validator  = nxt_conf_vldt_unsupported,
-        .u.string   = "conf_commands",
-#endif
-    }, {
-        .name       = nxt_string("session"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object,
-        .u.members  = nxt_conf_vldt_session_members,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_session_members[] = {
-    {
-        .name       = nxt_string("cache_size"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-        .validator  = nxt_conf_vldt_tls_cache_size,
-    }, {
-        .name       = nxt_string("timeout"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-        .validator  = nxt_conf_vldt_tls_timeout,
-    }, {
-        .name       = nxt_string("tickets"),
-        .type       = NXT_CONF_VLDT_STRING
-                     | NXT_CONF_VLDT_ARRAY
-                     | NXT_CONF_VLDT_BOOLEAN,
-#if (NXT_HAVE_OPENSSL_TLSEXT)
-        .validator  = nxt_conf_vldt_ticket_key,
-#else
-        .validator  = nxt_conf_vldt_unsupported,
-        .u.string   = "tickets",
-#endif
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_int_t
-nxt_conf_vldt_tls_cache_size(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    int64_t  cache_size;
-
-    cache_size = nxt_conf_get_number(value);
-
-    if (cache_size < 0) {
-        return nxt_conf_vldt_error(vldt, "The \"cache_size\" number must not "
-                                         "be negative.");
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_tls_timeout(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    int64_t  timeout;
-
-    timeout = nxt_conf_get_number(value);
-
-    if (timeout <= 0) {
-        return nxt_conf_vldt_error(vldt, "The \"timeout\" number must be "
-                                         "greater than zero.");
-    }
-
-    return NXT_OK;
-}
-
-#endif
-
-#if (NXT_HAVE_OPENSSL_TLSEXT)
-
-static nxt_int_t
-nxt_conf_vldt_ticket_key(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    if (nxt_conf_type(value) == NXT_CONF_BOOLEAN) {
-        return NXT_OK;
-    }
-
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        return nxt_conf_vldt_array_iterator(vldt, value,
-                                            &nxt_conf_vldt_ticket_key_element);
-    }
-
-    /* NXT_CONF_STRING */
-
-    return nxt_conf_vldt_ticket_key_element(vldt, value);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_ticket_key_element(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value)
-{
-    ssize_t    ret;
-    nxt_str_t  key;
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "The \"key\" array must "
-                                   "contain only string values.");
-    }
-
-    nxt_conf_get_string(value, &key);
-
-    ret = nxt_base64_decode(NULL, key.start, key.length);
-    if (ret == NXT_ERROR) {
-        return nxt_conf_vldt_error(vldt, "Invalid Base64 format for the ticket "
-                                   "key \"%V\".", &key);
-    }
-
-    if (ret != 48 && ret != 80) {
-        return nxt_conf_vldt_error(vldt, "Invalid length %d of the ticket "
-                                   "key \"%V\".  Must be 48 or 80 bytes.",
-                                   ret, &key);
-    }
-
-    return NXT_OK;
-}
-
-#endif
 
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_route_members[] = {
@@ -1894,85 +1722,6 @@ nxt_conf_vldt_match_patterns_set_member(nxt_conf_validation_t *vldt,
 }
 
 
-#if (NXT_TLS)
-
-static nxt_int_t
-nxt_conf_vldt_certificate(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        if (nxt_conf_array_elements_count(value) == 0) {
-            return nxt_conf_vldt_error(vldt, "The \"certificate\" array "
-                                       "must contain at least one element.");
-        }
-
-        return nxt_conf_vldt_array_iterator(vldt, value,
-                                            &nxt_conf_vldt_certificate_element);
-    }
-
-    /* NXT_CONF_STRING */
-
-    return nxt_conf_vldt_certificate_element(vldt, value);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_certificate_element(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value)
-{
-    nxt_str_t         name;
-    nxt_conf_value_t  *cert;
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "The \"certificate\" array must "
-                                   "contain only string values.");
-    }
-
-    nxt_conf_get_string(value, &name);
-
-    cert = nxt_cert_info_get(&name);
-
-    if (cert == NULL) {
-        return nxt_conf_vldt_error(vldt, "Certificate \"%V\" is not found.",
-                                   &name);
-    }
-
-    return NXT_OK;
-}
-
-
-#if (NXT_HAVE_OPENSSL_CONF_CMD)
-
-static nxt_int_t
-nxt_conf_vldt_object_conf_commands(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    uint32_t          index;
-    nxt_int_t         ret;
-    nxt_str_t         name;
-    nxt_conf_value_t  *member;
-
-    index = 0;
-
-    for ( ;; ) {
-        member = nxt_conf_next_object_member(value, &name, &index);
-
-        if (member == NULL) {
-            break;
-        }
-
-        ret = nxt_conf_vldt_type(vldt, &name, member, NXT_CONF_VLDT_STRING);
-        if (ret != NXT_OK) {
-            return ret;
-        }
-    }
-
-    return NXT_OK;
-}
-
-#endif
-
-#endif
 
 
 static nxt_int_t

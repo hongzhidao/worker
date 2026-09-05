@@ -27,7 +27,6 @@ extern PyObject  *nxt_py_http_str;
 extern PyObject  *nxt_py_http_disconnect_str;
 extern PyObject  *nxt_py_http_request_str;
 extern PyObject  *nxt_py_http_version_str;
-extern PyObject  *nxt_py_https_str;
 extern PyObject  *nxt_py_lifespan_str;
 extern PyObject  *nxt_py_lifespan_shutdown_str;
 extern PyObject  *nxt_py_lifespan_startup_str;
@@ -59,7 +58,6 @@ extern PyObject  *nxt_py_websocket_disconnect_str;
 extern PyObject  *nxt_py_websocket_receive_str;
 extern PyObject  *nxt_py_websocket_send_str;
 extern PyObject  *nxt_py_ws_str;
-extern PyObject  *nxt_py_wss_str;
 
 
 int nxt_py_asgi_str_init(void);

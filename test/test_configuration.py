@@ -1,7 +1,9 @@
 import socket
+from pathlib import Path
 
 import pytest
 from worker.control import Control
+from worker.option import option
 
 prerequisites = {'modules': {'python': 'any'}}
 
@@ -45,10 +47,11 @@ def test_configuration_upstreams_unsupported(upstreams):
             'protocol': 'X-Forwarded-Proto',
             'source': '127.0.0.1',
         }),
+        ('tls', {'certificate': 'removed'}),
     ],
-    ids=['client_ip', 'forwarded'],
+    ids=['client_ip', 'forwarded', 'tls'],
 )
-def test_listener_forwarding_options_unsupported(name, settings):
+def test_listener_options_unsupported(name, settings):
     assert 'success' in try_addr('127.0.0.1:8080')
     before = client.conf_get()
 
@@ -59,6 +62,19 @@ def test_listener_forwarding_options_unsupported(name, settings):
     assert resp.get('detail') == f'Unknown parameter "{name}".'
     assert client.conf_get() == before
     assert client.get()['status'] == 200
+
+
+@pytest.mark.parametrize('method', ['GET', 'PUT', 'DELETE'])
+@pytest.mark.parametrize('path', ['/certificates', '/certificates/removed'])
+def test_certificates_api_unavailable(method, path):
+    resp = client.http(
+        method, url=path, sock_type='unix',
+        addr=option.temp_dir + '/control.worker.sock',
+    )
+
+    assert resp['status'] == 404
+    assert 'certificates' not in client.conf_get('/')
+    assert not Path(option.temp_dir + '/state/certs').exists()
 
 
 def test_json_unicode():

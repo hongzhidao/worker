@@ -17,10 +17,6 @@
  * nxt_h1p_request_ prefix is used for HTTP/1 protocol request methods.
  */
 
-#if (NXT_TLS)
-static ssize_t nxt_http_idle_io_read_handler(nxt_task_t *task, nxt_conn_t *c);
-static void nxt_http_conn_test(nxt_task_t *task, void *obj, void *data);
-#endif
 static ssize_t nxt_h1p_idle_io_read_handler(nxt_task_t *task, nxt_conn_t *c);
 static void nxt_h1p_conn_proto_init(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_conn_request_init(nxt_task_t *task, void *obj, void *data);
@@ -85,10 +81,6 @@ static void nxt_h1p_conn_ws_shutdown(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_conn_closing(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_conn_free(nxt_task_t *task, void *obj, void *data);
 
-#if (NXT_TLS)
-static const nxt_conn_state_t  nxt_http_idle_state;
-static const nxt_conn_state_t  nxt_h1p_shutdown_state;
-#endif
 static const nxt_conn_state_t  nxt_h1p_idle_state;
 static const nxt_conn_state_t  nxt_h1p_header_parse_state;
 static const nxt_conn_state_t  nxt_h1p_read_body_state;
@@ -173,151 +165,11 @@ nxt_http_conn_init(nxt_task_t *task, void *obj, void *data)
 
     c->read_state = &nxt_h1p_idle_state;
 
-#if (NXT_TLS)
-    if (skcf->tls != NULL) {
-        c->read_state = &nxt_http_idle_state;
-    }
-#endif
 
     nxt_conn_read(engine, c);
 }
 
 
-#if (NXT_TLS)
-
-static const nxt_conn_state_t  nxt_http_idle_state
-    nxt_aligned(64) =
-{
-    .ready_handler = nxt_http_conn_test,
-    .close_handler = nxt_h1p_conn_close,
-    .error_handler = nxt_h1p_conn_error,
-
-    .io_read_handler = nxt_http_idle_io_read_handler,
-
-    .timer_handler = nxt_h1p_idle_timeout,
-    .timer_value = nxt_h1p_conn_timer_value,
-    .timer_data = offsetof(nxt_socket_conf_t, idle_timeout),
-};
-
-
-static ssize_t
-nxt_http_idle_io_read_handler(nxt_task_t *task, nxt_conn_t *c)
-{
-    size_t                   size;
-    ssize_t                  n;
-    nxt_buf_t                *b;
-    nxt_socket_conf_joint_t  *joint;
-
-    joint = c->listen->socket.data;
-
-    if (nxt_slow_path(joint == NULL)) {
-        /*
-         * Listening socket had been closed while
-         * connection was in keep-alive state.
-         */
-        c->read_state = &nxt_h1p_idle_close_state;
-        return 0;
-    }
-
-    size = joint->socket_conf->header_buffer_size;
-
-    b = nxt_event_engine_buf_mem_alloc(task->thread->engine, size);
-    if (nxt_slow_path(b == NULL)) {
-        c->socket.error = NXT_ENOMEM;
-        return NXT_ERROR;
-    }
-
-    /*
-     * 1 byte is enough to distinguish between SSLv3/TLS and plain HTTP.
-     * 11 bytes are enough to log supported SSLv3/TLS version.
-     * 16 bytes are just for more optimized kernel copy-out operation.
-     */
-    n = c->io->recv(c, b->mem.pos, 16, MSG_PEEK);
-
-    if (n > 0) {
-        c->read = b;
-
-    } else {
-        c->read = NULL;
-        nxt_event_engine_buf_mem_free(task->thread->engine, b);
-    }
-
-    return n;
-}
-
-
-static void
-nxt_http_conn_test(nxt_task_t *task, void *obj, void *data)
-{
-    u_char                   *p;
-    nxt_buf_t                *b;
-    nxt_conn_t               *c;
-    nxt_tls_conf_t           *tls;
-    nxt_event_engine_t       *engine;
-    nxt_socket_conf_joint_t  *joint;
-
-    c = obj;
-
-    nxt_debug(task, "h1p conn https test");
-
-    engine = task->thread->engine;
-    b = c->read;
-    p = b->mem.pos;
-
-    c->read_state = &nxt_h1p_idle_state;
-
-    if (p[0] != 0x16) {
-        b->mem.free = b->mem.pos;
-
-        nxt_conn_read(engine, c);
-        return;
-    }
-
-    /* SSLv3/TLS ClientHello message. */
-
-#if (NXT_DEBUG)
-    if (nxt_buf_mem_used_size(&b->mem) >= 11) {
-        u_char      major, minor;
-        const char  *protocol;
-
-        major = p[9];
-        minor = p[10];
-
-        if (major == 3) {
-            if (minor == 0) {
-                protocol = "SSLv";
-
-            } else {
-                protocol = "TLSv";
-                major -= 2;
-                minor -= 1;
-            }
-
-            nxt_debug(task, "SSL/TLS: %s%ud.%ud", protocol, major, minor);
-        }
-    }
-#endif
-
-    c->read = NULL;
-    nxt_event_engine_buf_mem_free(engine, b);
-
-    joint = c->listen->socket.data;
-
-    if (nxt_slow_path(joint == NULL)) {
-        /*
-         * Listening socket had been closed while
-         * connection was in keep-alive state.
-         */
-        nxt_h1p_closing(task, c);
-        return;
-    }
-
-    tls = joint->socket_conf->tls;
-
-    tls->conn_init(task, tls, c);
-}
-
-#endif
 
 
 static const nxt_conn_state_t  nxt_h1p_idle_state
@@ -430,9 +282,6 @@ nxt_h1p_conn_request_init(nxt_task_t *task, void *obj, void *data)
         /* r->protocol = NXT_HTTP_PROTO_H1 is done by zeroing. */
         r->remote = c->remote;
 
-#if (NXT_TLS)
-        r->tls = (c->u.tls != NULL);
-#endif
 
         r->task = c->task;
         task = &r->task;
@@ -521,12 +370,6 @@ nxt_h1p_conn_request_header_parse(nxt_task_t *task, void *obj, void *data)
 
         if (nxt_fast_path(ret == NXT_OK)) {
 
-#if (NXT_TLS)
-            if (c->u.tls == NULL && r->conf->socket_conf->tls != NULL) {
-                status = NXT_HTTP_TO_HTTPS;
-                goto error;
-            }
-#endif
 
             r->state->ready_handler(task, r, NULL);
             return;
@@ -1110,15 +953,6 @@ static const nxt_str_t  nxt_http_client_error[] = {
 };
 
 
-#define NXT_HTTP_LAST_NGINX_ERROR                                             \
-    (NXT_HTTP_TO_HTTPS + nxt_nitems(nxt_http_nginx_error) - 1)
-
-static const nxt_str_t  nxt_http_nginx_error[] = {
-    nxt_string("HTTP/1.1 400 "
-               "The plain HTTP request was sent to HTTPS port\r\n"),
-};
-
-
 #define NXT_HTTP_LAST_SERVER_ERROR                                            \
     (NXT_HTTP_INTERNAL_SERVER_ERROR + nxt_nitems(nxt_http_server_error) - 1)
 
@@ -1181,9 +1015,6 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
 
     } else if (n >= NXT_HTTP_BAD_REQUEST && n <= NXT_HTTP_LAST_CLIENT_ERROR) {
         status = &nxt_http_client_error[n - NXT_HTTP_BAD_REQUEST];
-
-    } else if (n >= NXT_HTTP_TO_HTTPS && n <= NXT_HTTP_LAST_NGINX_ERROR) {
-        status = &nxt_http_nginx_error[n - NXT_HTTP_TO_HTTPS];
 
     } else if (n >= NXT_HTTP_INTERNAL_SERVER_ERROR
                && n <= NXT_HTTP_LAST_SERVER_ERROR)
@@ -1992,32 +1823,11 @@ nxt_h1p_closing(nxt_task_t *task, nxt_conn_t *c)
 
     c->socket.data = NULL;
 
-#if (NXT_TLS)
-
-    if (c->u.tls != NULL) {
-        c->write_state = &nxt_h1p_shutdown_state;
-
-        c->io->shutdown(task, c, NULL);
-        return;
-    }
-
-#endif
 
     nxt_h1p_conn_closing(task, c, NULL);
 }
 
 
-#if (NXT_TLS)
-
-static const nxt_conn_state_t  nxt_h1p_shutdown_state
-    nxt_aligned(64) =
-{
-    .ready_handler = nxt_h1p_conn_closing,
-    .close_handler = nxt_h1p_conn_closing,
-    .error_handler = nxt_h1p_conn_closing,
-};
-
-#endif
 
 
 static void

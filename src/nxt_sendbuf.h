@@ -37,7 +37,6 @@
 
 typedef struct {
     nxt_buf_t     *buf;
-    void          *tls;
     nxt_socket_t  socket;
     nxt_err_t     error;
     nxt_off_t     sent;
@@ -112,15 +111,6 @@ nxt_uint_t nxt_sendbuf_mem_coalesce0(nxt_task_t *task, nxt_sendbuf_t *sb,
 nxt_uint_t nxt_sendbuf_mem_coalesce(nxt_task_t *task,
     nxt_sendbuf_coalesce_t *sb);
 size_t nxt_sendbuf_file_coalesce(nxt_sendbuf_coalesce_t *sb);
-
-/*
- * Auxiliary nxt_sendbuf_copy_coalesce() interface copies small memory
- * buffers into internal buffer before output.  It is intended for
- * SSL/TLS libraries which lack vector I/O interface yet add noticeable
- * overhead to each SSL/TLS record.
- */
-ssize_t nxt_sendbuf_copy_coalesce(nxt_conn_t *c, nxt_buf_mem_t *bm,
-    nxt_buf_t *b, size_t limit);
 
 nxt_buf_t *nxt_sendbuf_update(nxt_buf_t *b, size_t sent);
 nxt_buf_t *nxt_sendbuf_completion(nxt_task_t *task, nxt_work_queue_t *wq,

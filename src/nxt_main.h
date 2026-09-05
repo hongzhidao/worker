@@ -117,9 +117,6 @@ typedef struct nxt_conn_s               nxt_conn_t;
 
 #include <nxt_log_moderation.h>
 
-#if (NXT_TLS)
-#include <nxt_tls.h>
-#endif
 
 
 #define nxt_thread()                                                          \
