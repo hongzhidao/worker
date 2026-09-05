@@ -145,11 +145,6 @@ typedef void (*nxt_event_conn_handler_t)(nxt_thread_t *thr, nxt_conn_t *c);
 #include <nxt_conn.h>
 #include <nxt_event_engine.h>
 
-#include <nxt_job.h>
-#include <nxt_job_file.h>
-#include <nxt_buf_filter.h>
-
-#include <nxt_job_resolve.h>
 #include <nxt_sockaddr.h>
 
 #include <nxt_cache.h>
