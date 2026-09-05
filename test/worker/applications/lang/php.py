@@ -40,9 +40,11 @@ class ApplicationPHP(ApplicationProto):
             if attr in kwargs:
                 app[attr] = kwargs.pop(attr)
 
+        if 'targets' not in app:
+            app['listen'] = kwargs.pop('listen', '*:8080')
+
         self._load_conf(
             {
-                "listeners": {"*:8080": {"pass": "applications/" + script}},
                 "applications": {script: app},
             },
             **kwargs

@@ -73,10 +73,11 @@ static nxt_int_t nxt_conf_vldt_error(nxt_conf_validation_t *vldt,
 nxt_inline nxt_int_t nxt_conf_vldt_unsupported(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 
-static nxt_int_t nxt_conf_vldt_listener(nxt_conf_validation_t *vldt,
-    nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_pass(nxt_conf_validation_t *vldt,
+static nxt_int_t nxt_conf_vldt_applications(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
+static nxt_int_t nxt_conf_vldt_listen(nxt_conf_validation_t *vldt,
+    nxt_conf_value_t *value, nxt_str_t *app, nxt_str_t *target,
+    nxt_array_t *addresses);
 static nxt_int_t nxt_conf_vldt_python(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_python_path(nxt_conf_validation_t *vldt,
@@ -88,8 +89,6 @@ static nxt_int_t nxt_conf_vldt_python_protocol(nxt_conf_validation_t *vldt,
 static nxt_int_t nxt_conf_vldt_threads(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_thread_stack_size(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_app_name(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_app(nxt_conf_validation_t *vldt,
     nxt_str_t *name, nxt_conf_value_t *value);
@@ -155,15 +154,9 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_root_members[] = {
         .validator  = nxt_conf_vldt_object,
         .u.members  = nxt_conf_vldt_setting_members,
     }, {
-        .name       = nxt_string("listeners"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object_iterator,
-        .u.object   = nxt_conf_vldt_listener,
-    }, {
         .name       = nxt_string("applications"),
         .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object_iterator,
-        .u.object   = nxt_conf_vldt_app,
+        .validator  = nxt_conf_vldt_applications,
     },
 
     NXT_CONF_VLDT_END
@@ -233,25 +226,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_websocket_members[] = {
 
     NXT_CONF_VLDT_END
 };
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_listener_members[] = {
-    {
-        .name       = nxt_string("pass"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .validator  = nxt_conf_vldt_pass,
-    }, {
-        .name       = nxt_string("application"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .validator  = nxt_conf_vldt_app_name,
-    },
-
-
-    NXT_CONF_VLDT_END
-};
-
-
-
 
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_external_members[] = {
@@ -324,6 +298,10 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_python_members[] = {
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_python_target_members[] = {
     {
+        .name       = nxt_string("listen"),
+        .type       = NXT_CONF_VLDT_STRING,
+        .flags      = NXT_CONF_VLDT_REQUIRED,
+    }, {
         .name       = nxt_string("module"),
         .type       = NXT_CONF_VLDT_STRING,
         .flags      = NXT_CONF_VLDT_REQUIRED,
@@ -417,6 +395,10 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_php_options_members[] = {
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_php_target_members[] = {
     {
+        .name       = nxt_string("listen"),
+        .type       = NXT_CONF_VLDT_STRING,
+        .flags      = NXT_CONF_VLDT_REQUIRED,
+    }, {
         .name       = nxt_string("root"),
         .type       = NXT_CONF_VLDT_STRING,
         .flags      = NXT_CONF_VLDT_REQUIRED,
@@ -469,6 +451,9 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_ruby_members[] = {
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_common_members[] = {
     {
+        .name       = nxt_string("listen"),
+        .type       = NXT_CONF_VLDT_STRING,
+    }, {
         .name       = nxt_string("type"),
         .type       = NXT_CONF_VLDT_STRING,
     }, {
@@ -802,91 +787,121 @@ nxt_conf_vldt_unsupported(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
 }
 
 
+typedef struct {
+    nxt_str_t       app;
+    nxt_str_t       target;
+    nxt_sockaddr_t  *sockaddr;
+} nxt_conf_vldt_listen_t;
+
+
 static nxt_int_t
-nxt_conf_vldt_listener(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_conf_value_t *value)
+nxt_conf_vldt_applications(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
+    void *data)
 {
-    nxt_int_t       ret;
-    nxt_sockaddr_t  *sa;
+    uint32_t          next, next_target;
+    nxt_int_t         ret;
+    nxt_str_t         name, target;
+    nxt_array_t       *addresses;
+    nxt_conf_value_t  *app, *targets, *entry;
 
-    sa = nxt_sockaddr_parse(vldt->pool, name);
-    if (nxt_slow_path(sa == NULL)) {
-        return nxt_conf_vldt_error(vldt,
-                                   "The listener address \"%V\" is invalid.",
-                                   name);
-    }
+    static nxt_str_t  targets_str = nxt_string("targets");
 
-    ret = nxt_conf_vldt_type(vldt, name, value, NXT_CONF_VLDT_OBJECT);
+    ret = nxt_conf_vldt_object_iterator(vldt, value, &nxt_conf_vldt_app);
     if (ret != NXT_OK) {
         return ret;
     }
 
-    return nxt_conf_vldt_object(vldt, value, nxt_conf_vldt_listener_members);
+    addresses = nxt_array_create(vldt->pool, 4, sizeof(nxt_conf_vldt_listen_t));
+    if (nxt_slow_path(addresses == NULL)) {
+        return NXT_ERROR;
+    }
+
+    next = 0;
+
+    for ( ;; ) {
+        app = nxt_conf_next_object_member(value, &name, &next);
+        if (app == NULL) {
+            return NXT_OK;
+        }
+
+        targets = nxt_conf_get_object_member(app, &targets_str, NULL);
+        if (targets == NULL) {
+            nxt_str_null(&target);
+            ret = nxt_conf_vldt_listen(vldt, app, &name, &target, addresses);
+            if (ret != NXT_OK) {
+                return ret;
+            }
+
+            continue;
+        }
+
+        next_target = 0;
+
+        for ( ;; ) {
+            entry = nxt_conf_next_object_member(targets, &target, &next_target);
+            if (entry == NULL) {
+                break;
+            }
+
+            ret = nxt_conf_vldt_listen(vldt, entry, &name, &target, addresses);
+            if (ret != NXT_OK) {
+                return ret;
+            }
+        }
+    }
 }
 
 
 static nxt_int_t
-nxt_conf_vldt_pass(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
+nxt_conf_vldt_listen(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
+    nxt_str_t *app, nxt_str_t *target, nxt_array_t *addresses)
 {
-    nxt_str_t  pass;
-    nxt_int_t  ret;
-    nxt_str_t  segments[3];
+    nxt_uint_t              i;
+    nxt_str_t               address, copy;
+    nxt_sockaddr_t          *sa;
+    nxt_conf_value_t        *listen;
+    nxt_conf_vldt_listen_t  *prev, *ls;
 
-    static nxt_str_t  targets_str = nxt_string("targets");
+    static nxt_str_t  listen_str = nxt_string("listen");
 
-    nxt_conf_get_string(value, &pass);
+    listen = nxt_conf_get_object_member(value, &listen_str, NULL);
+    nxt_conf_get_string(listen, &address);
 
-    ret = nxt_http_pass_segments(vldt->pool, &pass, segments, 3);
-
-    if (ret != NXT_OK) {
-        if (ret == NXT_DECLINED) {
-            return nxt_conf_vldt_error(vldt, "Request \"pass\" value \"%V\" "
-                                       "is invalid.", &pass);
-        }
-
+    /* Parsing an abstract Unix socket modifies the address string. */
+    if (nxt_slow_path(nxt_str_dup(vldt->pool, &copy, &address) == NULL)) {
         return NXT_ERROR;
     }
 
-    if (nxt_str_eq(&segments[0], "applications", 12)) {
-
-        if (segments[1].length == 0) {
-            goto error;
-        }
-
-        value = nxt_conf_get_object_member(vldt->conf, &segments[0], NULL);
-
-        if (value == NULL) {
-            goto error;
-        }
-
-        value = nxt_conf_get_object_member(value, &segments[1], NULL);
-
-        if (value == NULL) {
-            goto error;
-        }
-
-        if (segments[2].length > 0) {
-            value = nxt_conf_get_object_member(value, &targets_str, NULL);
-
-            if (value == NULL) {
-                goto error;
-            }
-
-            value = nxt_conf_get_object_member(value, &segments[2], NULL);
-
-            if (value == NULL) {
-                goto error;
-            }
-        }
-
-        return NXT_OK;
+    sa = nxt_sockaddr_parse(vldt->pool, &copy);
+    if (sa == NULL) {
+        return nxt_conf_vldt_error(vldt, "The \"listen\" address \"%V\" of "
+                                   "application \"%V\", target \"%V\", "
+                                   "is invalid.", &address, app, target);
     }
 
-error:
+    prev = addresses->elts;
 
-    return nxt_conf_vldt_error(vldt, "Request \"pass\" points to invalid "
-                               "location \"%V\".", &pass);
+    for (i = 0; i < addresses->nelts; i++) {
+        if (nxt_sockaddr_cmp(prev[i].sockaddr, sa)) {
+            return nxt_conf_vldt_error(vldt, "Application \"%V\", target "
+                                       "\"%V\", and application \"%V\", "
+                                       "target \"%V\", have the same "
+                                       "\"listen\" address \"%V\".",
+                                       &prev[i].app, &prev[i].target,
+                                       app, target, &address);
+        }
+    }
+
+    ls = nxt_array_add(addresses);
+    if (nxt_slow_path(ls == NULL)) {
+        return NXT_ERROR;
+    }
+
+    ls->app = *app;
+    ls->target = *target;
+    ls->sockaddr = sa;
+
+    return NXT_OK;
 }
 
 
@@ -1005,49 +1020,18 @@ nxt_conf_vldt_thread_stack_size(nxt_conf_validation_t *vldt,
 
 
 static nxt_int_t
-nxt_conf_vldt_app_name(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    nxt_str_t         name;
-    nxt_conf_value_t  *apps, *app;
-
-    static nxt_str_t  apps_str = nxt_string("applications");
-
-    nxt_conf_get_string(value, &name);
-
-    apps = nxt_conf_get_object_member(vldt->conf, &apps_str, NULL);
-
-    if (nxt_slow_path(apps == NULL)) {
-        goto error;
-    }
-
-    app = nxt_conf_get_object_member(apps, &name, NULL);
-
-    if (nxt_slow_path(app == NULL)) {
-        goto error;
-    }
-
-    return NXT_OK;
-
-error:
-
-    return nxt_conf_vldt_error(vldt, "Listening socket is assigned for "
-                                     "a non existing application \"%V\".",
-                                     &name);
-}
-
-
-static nxt_int_t
 nxt_conf_vldt_app(nxt_conf_validation_t *vldt, nxt_str_t *name,
     nxt_conf_value_t *value)
 {
     nxt_int_t              ret;
     nxt_str_t              type;
     nxt_thread_t           *thread;
-    nxt_conf_value_t       *type_value;
+    nxt_conf_value_t       *type_value, *targets, *listen;
     nxt_app_lang_module_t  *lang;
 
     static nxt_str_t  type_str = nxt_string("type");
+    static nxt_str_t  targets_str = nxt_string("targets");
+    static nxt_str_t  listen_str = nxt_string("listen");
 
     static struct {
         nxt_conf_vldt_handler_t  validator;
@@ -1091,7 +1075,25 @@ nxt_conf_vldt_app(nxt_conf_validation_t *vldt, nxt_str_t *name,
                                    &type);
     }
 
-    return types[lang->type].validator(vldt, value, types[lang->type].members);
+    ret = types[lang->type].validator(vldt, value, types[lang->type].members);
+    if (ret != NXT_OK) {
+        return ret;
+    }
+
+    targets = nxt_conf_get_object_member(value, &targets_str, NULL);
+    listen = nxt_conf_get_object_member(value, &listen_str, NULL);
+
+    if (targets != NULL && listen != NULL) {
+        return nxt_conf_vldt_error(vldt, "The \"listen\" option is mutually "
+                                   "exclusive with the \"targets\" object.");
+    }
+
+    if (targets == NULL && listen == NULL) {
+        return nxt_conf_vldt_error(vldt,
+                                   "Required parameter \"listen\" is missing.");
+    }
+
+    return NXT_OK;
 }
 
 
@@ -1395,6 +1397,11 @@ nxt_conf_vldt_targets(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
     nxt_uint_t  n;
 
     n = nxt_conf_object_members_count(value);
+
+    if (n == 0) {
+        return nxt_conf_vldt_error(vldt,
+                                   "The \"targets\" object must not be empty.");
+    }
 
     if (n > 254) {
         return nxt_conf_vldt_error(vldt, "The \"targets\" object must not "

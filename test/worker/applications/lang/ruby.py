@@ -23,6 +23,7 @@ class ApplicationRuby(ApplicationProto):
         script_path = option.temp_dir + '/ruby/' + script
 
         app = {
+            "listen": kwargs.pop('listen', '*:8080'),
             "type": self.get_application_type(),
             "processes": {"spare": 0},
             "working_directory": script_path,
@@ -37,7 +38,6 @@ class ApplicationRuby(ApplicationProto):
 
         self._load_conf(
             {
-                "listeners": {"*:8080": {"pass": "applications/" + script}},
                 "applications": {script: app},
             },
             **kwargs

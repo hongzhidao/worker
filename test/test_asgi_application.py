@@ -60,7 +60,7 @@ def test_asgi_application_ipv6():
     client.load('empty')
 
     assert 'success' in client.conf(
-        {"[::1]:8080": {"pass": "applications/empty"}}, 'listeners'
+        '"[::1]:8080"', 'applications/empty/listen'
     )
 
     assert client.get(sock_type='ipv6')['status'] == 200
@@ -305,7 +305,7 @@ def test_asgi_keepalive_reconfigure_2():
     assert resp['body'] == '', 'reconfigure 2 keep-alive 2 body'
 
     assert 'success' in client.conf(
-        {"listeners": {}, "applications": {}}
+        {"applications": {}}
     ), 'reconfigure 2 clear configuration'
 
     resp = client.get(sock=sock)
@@ -327,7 +327,7 @@ def test_asgi_keepalive_reconfigure_3():
     assert client.get()['status'] == 200
 
     assert 'success' in client.conf(
-        {"listeners": {}, "applications": {}}
+        {"applications": {}}
     ), 'reconfigure 3 clear configuration'
 
     resp = client.http(

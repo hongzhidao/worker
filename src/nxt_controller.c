@@ -448,7 +448,7 @@ nxt_controller_conf_default(void)
     nxt_conf_value_t  *conf;
 
     static const nxt_str_t json
-        = nxt_string("{ \"listeners\": {}, \"applications\": {} }");
+        = nxt_string("{ \"applications\": {} }");
 
     mp = nxt_mp_create(1024, 128, 256, 32);
 

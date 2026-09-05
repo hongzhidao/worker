@@ -19,9 +19,9 @@ def check_isolation():
         ApplicationGo().prepare_env('empty', 'app')
 
         conf = {
-            "listeners": {"*:8080": {"pass": "applications/empty"}},
             "applications": {
                 "empty": {
+                    "listen": "*:8080",
                     "type": "external",
                     "processes": {"spare": 0},
                     "working_directory": option.test_dir + "/go/empty",
@@ -33,9 +33,9 @@ def check_isolation():
 
     elif 'python' in available['modules']:
         conf = {
-            "listeners": {"*:8080": {"pass": "applications/empty"}},
             "applications": {
                 "empty": {
+                    "listen": "*:8080",
                     "type": "python",
                     "processes": {"spare": 0},
                     "path": option.test_dir + "/python/empty",
@@ -48,9 +48,9 @@ def check_isolation():
 
     elif 'php' in available['modules']:
         conf = {
-            "listeners": {"*:8080": {"pass": "applications/phpinfo"}},
             "applications": {
                 "phpinfo": {
+                    "listen": "*:8080",
                     "type": "php",
                     "processes": {"spare": 0},
                     "root": option.test_dir + "/php/phpinfo",
@@ -65,9 +65,9 @@ def check_isolation():
         ApplicationRuby().prepare_env('empty')
 
         conf = {
-            "listeners": {"*:8080": {"pass": "applications/empty"}},
             "applications": {
                 "empty": {
+                    "listen": "*:8080",
                     "type": "ruby",
                     "processes": {"spare": 0},
                     "working_directory": option.temp_dir + "/ruby/empty",

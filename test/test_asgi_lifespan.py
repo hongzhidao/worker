@@ -54,10 +54,6 @@ def test_asgi_lifespan():
 def test_asgi_lifespan_targets():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/targets/1"},
-                "*:8081": {"pass": "applications/targets/2"},
-            },
             "applications": {
                 "targets": {
                     "type": "python",
@@ -66,8 +62,10 @@ def test_asgi_lifespan_targets():
                     + "/python/lifespan/empty",
                     "path": option.test_dir + '/python/lifespan/empty',
                     "targets": {
-                        "1": {"module": "asgi", "callable": "application"},
+                        "1": {"listen": "*:8080",
+                              "module": "asgi", "callable": "application"},
                         "2": {
+                            "listen": "*:8081",
                             "module": "asgi",
                             "callable": "application2",
                         },

@@ -10,25 +10,23 @@ client = ApplicationPHP()
 def test_php_application_targets():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/targets/1"},
-                "*:8081": {"pass": "applications/targets/2"},
-                "*:8082": {"pass": "applications/targets/default"},
-            },
             "applications": {
                 "targets": {
                     "type": "php",
                     "processes": {"spare": 0},
                     "targets": {
                         "1": {
+                            "listen": "*:8080",
                             "script": "1.php",
                             "root": option.test_dir + "/php/targets",
                         },
                         "2": {
+                            "listen": "*:8081",
                             "script": "2.php",
                             "root": option.test_dir + "/php/targets/2",
                         },
                         "default": {
+                            "listen": "*:8082",
                             "index": "index.php",
                             "root": option.test_dir + "/php/targets",
                         },
@@ -57,15 +55,13 @@ def test_php_application_targets():
 def test_php_application_targets_error():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/targets/default"}
-            },
             "applications": {
                 "targets": {
                     "type": "php",
                     "processes": {"spare": 0},
                     "targets": {
                         "default": {
+                            "listen": "*:8080",
                             "index": "index.php",
                             "root": option.test_dir + "/php/targets",
                         },
@@ -77,8 +73,8 @@ def test_php_application_targets_error():
     assert client.get()['status'] == 200
 
     assert 'error' in client.conf(
-        {"pass": "applications/targets/blah"}, 'listeners/*:8080'
-    ), 'invalid targets pass'
+        '"127.0.0.1"', 'applications/targets/targets/default/listen'
+    ), 'invalid target listen'
     assert 'error' in client.conf(
         '"' + option.test_dir + '/php/targets\"',
         'applications/targets/root',

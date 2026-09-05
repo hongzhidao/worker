@@ -6,6 +6,7 @@ client = Control()
 
 conf_app = {
     "app": {
+        "listen": "*:8080",
         "type": "python",
         "processes": {"spare": 0},
         "path": "/app",
@@ -14,14 +15,13 @@ conf_app = {
 }
 
 conf_basic = {
-    "listeners": {"*:8080": {"pass": "applications/app"}},
     "applications": conf_app,
 }
 
 
 def test_python_get_empty():
-    assert client.conf_get() == {'listeners': {}, 'applications': {}}
-    assert client.conf_get('listeners') == {}
+    assert client.conf_get() == {'applications': {}}
+    assert 'error' in client.conf_get('listeners')
     assert client.conf_get('applications') == {}
 
 
@@ -30,9 +30,10 @@ def test_python_get_applications():
 
     conf = client.conf_get()
 
-    assert conf['listeners'] == {}, 'listeners'
+    assert 'listeners' not in conf
     assert conf['applications'] == {
         "app": {
+            "listen": "*:8080",
             "type": "python",
             "processes": {"spare": 0},
             "path": "/app",
@@ -42,6 +43,7 @@ def test_python_get_applications():
 
     assert client.conf_get('applications') == {
         "app": {
+            "listen": "*:8080",
             "type": "python",
             "processes": {"spare": 0},
             "path": "/app",
@@ -50,6 +52,7 @@ def test_python_get_applications():
     }, 'applications prefix'
 
     assert client.conf_get('applications/app') == {
+        "listen": "*:8080",
         "type": "python",
         "processes": {"spare": 0},
         "path": "/app",
@@ -60,43 +63,30 @@ def test_python_get_applications():
     assert client.conf_get('applications/app/processes/spare') == 0, 'spare'
 
 
-def test_python_get_listeners():
+def test_python_get_listen():
     assert 'success' in client.conf(conf_basic)
 
-    assert client.conf_get()['listeners'] == {
-        "*:8080": {"pass": "applications/app"}
-    }, 'listeners'
-
-    assert client.conf_get('listeners') == {
-        "*:8080": {"pass": "applications/app"}
-    }, 'listeners prefix'
-
-    assert client.conf_get('listeners/*:8080') == {
-        "pass": "applications/app"
-    }, 'listeners prefix 2'
+    assert client.conf_get()['applications']['app']['listen'] == '*:8080'
+    assert client.conf_get('applications/app/listen') == '*:8080'
 
 
-def test_python_change_listener():
+def test_python_change_listen():
     assert 'success' in client.conf(conf_basic)
     assert 'success' in client.conf(
-        {"*:8081": {"pass": "applications/app"}}, 'listeners'
+        '"*:8081"', 'applications/app/listen'
     )
 
-    assert client.conf_get('listeners') == {
-        "*:8081": {"pass": "applications/app"}
-    }, 'change listener'
+    assert client.conf_get('applications/app/listen') == '*:8081'
 
 
-def test_python_add_listener():
+def test_python_add_application():
     assert 'success' in client.conf(conf_basic)
     assert 'success' in client.conf(
-        {"pass": "applications/app"}, 'listeners/*:8082'
+        {**conf_app['app'], 'listen': '*:8082'}, 'applications/other'
     )
 
-    assert client.conf_get('listeners') == {
-        "*:8080": {"pass": "applications/app"},
-        "*:8082": {"pass": "applications/app"},
-    }, 'add listener'
+    assert client.conf_get('applications/app/listen') == '*:8080'
+    assert client.conf_get('applications/other/listen') == '*:8082'
 
 
 def test_python_change_application():
@@ -116,8 +106,7 @@ def test_python_change_application():
 def test_python_delete():
     assert 'success' in client.conf(conf_basic)
 
-    assert 'error' in client.conf_delete('applications/app')
-    assert 'success' in client.conf_delete('listeners/*:8080')
+    assert 'error' in client.conf_delete('applications/app/listen')
     assert 'success' in client.conf_delete('applications/app')
     assert 'error' in client.conf_delete('applications/app')
 
@@ -125,10 +114,9 @@ def test_python_delete():
 def test_python_delete_blocks():
     assert 'success' in client.conf(conf_basic)
 
-    assert 'success' in client.conf_delete('listeners')
     assert 'success' in client.conf_delete('applications')
 
     assert 'success' in client.conf(conf_app, 'applications')
     assert 'success' in client.conf(
-        {"*:8081": {"pass": "applications/app"}}, 'listeners'
+        '"*:8081"', 'applications/app/listen'
     ), 'applications restore'

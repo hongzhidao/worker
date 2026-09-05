@@ -236,12 +236,8 @@ nxt_int_t nxt_http_request_field(void *ctx, nxt_http_field_t *field,
 nxt_int_t nxt_http_request_content_length(void *ctx, nxt_http_field_t *field,
     uintptr_t data);
 
-nxt_http_action_t *nxt_http_action_create(nxt_task_t *task,
-    nxt_router_temp_conf_t *tmcf, nxt_str_t *pass);
-nxt_int_t nxt_http_pass_segments(nxt_mp_t *mp, nxt_str_t *pass,
-    nxt_str_t *segments, nxt_uint_t n);
 nxt_http_action_t *nxt_http_pass_application(nxt_task_t *task,
-    nxt_router_conf_t *rtcf, nxt_str_t *name);
+    nxt_router_conf_t *rtcf, nxt_str_t *name, nxt_str_t *target);
 void nxt_http_request_action(nxt_task_t *task, nxt_http_request_t *r,
     nxt_http_action_t *action);
 

@@ -1,16 +1,11 @@
 {
 	"applications": {
 		"example_python": {
+			"listen": "*:8400",
 			"type": "python",
 			"processes": 2,
 			"path": "/usr/share/doc/worker-python/examples/python-app",
 			"module": "wsgi"
-		}
-	},
-
-	"listeners": {
-		"*:8400": {
-			"pass": "applications/example_python"
 		}
 	}
 }

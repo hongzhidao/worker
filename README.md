@@ -12,8 +12,8 @@ Ruby applications through a JSON control API.
 - **High performance**: Keep the resource overhead of unified application
   management low. Performance claims must be backed by reproducible tests.
 
-Worker accepts HTTP requests and passes each listener directly to an
-application. It can also run behind an external reverse proxy.
+Worker accepts HTTP requests at application or target listening addresses.
+Worker can also run behind an external reverse proxy.
 
 ## Build
 
@@ -61,13 +61,9 @@ curl -X PUT --data-binary @- \
     --unix-socket /tmp/control.worker.sock \
     http://localhost/config/ <<'EOF'
 {
-    "listeners": {
-        "127.0.0.1:8080": {
-            "pass": "applications/example"
-        }
-    },
     "applications": {
         "example": {
+            "listen": "127.0.0.1:8080",
             "type": "python",
             "path": "/srv/example",
             "module": "wsgi"
@@ -78,6 +74,52 @@ EOF
 ```
 
 ## Manage Applications
+
+Applications without `targets` must specify exactly one `listen` address.
+Python and PHP applications with `targets` must omit the application's `listen`;
+each target must specify its own `listen`, and `targets` must not be empty.
+Go and Ruby applications use the application-level `listen`.
+
+Every `listen` must be a nonempty address string, not an array.
+IPv4, IPv6, and Unix socket addresses are supported, for example
+`127.0.0.1:8080`, `[::1]:8080`, and `unix:/tmp/example.sock`. Listening addresses
+must be unique across all applications and targets; equivalent address spellings
+are duplicates.
+The top-level `listeners` object is no longer supported.
+
+Change an application's listening address without restarting its processes:
+
+```sh
+curl -X PUT --data '"127.0.0.1:8081"' --unix-socket /tmp/control.worker.sock \
+    http://localhost/config/applications/example/listen
+```
+
+If the new address cannot be bound, the previous configuration remains active.
+Deleting an application releases all its listening addresses. Deleting a target
+releases that target's address; deleting only a required `listen` field or the
+last target is rejected. `{"applications": {}}` is a valid empty configuration.
+
+For example, these Python targets share the application's process pool and
+accept requests on separate ports:
+
+```json
+{
+    "applications": {
+        "example": {
+            "type": "python",
+            "path": "/srv/example",
+            "targets": {
+                "api": {"listen": "127.0.0.1:8080", "module": "api"},
+                "admin": {"listen": "127.0.0.1:8081", "module": "admin"}
+            }
+        }
+    }
+}
+```
+
+Update `/config/applications/example/targets/api/listen` to move only the API
+listener. Changing a target's listening address also preserves application
+processes and in-flight requests.
 
 Set the application to two processes:
 

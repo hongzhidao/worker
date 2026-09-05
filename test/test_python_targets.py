@@ -10,10 +10,6 @@ client = ApplicationPython()
 def test_python_targets():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/targets/1"},
-                "*:8081": {"pass": "applications/targets/2"},
-            },
             "applications": {
                 "targets": {
                     "type": "python",
@@ -22,10 +18,12 @@ def test_python_targets():
                     "path": option.test_dir + '/python/targets/',
                     "targets": {
                         "1": {
+                            "listen": "*:8080",
                             "module": "wsgi",
                             "callable": "wsgi_target_a",
                         },
                         "2": {
+                            "listen": "*:8081",
                             "module": "wsgi",
                             "callable": "wsgi_target_b",
                         },

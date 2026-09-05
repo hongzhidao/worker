@@ -76,7 +76,7 @@ def test_python_isolation_rootfs_no_language_deps(require, temp_dir):
     assert client.get()['status'] == 200, 'enabled language_deps'
     assert waitformount(python_path), 'language_deps mount'
 
-    client.conf({"listeners": {}, "applications": {}})
+    client.conf({"applications": {}})
 
     assert waitforunmount(python_path), 'language_deps unmount'
 

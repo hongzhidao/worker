@@ -32,16 +32,6 @@ typedef struct {
 
 
 typedef struct {
-    nxt_str_t         pass;
-    nxt_str_t         application;
-} nxt_router_listener_conf_t;
-
-
-
-
-
-
-typedef struct {
     nxt_str_t               *name;
     nxt_socket_conf_t       *socket_conf;
     nxt_router_temp_conf_t  *temp_conf;
@@ -1343,21 +1333,6 @@ static nxt_conf_map_t  nxt_router_app_processes_conf[] = {
 };
 
 
-static nxt_conf_map_t  nxt_router_listener_conf[] = {
-    {
-        nxt_string("pass"),
-        NXT_CONF_MAP_STR_COPY,
-        offsetof(nxt_router_listener_conf_t, pass),
-    },
-
-    {
-        nxt_string("application"),
-        NXT_CONF_MAP_STR_COPY,
-        offsetof(nxt_router_listener_conf_t, application),
-    },
-};
-
-
 static nxt_conf_map_t  nxt_router_http_conf[] = {
     {
         nxt_string("header_buffer_size"),
@@ -1450,6 +1425,162 @@ static nxt_conf_map_t  nxt_router_websocket_conf[] = {
 
 
 static nxt_int_t
+nxt_router_listener_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
+    nxt_conf_value_t *value, nxt_str_t *name, nxt_str_t *target,
+    nxt_conf_value_t *http, nxt_conf_value_t *websocket)
+{
+    nxt_int_t          ret;
+    nxt_mp_t           *mp;
+    nxt_str_t          address, copy, *t;
+    nxt_conf_value_t   *listen;
+    nxt_socket_conf_t  *skcf;
+    nxt_router_conf_t  *rtcf;
+
+    static nxt_str_t  listen_str = nxt_string("listen");
+
+    rtcf = tmcf->router_conf;
+    mp = rtcf->mem_pool;
+
+    listen = nxt_conf_get_object_member(value, &listen_str, NULL);
+    nxt_conf_get_string(listen, &address);
+
+    if (nxt_str_dup(tmcf->mem_pool, &copy, &address) == NULL) {
+        return NXT_ERROR;
+    }
+
+    skcf = nxt_router_socket_conf(task, tmcf, &copy);
+    if (skcf == NULL) {
+        return NXT_ERROR;
+    }
+
+    nxt_debug(task, "application: %V, listen: %V", name, &address);
+
+    // STUB, default values if http block is not defined.
+    skcf->header_buffer_size = 2048;
+    skcf->large_header_buffer_size = 8192;
+    skcf->large_header_buffers = 4;
+    skcf->discard_unsafe_fields = 1;
+    skcf->body_buffer_size = 16 * 1024;
+    skcf->max_body_size = 8 * 1024 * 1024;
+    skcf->idle_timeout = 180 * 1000;
+    skcf->header_read_timeout = 30 * 1000;
+    skcf->body_read_timeout = 30 * 1000;
+    skcf->send_timeout = 30 * 1000;
+
+    skcf->websocket_conf.max_frame_size = 1024 * 1024;
+    skcf->websocket_conf.read_timeout = 60 * 1000;
+    skcf->websocket_conf.keepalive_interval = 30 * 1000;
+
+    nxt_str_null(&skcf->body_temp_path);
+
+    if (http != NULL) {
+        ret = nxt_conf_map_object(mp, http, nxt_router_http_conf,
+                                  nxt_nitems(nxt_router_http_conf),
+                                  skcf);
+        if (ret != NXT_OK) {
+            nxt_alert(task, "http map error");
+            return NXT_ERROR;
+        }
+    }
+
+    if (websocket != NULL) {
+        ret = nxt_conf_map_object(mp, websocket,
+                                  nxt_router_websocket_conf,
+                                  nxt_nitems(nxt_router_websocket_conf),
+                                  &skcf->websocket_conf);
+        if (ret != NXT_OK) {
+            nxt_alert(task, "websocket map error");
+            return NXT_ERROR;
+        }
+    }
+
+    t = &skcf->body_temp_path;
+
+    if (t->length == 0) {
+        t->start = (u_char *) task->thread->runtime->tmp;
+        t->length = nxt_strlen(t->start);
+    }
+
+
+    skcf->listen->handler = nxt_http_conn_init;
+    skcf->router_conf = rtcf;
+    skcf->router_conf->count++;
+
+    skcf->action = nxt_http_pass_application(task, rtcf, name, target);
+
+    if (nxt_slow_path(skcf->action == NULL)) {
+        return NXT_ERROR;
+    }
+
+    return NXT_OK;
+}
+
+
+static nxt_conf_value_t *
+nxt_router_conf_without_listen(nxt_mp_t *mp, nxt_conf_value_t *value)
+{
+    nxt_conf_op_t  *ops;
+
+    static nxt_str_t  listen_path = nxt_string("/listen");
+
+    if (nxt_conf_op_compile(mp, &ops, value, &listen_path, NULL, 0)
+        != NXT_CONF_OP_OK)
+    {
+        return NULL;
+    }
+
+    return nxt_conf_clone(mp, ops, value);
+}
+
+
+static nxt_conf_value_t *
+nxt_router_app_process_conf(nxt_mp_t *mp, nxt_conf_value_t *application)
+{
+    uint32_t          next, index;
+    nxt_str_t         name;
+    nxt_conf_op_t     *ops;
+    nxt_conf_value_t  *targets, *copy, *target;
+
+    static nxt_str_t  targets_path = nxt_string("/targets");
+
+    targets = nxt_conf_get_path(application, &targets_path);
+    if (targets == NULL) {
+        return nxt_router_conf_without_listen(mp, application);
+    }
+
+    copy = nxt_conf_create_object(mp, nxt_conf_object_members_count(targets));
+    if (copy == NULL) {
+        return NULL;
+    }
+
+    next = 0;
+    index = 0;
+
+    for ( ;; ) {
+        target = nxt_conf_next_object_member(targets, &name, &next);
+        if (target == NULL) {
+            break;
+        }
+
+        target = nxt_router_conf_without_listen(mp, target);
+        if (target == NULL) {
+            return NULL;
+        }
+
+        nxt_conf_set_member(copy, &name, target, index++);
+    }
+
+    if (nxt_conf_op_compile(mp, &ops, application, &targets_path, copy, 0)
+        != NXT_CONF_OP_OK)
+    {
+        return NULL;
+    }
+
+    return nxt_conf_clone(mp, ops, application);
+}
+
+
+static nxt_int_t
 nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     u_char *start, u_char *end)
 {
@@ -1460,24 +1591,22 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_int_t                   ret;
     nxt_str_t                   name, target;
     nxt_app_t                   *app, *prev;
-    nxt_str_t                   *t, *s, *targets;
+    nxt_str_t                   *s, *targets;
     nxt_uint_t                  n, i;
     nxt_port_t                  *port;
     nxt_router_t                *router;
     nxt_app_joint_t             *app_joint;
     nxt_conf_value_t            *root, *http, *websocket;
     nxt_conf_value_t            *applications, *application;
-    nxt_conf_value_t            *listeners, *listener;
-    nxt_socket_conf_t           *skcf;
+    nxt_conf_value_t            *process_conf, *target_values, *target_value;
     nxt_router_conf_t           *rtcf;
     nxt_event_engine_t          *engine;
     nxt_app_lang_module_t       *lang;
     nxt_router_app_conf_t       apcf;
-    nxt_router_listener_conf_t  lscf;
 
     static nxt_str_t  http_path = nxt_string("/settings/http");
     static nxt_str_t  applications_path = nxt_string("/applications");
-    static nxt_str_t  listeners_path = nxt_string("/listeners");
+    static nxt_str_t  targets_str = nxt_string("targets");
     static nxt_str_t  websocket_path = nxt_string("/settings/http/websocket");
 
     root = nxt_conf_json_parse(tmcf->mem_pool, start, end, NULL);
@@ -1516,7 +1645,14 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
 
             nxt_debug(task, "application \"%V\"", &name);
 
-            size = nxt_conf_json_length(application, NULL);
+            /* Application and target listeners do not affect processes. */
+            process_conf = nxt_router_app_process_conf(tmcf->mem_pool,
+                                                       application);
+            if (process_conf == NULL) {
+                goto fail;
+            }
+
+            size = nxt_conf_json_length(process_conf, NULL);
 
             app_mp = nxt_mp_create(4096, 128, 1024, 64);
             if (nxt_slow_path(app_mp == NULL)) {
@@ -1536,7 +1672,7 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
             app->conf.start = nxt_pointer_to(app, sizeof(nxt_app_t)
                                                   + name.length);
 
-            p = nxt_conf_json_print(app->conf.start, application, NULL);
+            p = nxt_conf_json_print(app->conf.start, process_conf, NULL);
             app->conf.length = p - app->conf.start;
 
             nxt_assert(app->conf.length <= size);
@@ -1748,96 +1884,42 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
 
     websocket = nxt_conf_get_path(root, &websocket_path);
 
-    listeners = nxt_conf_get_path(root, &listeners_path);
-
-    if (listeners != NULL) {
+    if (applications != NULL) {
         next = 0;
 
         for ( ;; ) {
-            listener = nxt_conf_next_object_member(listeners, &name, &next);
-            if (listener == NULL) {
+            application = nxt_conf_next_object_member(applications,
+                                                      &name, &next);
+            if (application == NULL) {
                 break;
             }
 
-            skcf = nxt_router_socket_conf(task, tmcf, &name);
-            if (skcf == NULL) {
-                goto fail;
-            }
-
-            nxt_memzero(&lscf, sizeof(lscf));
-
-            ret = nxt_conf_map_object(mp, listener, nxt_router_listener_conf,
-                                      nxt_nitems(nxt_router_listener_conf),
-                                      &lscf);
-            if (ret != NXT_OK) {
-                nxt_alert(task, "listener map error");
-                goto fail;
-            }
-
-            nxt_debug(task, "application: %V", &lscf.application);
-
-            // STUB, default values if http block is not defined.
-            skcf->header_buffer_size = 2048;
-            skcf->large_header_buffer_size = 8192;
-            skcf->large_header_buffers = 4;
-            skcf->discard_unsafe_fields = 1;
-            skcf->body_buffer_size = 16 * 1024;
-            skcf->max_body_size = 8 * 1024 * 1024;
-            skcf->idle_timeout = 180 * 1000;
-            skcf->header_read_timeout = 30 * 1000;
-            skcf->body_read_timeout = 30 * 1000;
-            skcf->send_timeout = 30 * 1000;
-
-            skcf->websocket_conf.max_frame_size = 1024 * 1024;
-            skcf->websocket_conf.read_timeout = 60 * 1000;
-            skcf->websocket_conf.keepalive_interval = 30 * 1000;
-
-            nxt_str_null(&skcf->body_temp_path);
-
-            if (http != NULL) {
-                ret = nxt_conf_map_object(mp, http, nxt_router_http_conf,
-                                          nxt_nitems(nxt_router_http_conf),
-                                          skcf);
+            target_values = nxt_conf_get_object_member(application,
+                                                       &targets_str, NULL);
+            if (target_values == NULL) {
+                ret = nxt_router_listener_create(task, tmcf, application,
+                                                 &name, NULL, http, websocket);
                 if (ret != NXT_OK) {
-                    nxt_alert(task, "http map error");
                     goto fail;
                 }
+
+                continue;
             }
 
-            if (websocket != NULL) {
-                ret = nxt_conf_map_object(mp, websocket,
-                                          nxt_router_websocket_conf,
-                                          nxt_nitems(nxt_router_websocket_conf),
-                                          &skcf->websocket_conf);
+            next_target = 0;
+
+            for ( ;; ) {
+                target_value = nxt_conf_next_object_member(target_values,
+                                                         &target, &next_target);
+                if (target_value == NULL) {
+                    break;
+                }
+
+                ret = nxt_router_listener_create(task, tmcf, target_value,
+                                              &name, &target, http, websocket);
                 if (ret != NXT_OK) {
-                    nxt_alert(task, "websocket map error");
                     goto fail;
                 }
-            }
-
-            t = &skcf->body_temp_path;
-
-            if (t->length == 0) {
-                t->start = (u_char *) task->thread->runtime->tmp;
-                t->length = nxt_strlen(t->start);
-            }
-
-
-            skcf->listen->handler = nxt_http_conn_init;
-            skcf->router_conf = rtcf;
-            skcf->router_conf->count++;
-
-            if (lscf.pass.length != 0) {
-                skcf->action = nxt_http_action_create(task, tmcf, &lscf.pass);
-
-            /* COMPATIBILITY: listener application. */
-            } else if (lscf.application.length > 0) {
-                skcf->action = nxt_http_pass_application(task, rtcf,
-                                                         &lscf.application);
-            }
-
-            if (nxt_slow_path(skcf->action == NULL)) {
-                goto fail;
             }
         }
     }
