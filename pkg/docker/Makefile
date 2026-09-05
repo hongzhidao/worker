@@ -8,7 +8,7 @@ DEFAULT_VERSION := $(NXT_VERSION)
 VERSION ?= $(DEFAULT_VERSION)
 EXPORT_DIR := $(VERSION)
 
-MODULES ?= go perl php python ruby
+MODULES ?= go php python ruby
 
 VARIANT ?= bullseye
 
@@ -29,13 +29,6 @@ COPY --from=BUILDER /usr/lib/x86_64-linux-gnu/libworker.a /usr/lib/x86_64-linux-
 COPY --from=BUILDER /usr/include/nxt_* /usr/include/\n\$
 COPY --from=BUILDER /go/src/ /go/src/
 endef
-
-VERSIONS_perl ?=	5.34
-VARIANT_perl ?=		$(VARIANT)
-$(foreach perlversion, $(VERSIONS_perl), $(eval CONTAINER_perl$(perlversion) = perl:$(perlversion)-$(VARIANT_perl)))
-CONFIGURE_perl ?=	perl
-INSTALL_perl ?=		perl-install
-COPY_perl =
 
 VERSIONS_php ?=		8.0
 VARIANT_php ?=		cli-$(VARIANT)

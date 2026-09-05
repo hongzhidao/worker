@@ -77,20 +77,6 @@ def check_isolation():
             },
         }
 
-    elif 'perl' in available['modules']:
-        conf = {
-            "listeners": {"*:8080": {"pass": "applications/body_empty"}},
-            "applications": {
-                "body_empty": {
-                    "type": "perl",
-                    "processes": {"spare": 0},
-                    "working_directory": option.test_dir + "/perl/body_empty",
-                    "script": option.test_dir + "/perl/body_empty/psgi.pl",
-                    "isolation": {"namespaces": {"credential": True}},
-                }
-            },
-        }
-
     else:
         return False
 

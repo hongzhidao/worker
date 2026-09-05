@@ -11,7 +11,6 @@ PACKAGES=	worker 							\
 		worker-python3.10 worker-python3.13			\
 		worker-go worker-go1.7 worker-go1.8 worker-go1.9 worker-go1.10	\
 		worker-go1.12 worker-go1.13					\
-		worker-perl						\
 		worker-ruby
 
 CURDATE:=$(shell date +"%Y-%m-%d")

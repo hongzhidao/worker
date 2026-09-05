@@ -26,7 +26,6 @@ include Makefile.python27
 include Makefile.python39
 include Makefile.python310
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
@@ -36,7 +35,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python39
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
@@ -46,7 +44,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python38
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
@@ -58,7 +55,6 @@ include Makefile.python36
 include Makefile.python37
 include Makefile.python38
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
@@ -68,7 +64,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python39
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
@@ -78,7 +73,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python37
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 

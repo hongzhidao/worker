@@ -11,7 +11,7 @@
                 worker-python3.4 worker-python3.5 worker-python3.6
                 worker-python3.7 worker-python3.8 worker-python3.9
                 worker-python3.10 worker-python3.13
-                worker-go worker-perl worker-ruby"
+                worker-go worker-ruby"
          ver="0.1.0" rev="1"
          date="2026-09-04" time="00:00:00 +0000"
          packager="Zhidao HONG &lt;hongzhidao@gmail.com&gt;">

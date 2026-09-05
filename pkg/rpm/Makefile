@@ -67,7 +67,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python36
 include Makefile.go
-include Makefile.perl
 endif
 
 ifeq ($(OSVER), centos8)
@@ -75,7 +74,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python36
 include Makefile.go
-include Makefile.perl
 endif
 
 ifeq ($(OSVER), amazonlinux1)
@@ -85,7 +83,6 @@ include Makefile.python34
 include Makefile.python35
 include Makefile.python36
 include Makefile.go
-include Makefile.perl
 endif
 
 ifeq ($(OSVER), amazonlinux2)
@@ -93,14 +90,12 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python37
 include Makefile.go
-include Makefile.perl
 endif
 
 ifeq ($(OSVER), opensuse-leap)
 include Makefile.python27
 include Makefile.python34
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
@@ -109,14 +104,12 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python36
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
 ifeq ($(OSVER), sles)
 include Makefile.python27
 include Makefile.python34
-include Makefile.perl
 endif
 
 ifeq ($(OSVER), fedora)
@@ -136,7 +129,6 @@ else
 include Makefile.python36
 endif
 include Makefile.go
-include Makefile.perl
 include Makefile.ruby
 endif
 
