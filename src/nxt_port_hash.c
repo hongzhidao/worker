@@ -41,13 +41,6 @@ static const nxt_lvlhsh_proto_t  lvlhsh_ports_proto  nxt_aligned(64) = {
 };
 
 
-nxt_port_t *
-nxt_port_hash_retrieve(nxt_lvlhsh_t *port_hash)
-{
-    return nxt_lvlhsh_retrieve(port_hash, &lvlhsh_ports_proto, NULL);
-}
-
-
 nxt_inline void
 nxt_port_hash_lhq(nxt_lvlhsh_query_t *lhq, nxt_pid_port_id_t *pid_port)
 {

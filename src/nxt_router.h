@@ -100,8 +100,6 @@ struct nxt_app_s {
 
     nxt_str_t              name;
 
-    uint32_t               port_hash_count;
-
     uint32_t               active_requests;
     uint32_t               pending_processes;
     uint32_t               processes;

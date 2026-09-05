@@ -226,7 +226,6 @@ struct nxt_port_s {
 
     nxt_queue_link_t    app_link;   /* for nxt_app_t.ports */
     nxt_app_t           *app;
-    nxt_port_t          *main_app_port;
 
     nxt_queue_link_t    idle_link;  /* for nxt_app_t.idle_ports */
     nxt_msec_t          idle_start;
