@@ -1,14 +1,9 @@
 {
 	"applications": {
 		"example_go": {
+			"listen": "*:8500",
 			"type": "external",
 			"executable": "/tmp/go-app"
-		}
-	},
-
-	"listeners": {
-		"*:8500": {
-			"pass": "applications/example_go"
 		}
 	}
 }

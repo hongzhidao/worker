@@ -14,9 +14,9 @@ client = Control()
 def try_addr(addr):
     return client.conf(
         {
-            "listeners": {addr: {"pass": "applications/empty"}},
             "applications": {
                 "empty": {
+                    "listen": addr,
                     "type": "python",
                     "processes": {"spare": 0},
                     "path": option.test_dir + "/python/empty",
@@ -57,13 +57,13 @@ def test_configuration_upstreams_unsupported(upstreams):
     ],
     ids=['client_ip', 'forwarded', 'tls'],
 )
-def test_listener_options_unsupported(name, settings):
+def test_application_listener_options_unsupported(name, settings):
     assert 'success' in try_addr('127.0.0.1:8080')
     before = client.conf_get()
 
     resp = client.conf(
-        {'pass': 'applications/empty', name: settings},
-        'listeners/127.0.0.1:8080',
+        settings,
+        'applications/empty/' + name,
     )
 
     assert resp.get('detail') == f'Unknown parameter "{name}".'
@@ -89,6 +89,7 @@ def test_json_unicode():
         """
         {
             "ap\u0070": {
+                "listen": "*:8080",
                 "type": "\u0070ython",
                 "processes": { "spare": 0 },
                 "path": "\u002Fapp",
@@ -101,6 +102,7 @@ def test_json_unicode():
 
     assert client.conf_get('applications') == {
         "app": {
+            "listen": "*:8080",
             "type": "python",
             "processes": {"spare": 0},
             "path": "/app",
@@ -112,6 +114,7 @@ def test_json_unicode_2():
     assert 'success' in client.conf(
         {
             "приложение": {
+                "listen": "*:8080",
                 "type": "python",
                 "processes": {"spare": 0},
                 "path": "/app",
@@ -128,6 +131,7 @@ def test_json_unicode_number():
         """
         {
             "app": {
+                "listen": "*:8080",
                 "type": "python",
                 "processes": { "spare": \u0030 },
                 "path": "/app",
@@ -143,6 +147,7 @@ def test_json_utf8_bom():
         b"""\xEF\xBB\xBF
         {
             "app": {
+                "listen": "*:8080",
                 "type": "python",
                 "processes": {"spare": 0},
                 "path": "/app",
@@ -159,6 +164,7 @@ def test_json_comment_single_line():
         // this is bridge
         {
             "//app": {
+                "listen": "*:8080",
                 "type": "python", // end line
                 "processes": {"spare": 0},
                 // inside of block
@@ -181,6 +187,7 @@ def test_json_comment_multi_line():
             /**
              * multiple lines
              **/
+                "listen": "*:8080",
                 "type": "python",
                 "processes": /* inline */ {"spare": 0},
                 "path": "/app",
@@ -219,6 +226,7 @@ def test_applications_miss_quote():
         """
         {
             app": {
+                "listen": "*:8080",
                 "type": "python",
                 "processes": { "spare": 0 },
                 "path": "/app",
@@ -234,6 +242,7 @@ def test_applications_miss_colon():
         """
         {
             "app" {
+                "listen": "*:8080",
                 "type": "python",
                 "processes": { "spare": 0 },
                 "path": "/app",
@@ -249,6 +258,7 @@ def test_applications_miss_comma():
         """
         {
             "app": {
+                "listen": "*:8080",
                 "type": "python"
                 "processes": { "spare": 0 },
                 "path": "/app",
@@ -268,6 +278,7 @@ def test_applications_relative_path():
     assert 'success' in client.conf(
         {
             "app": {
+                "listen": "*:8080",
                 "type": "python",
                 "processes": {"spare": 0},
                 "path": "../app",
@@ -277,7 +288,6 @@ def test_applications_relative_path():
         'applications',
     ), 'relative path'
 
-@pytest.mark.skip('not yet, unsafe')
 def test_listeners_empty():
     assert 'error' in client.conf(
         {"*:8080": {}}, 'listeners'
@@ -311,7 +321,7 @@ def test_listeners_port_release():
 
             assert 'success' in try_addr('127.0.0.1:8080')
 
-            resp = client.conf({"listeners": {}, "applications": {}})
+            resp = client.conf({"applications": {}})
 
             try:
                 s.bind(('127.0.0.1', 8080))
@@ -330,9 +340,9 @@ def test_json_application_name_large():
 
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "applications/" + name}},
             "applications": {
                 name: {
+                    "listen": "*:8080",
                     "type": "python",
                     "processes": {"spare": 0},
                     "path": "/app",
@@ -350,15 +360,12 @@ def test_json_application_many():
         "applications": {
             "app-"
             + str(a): {
+                "listen": "*:" + str(7000 + a),
                 "type": "python",
                 "processes": {"spare": 0},
                 "path": "/app",
                 "module": "wsgi",
             }
-            for a in range(apps)
-        },
-        "listeners": {
-            "*:" + str(7000 + a): {"pass": "applications/app-" + str(a)}
             for a in range(apps)
         },
     }
@@ -370,6 +377,7 @@ def test_json_application_many2():
         "applications": {
             "app-"
             + str(a): {
+                "listen": "*:" + str(7000 + a),
                 "type": "python",
                 "processes": {"spare": 0},
                 "path": "/app",
@@ -379,7 +387,6 @@ def test_json_application_many2():
             # open files limit due to the lack of file descriptors.
             for a in range(100)
         },
-        "listeners": {"*:8080": {"pass": "applications/app-1"}},
     }
 
     assert 'success' in client.conf(conf)
@@ -392,6 +399,7 @@ def test_unprivileged_user_error(require, skip_alert):
     assert 'error' in client.conf(
         {
             "app": {
+                "listen": "*:8080",
                 "type": "external",
                 "processes": 1,
                 "executable": "/app",

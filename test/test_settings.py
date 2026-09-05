@@ -222,7 +222,7 @@ Connection: close
     addr = temp_dir + '/sock'
 
     assert 'success' in client.conf(
-        {"unix:" + addr: {'application': 'body_generate'}}, 'listeners'
+        '"unix:' + addr + '"', 'applications/body_generate/listen'
     )
 
     assert 'success' in client.conf(

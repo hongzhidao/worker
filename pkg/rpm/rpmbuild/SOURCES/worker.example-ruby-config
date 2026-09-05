@@ -1,15 +1,10 @@
 {
 	"applications": {
 		"example_ruby": {
+			"listen": "*:8700",
 			"type": "ruby",
 			"processes": 2,
 			"script": "/usr/share/doc/worker-ruby/examples/ruby-app.ru"
-		}
-	},
-
-	"listeners": {
-		"*:8700": {
-			"pass": "applications/example_ruby"
 		}
 	}
 }

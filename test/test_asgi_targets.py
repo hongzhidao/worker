@@ -15,10 +15,6 @@ client = ApplicationPython(load_module='asgi')
 def setup_method_fixture():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/targets/1"},
-                "*:8081": {"pass": "applications/targets/2"},
-            },
             "applications": {
                 "targets": {
                     "type": "python",
@@ -29,10 +25,12 @@ def setup_method_fixture():
                     "protocol": "asgi",
                     "targets": {
                         "1": {
+                            "listen": "*:8080",
                             "module": "asgi",
                             "callable": "application_200",
                         },
                         "2": {
+                            "listen": "*:8081",
                             "module": "asgi",
                             "callable": "application_201",
                         },
@@ -43,6 +41,9 @@ def setup_method_fixture():
     )
 
 def conf_targets(targets):
+    current = client.conf_get('applications/targets/targets')
+    for name, target in targets.items():
+        target['listen'] = current[name]['listen']
     assert 'success' in client.conf(targets, 'applications/targets/targets')
 
 def test_asgi_targets():

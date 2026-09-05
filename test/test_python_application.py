@@ -76,11 +76,8 @@ def test_python_application_connection_info(sock_type, address, forwarded_for,
     forwarded_proto):
     client.load('connection_info')
     assert 'success' in client.conf(
-        {
-            '127.0.0.1:8081': {'pass': 'applications/connection_info'},
-            '[::1]:8082': {'pass': 'applications/connection_info'},
-        },
-        'listeners',
+        '"127.0.0.1:8081"' if sock_type == 'ipv4' else '"[::1]:8082"',
+        'applications/connection_info/listen',
     )
 
     resp = client.get(
@@ -188,7 +185,7 @@ def test_python_application_ctx_iter_atexit(wait_for_record):
     assert resp['status'] == 200, 'ctx iter status'
     assert resp['body'] == '0123456789', 'ctx iter body'
 
-    assert 'success' in client.conf({"listeners": {}, "applications": {}})
+    assert 'success' in client.conf({"applications": {}})
 
     assert wait_for_record(r'RuntimeError') is not None, 'ctx iter atexit'
 
@@ -322,7 +319,7 @@ def test_python_keepalive_reconfigure_2():
     assert resp['body'] == '', 'reconfigure 2 keep-alive 2 body'
 
     assert 'success' in client.conf(
-        {"listeners": {}, "applications": {}}
+        {"applications": {}}
     ), 'reconfigure 2 clear configuration'
 
     resp = client.get(sock=sock)
@@ -344,7 +341,7 @@ def test_python_keepalive_reconfigure_3():
     assert client.get()['status'] == 200
 
     assert 'success' in client.conf(
-        {"listeners": {}, "applications": {}}
+        {"applications": {}}
     ), 'reconfigure 3 clear configuration'
 
     resp = client.http(
@@ -363,7 +360,7 @@ def test_python_atexit(wait_for_record):
 
     client.get()
 
-    assert 'success' in client.conf({"listeners": {}, "applications": {}})
+    assert 'success' in client.conf({"applications": {}})
 
     assert wait_for_record(r'At exit called\.') is not None, 'atexit'
 

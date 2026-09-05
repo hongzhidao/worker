@@ -215,7 +215,7 @@ def test_ruby_application_at_exit(wait_for_record):
 
     client.get()
 
-    assert 'success' in client.conf({"listeners": {}, "applications": {}})
+    assert 'success' in client.conf({"applications": {}})
 
     assert (
         wait_for_record(r'\[error\].+At exit called\.') is not None

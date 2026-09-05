@@ -366,7 +366,7 @@ def _clear_conf(*, log=None):
         url='/config',
         sock_type='unix',
         addr=sock,
-        body=json.dumps({"listeners": {}, "applications": {}}),
+        body=json.dumps({"applications": {}}),
     )['body']
 
     assert 'success' in resp, 'clear conf'

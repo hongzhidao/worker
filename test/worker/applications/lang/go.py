@@ -72,9 +72,9 @@ class ApplicationGo(ApplicationProto):
         ApplicationGo.prepare_env(script, name, static=static_build)
 
         conf = {
-            "listeners": {"*:8080": {"pass": "applications/" + script}},
             "applications": {
                 script: {
+                    "listen": kwargs.pop('listen', '*:8080'),
                     "type": "external",
                     "processes": {"spare": 0},
                     "working_directory": wdir,

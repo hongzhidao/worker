@@ -18,8 +18,9 @@ def check_connections(accepted, active, idle, closed):
         'closed': closed,
     }
 
-def app_default(name="empty", module="wsgi"):
+def app_default(name="empty", module="wsgi", listen="*:8080"):
     return {
+        "listen": listen,
         "type": client.get_application_type(),
         "processes": {"spare": 0},
         "path": option.test_dir + "/python/" + name,
@@ -35,14 +36,11 @@ def test_status_requests(skip_alert):
 
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/empty"},
-                "*:8081": {"pass": "applications/empty"},
-                "*:8082": {"pass": "applications/blah"},
-            },
             "applications": {
                 "empty": app_default(),
+                "other": app_default(listen="*:8081"),
                 "blah": {
+                    "listen": "*:8082",
                     "type": client.get_application_type(),
                     "processes": {"spare": 0},
                     "module": "blah",
@@ -92,13 +90,9 @@ Connection: close
 def test_status_connections():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/empty"},
-                "*:8081": {"pass": "applications/delayed"},
-            },
             "applications": {
                 "empty": app_default(),
-                "delayed": app_default("delayed"),
+                "delayed": app_default("delayed", listen="*:8081"),
             },
         },
     )
@@ -187,13 +181,9 @@ def test_status_applications():
 
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/restart"},
-                "*:8081": {"pass": "applications/delayed"},
-            },
             "applications": {
                 "restart": app_default("restart", "longstart"),
-                "delayed": app_default("delayed"),
+                "delayed": app_default("delayed", listen="*:8081"),
             },
         },
     )
@@ -211,9 +201,6 @@ def test_status_applications():
 def test_status_application_pass():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/empty"},
-            },
             "applications": {
                 "empty": app_default(),
             },

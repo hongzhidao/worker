@@ -1,11 +1,27 @@
 
 Changes with Worker 0.1.0                                        04 Sep 2026
 
-    *) Change: the project was renamed to Worker.
+    *) initial release of Worker, an application server for PHP, Python, Go,
+       and Ruby.
 
-    *) Change: user-facing commands, process titles, default paths, language
-       packages, documentation, and distribution metadata now use the Worker
-       brand.
+    *) Feature: dynamic application configuration through a JSON control
+       API, with process scaling, on-demand process management, and
+       application restarts.
 
-    *) Change: the changelog now records Worker releases only; the complete
-       NGINX Unit development history remains available in Git.
+    *) Feature: HTTP serving over IPv4, IPv6, and Unix sockets. Applications
+       without targets require one listen address. Python and PHP
+       applications with targets require one listen address per target and
+       no application-level listen. Addresses are unique across all
+       applications and targets; targets share their application's process
+       pool.
+
+    *) Feature: listen address updates preserve application processes and
+       in-flight requests. A failed bind leaves the previous configuration
+       active.
+
+    *) Feature: request, connection, and application process statistics
+       through the status API.
+
+    *) Feature: Linux Python and PHP runtime packages for amd64 and arm64,
+       available as tar.gz archives and deb packages with the language
+       runtime and shared libraries included.

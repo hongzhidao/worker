@@ -11,12 +11,6 @@ def test_python_factory_targets():
 
     assert "success" in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/targets/1"},
-                "*:8081": {"pass": "applications/targets/2"},
-                "*:8082": {"pass": "applications/targets/factory-1"},
-                "*:8083": {"pass": "applications/targets/factory-2"},
-            },
             "applications": {
                 "targets": {
                     "type": client.get_application_type(),
@@ -24,21 +18,25 @@ def test_python_factory_targets():
                     "path": f"{python_dir}/factory/",
                     "targets": {
                         "1": {
+                            "listen": "*:8080",
                             "module": "wsgi",
                             "callable": "wsgi_a",
                             "factory": False,
                         },
                         "2": {
+                            "listen": "*:8081",
                             "module": "wsgi",
                             "callable": "wsgi_b",
                             "factory": False,
                         },
                         "factory-1": {
+                            "listen": "*:8082",
                             "module": "wsgi",
                             "callable": "wsgi_a_factory",
                             "factory": True,
                         },
                         "factory-2": {
+                            "listen": "*:8083",
                             "module": "wsgi",
                             "callable": "wsgi_b_factory",
                             "factory": True,
@@ -71,12 +69,9 @@ def test_python_factory_without_targets():
 
     assert "success" in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/python-app-factory"},
-                "*:8081": {"pass": "applications/python-app"},
-            },
             "applications": {
                 "python-app-factory": {
+                    "listen": "*:8080",
                     "type": client.get_application_type(),
                     "working_directory": f"{python_dir}/factory/",
                     "path": f"{python_dir}/factory/",
@@ -85,6 +80,7 @@ def test_python_factory_without_targets():
                     "factory": True,
                 },
                 "python-app": {
+                    "listen": "*:8081",
                     "type": client.get_application_type(),
                     "working_directory": f"{python_dir}/factory/",
                     "path": f"{python_dir}/factory/",
@@ -121,7 +117,6 @@ def test_python_factory_invalid_callable_value(skip_alert):
     for callable_value in invalid_callable_values:
         assert "error" in client.conf(
             {
-                "listeners": {"*:8080": {"pass": "applications/targets/1"}},
                 "applications": {
                     "targets": {
                         "type": client.get_application_type(),
@@ -129,6 +124,7 @@ def test_python_factory_invalid_callable_value(skip_alert):
                         "path": f"{python_dir}/factory/",
                         "targets": {
                             "1": {
+                                "listen": "*:8080",
                                 "module": "wsgi",
                                 "callable": callable_value,
                                 "factory": True,

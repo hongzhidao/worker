@@ -97,11 +97,9 @@ def test_php_application_query_string_empty():
 def test_php_application_query_string_pass():
     assert 'success' in client.conf(
         {
-            "listeners": {
-                "*:8080": {"pass": "applications/query_string"},
-            },
             "applications": {
                 "query_string": {
+                    "listen": "*:8080",
                     "type": client.get_application_type(),
                     "processes": {"spare": 0},
                     "root": f"{option.test_dir}/php/query_string",
@@ -585,9 +583,9 @@ def test_php_application_error_log(findall, wait_for_record):
 def test_php_application_script():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "applications/script"}},
             "applications": {
                 "script": {
+                    "listen": "*:8080",
                     "type": "php",
                     "processes": {"spare": 0},
                     "root": option.test_dir + "/php/script",
@@ -605,9 +603,9 @@ def test_php_application_script():
 def test_php_application_index_default():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "applications/phpinfo"}},
             "applications": {
                 "phpinfo": {
+                    "listen": "*:8080",
                     "type": "php",
                     "processes": {"spare": 0},
                     "root": option.test_dir + "/php/phpinfo",
@@ -632,9 +630,9 @@ def test_php_application_extension_check(temp_dir):
 
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "applications/phpinfo"}},
             "applications": {
                 "phpinfo": {
+                    "listen": "*:8080",
                     "type": "php",
                     "processes": {"spare": 0},
                     "root": new_root,

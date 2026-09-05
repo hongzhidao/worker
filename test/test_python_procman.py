@@ -203,7 +203,7 @@ def test_python_processes_invalid():
     ), 'max zero'
 
 def stop_all():
-    assert 'success' in client.conf({"listeners": {}, "applications": {}})
+    assert 'success' in client.conf({"applications": {}})
 
     assert len(pids_for_process()) == 0, 'stop all'
 
