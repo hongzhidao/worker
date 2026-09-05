@@ -5,7 +5,6 @@ from worker.check.chroot import check_chroot
 from worker.check.go import check_go
 from worker.check.isolation import check_isolation
 from worker.check.njs import check_njs
-from worker.check.node import check_node
 from worker.check.regex import check_regex
 from worker.check.tls import check_openssl
 from worker.log import Log
@@ -34,7 +33,6 @@ def discover_available(worker):
 
     option.available['modules']['go'] = check_go()
     option.available['modules']['njs'] = check_njs(output_version)
-    option.available['modules']['node'] = check_node()
     option.available['modules']['openssl'] = check_openssl(output_version)
     option.available['modules']['regex'] = check_regex(output_version)
 

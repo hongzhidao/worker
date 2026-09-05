@@ -2,7 +2,6 @@ import json
 import os
 
 from worker.applications.lang.go import ApplicationGo
-from worker.applications.lang.node import ApplicationNode
 from worker.applications.lang.ruby import ApplicationRuby
 from worker.http import HTTP1
 from worker.option import option
@@ -73,22 +72,6 @@ def check_isolation():
                     "processes": {"spare": 0},
                     "working_directory": option.temp_dir + "/ruby/empty",
                     "script": option.temp_dir + "/ruby/empty/config.ru",
-                    "isolation": {"namespaces": {"credential": True}},
-                }
-            },
-        }
-
-    elif 'node' in available['modules']:
-        ApplicationNode().prepare_env('basic')
-
-        conf = {
-            "listeners": {"*:8080": {"pass": "applications/basic"}},
-            "applications": {
-                "basic": {
-                    "type": "external",
-                    "processes": {"spare": 0},
-                    "working_directory": option.temp_dir + "/node",
-                    "executable": "app.js",
                     "isolation": {"namespaces": {"credential": True}},
                 }
             },

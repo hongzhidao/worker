@@ -7,7 +7,7 @@ VERSION ?= $(NXT_VERSION)
 RELEASE ?= 1
 
 default:
-	@echo "available targets: dist rpm deb docker npm"
+	@echo "available targets: dist rpm deb docker"
 
 dist:
 	rm -f worker-$(VERSION).tar.gz
@@ -27,9 +27,6 @@ deb:
 docker:
 	@cd docker && VERSION=$(VERSION) RELEASE=$(RELEASE) make all
 
-npm:
-	@cd npm && VERSION=$(VERSION) RELEASE=$(RELEASE) make all
-
 njs:
 	@cd contrib && make .njs
 
@@ -37,9 +34,8 @@ clean:
 	@cd rpm && make clean
 	@cd deb && make clean
 	@cd docker && make clean
-	@cd npm && make clean
 	@cd contrib && make clean
 	rm -f worker-$(VERSION).tar.gz
 	rm -f worker-$(VERSION).tar.gz.sha512
 
-.PHONY: default rpm deb docker npm clean
+.PHONY: default rpm deb docker clean
