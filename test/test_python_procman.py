@@ -4,8 +4,8 @@ import subprocess
 import time
 
 import pytest
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
 
 prerequisites = {'modules': {'python': 'any'}}
 
@@ -26,7 +26,7 @@ def pids_for_process():
 
     pids = set()
     for m in re.findall(
-        '.*unit: "' + client.app_name + '" application', output.decode()
+        '.*worker: "' + client.app_name + '" application', output.decode()
     ):
         pids.add(re.search(r'^\s*(\d+)', m).group(1))
 

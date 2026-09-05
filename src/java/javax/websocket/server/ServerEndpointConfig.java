@@ -143,7 +143,7 @@ public interface ServerEndpointConfig extends EndpointConfig {
         private static final Object defaultImplLock = new Object();
 
         private static final String DEFAULT_IMPL_CLASSNAME =
-                "nginx.unit.websocket.server.DefaultServerEndpointConfigurator";
+                "worker.websocket.server.DefaultServerEndpointConfigurator";
 
         public static void setDefault(Configurator def) {
             synchronized (defaultImplLock) {

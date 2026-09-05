@@ -48,7 +48,7 @@ static void nxt_python_asgi_done(void);
 static PyObject           *nxt_py_port_read;
 
 static PyMethodDef        nxt_py_port_read_method =
-    {"unit_port_read", nxt_py_asgi_port_read, METH_VARARGS, ""};
+    {"worker_port_read", nxt_py_asgi_port_read, METH_VARARGS, ""};
 
 static nxt_python_proto_t  nxt_py_asgi_proto = {
     .ctx_data_alloc = nxt_python_asgi_ctx_data_alloc,

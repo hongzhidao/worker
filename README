@@ -1,24 +1,64 @@
+Worker
+======
 
-NGINX Unit
-----------
+Worker is a dynamically configured application server.  It runs application
+code in multiple language runtimes and manages application processes through a
+JSON control API.
 
-The documentation and binary packages are available online:
+Worker can serve HTTP and HTTPS traffic directly, including static files and
+request routing, or run behind a reverse proxy.
 
-  http://unit.nginx.org
+Building
+--------
 
-The source code is provided under the terms of Apache License 2.0:
+Configure and build the core daemon:
 
-  http://hg.nginx.org/unit
+    ./configure
+    make
 
-Please ask questions, report issues, and send patches to the mailing list:
+Configure the language modules required by your applications before running
+make.  For example:
 
-  unit@nginx.org (http://mailman.nginx.org/mailman/listinfo/unit)
+    ./configure python
+    ./configure php
+    ./configure ruby
 
-or via Github:
+The daemon is built as `build/workerd`.  Start it in the foreground with a
+local control socket:
 
-  https://github.com/nginx/unit
+    mkdir -p build/state
+    build/workerd --no-daemon --modules build --state build/state \
+        --pid build/worker.pid --log build/worker.log --tmp /tmp \
+        --control unix:/tmp/control.worker.sock
 
---
-NGINX, Inc.
-http://nginx.com
+Worker configuration is read and changed over the control API.  The following
+example starts a Python WSGI application on port 8080:
 
+    curl -X PUT --data-binary @- \
+        --unix-socket /tmp/control.worker.sock \
+        http://localhost/config/ <<'EOF'
+    {
+        "listeners": {
+            "127.0.0.1:8080": {
+                "pass": "applications/example"
+            }
+        },
+        "applications": {
+            "example": {
+                "type": "python",
+                "path": "/srv/example",
+                "module": "wsgi"
+            }
+        }
+    }
+    EOF
+
+Source And License
+------------------
+
+The source repository is available at:
+
+    https://github.com/hongzhidao/worker
+
+Worker is derived from NGINX Unit and retains the original copyright notices
+and Apache License 2.0 terms.

@@ -568,7 +568,7 @@ nxt_unit_create(nxt_unit_init_t *init)
     lib = nxt_unit_malloc(NULL,
                           sizeof(nxt_unit_impl_t) + init->request_data_size);
     if (nxt_slow_path(lib == NULL)) {
-        nxt_unit_alert(NULL, "failed to allocate unit struct");
+        nxt_unit_alert(NULL, "failed to allocate worker struct");
 
         return NULL;
     }
@@ -815,7 +815,7 @@ nxt_unit_read_env(nxt_unit_port_t *ready_port, nxt_unit_port_t *router_port,
 
     version_end = strchr(unit_init, ';');
     if (nxt_slow_path(version_end == NULL)) {
-        nxt_unit_alert(NULL, "Unit version not found in %s=\"%s\"",
+        nxt_unit_alert(NULL, "Worker version not found in %s=\"%s\"",
                        NXT_UNIT_INIT_ENV, unit_init);
 
         return NXT_UNIT_ERROR;
@@ -827,8 +827,8 @@ nxt_unit_read_env(nxt_unit_port_t *ready_port, nxt_unit_port_t *router_port,
          || memcmp(unit_init, NXT_VERSION, nxt_length(NXT_VERSION));
 
     if (nxt_slow_path(rc != 0)) {
-        nxt_unit_alert(NULL, "versions mismatch: the Unit daemon has version "
-                       "%.*s, while the app was compiled with libunit %s",
+        nxt_unit_alert(NULL, "versions mismatch: the Worker daemon has version "
+                       "%.*s, while the app was compiled with libworker %s",
                        (int) version_length, unit_init, NXT_VERSION);
 
         return NXT_UNIT_ERROR;
@@ -2022,7 +2022,7 @@ nxt_unit_response_init(nxt_unit_request_info_t *req,
     }
 
     /*
-     * Each field name and value 0-terminated by libunit,
+     * Each field name and value 0-terminated by libworker,
      * this is the reason of '+ 2' below.
      */
     buf_size = sizeof(nxt_unit_response_t)
@@ -2101,7 +2101,7 @@ nxt_unit_response_realloc(nxt_unit_request_info_t *req,
     }
 
     /*
-     * Each field name and value 0-terminated by libunit,
+     * Each field name and value 0-terminated by libworker,
      * this is the reason of '+ 2' below.
      */
     buf_size = sizeof(nxt_unit_response_t)
@@ -3817,7 +3817,7 @@ nxt_unit_shm_open(nxt_unit_ctx_t *ctx, size_t size)
 #if (NXT_HAVE_MEMFD_CREATE || NXT_HAVE_SHM_OPEN)
     char             name[64];
 
-    snprintf(name, sizeof(name), NXT_SHM_PREFIX "unit.%d.%p",
+    snprintf(name, sizeof(name), NXT_SHM_PREFIX "worker.%d.%p",
              lib->pid, (void *) (uintptr_t) pthread_self());
 #endif
 
@@ -6691,7 +6691,7 @@ nxt_unit_snprint_prefix(char *p, char *end, pid_t pid, int level)
 #endif
 
     p += snprintf(p, end - p,
-                  "[%s] %d#%"PRIu64" [unit] ", nxt_unit_log_levels[level],
+                  "[%s] %d#%"PRIu64" [worker] ", nxt_unit_log_levels[level],
                   (int) pid,
                   (uint64_t) (uintptr_t) nxt_thread_get_tid());
 

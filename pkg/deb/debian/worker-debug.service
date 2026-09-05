@@ -1,0 +1,14 @@
+[Unit]
+Description=Worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/worker.pid
+EnvironmentFile=-/etc/default/worker
+ExecStart=/usr/sbin/workerd-debug $DAEMON_ARGS
+ExecReload=
+
+[Install]
+WantedBy=multi-user.target

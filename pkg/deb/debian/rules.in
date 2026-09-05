@@ -17,10 +17,10 @@ include /usr/share/dpkg/buildflags.mk
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 CODENAME := $(shell lsb_release -cs)
 
-BUILDDIR_unit = $(CURDIR)/debian/build-unit
-BUILDDIR_unit_debug = $(CURDIR)/debian/build-unit-debug
-INSTALLDIR = $(CURDIR)/debian/unit
-INSTALLDIR_dev = $(CURDIR)/debian/unit-dev
+BUILDDIR_worker = $(CURDIR)/debian/build-worker
+BUILDDIR_worker_debug = $(CURDIR)/debian/build-worker-debug
+INSTALLDIR = $(CURDIR)/debian/worker
+INSTALLDIR_dev = $(CURDIR)/debian/worker-dev
 BASEDIR = $(CURDIR)
 
 DOTESTS = 0
@@ -44,27 +44,29 @@ config.env.%: njs
 	cp -Pa $(CURDIR)/README $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/go $(BUILDDIR_$*)/
 	mkdir -p $(BUILDDIR_$*)/docs/man
-	cp -Pa $(CURDIR)/docs/man/unitd.8.in $(BUILDDIR_$*)/docs/man/
+	cp -Pa $(CURDIR)/docs/man/workerd.8.in $(BUILDDIR_$*)/docs/man/
 	touch $@
 
-configure.unit: config.env.unit
-	cd $(BUILDDIR_unit) && \
+configure.worker: config.env.worker
+	cd $(BUILDDIR_worker) && \
 	PKG_CONFIG_PATH=$(CURDIR)/pkg/contrib/njs/build \
 	CFLAGS= ./configure \
 		%%CONFIGURE_ARGS%% \
-		--modules=/usr/lib/unit/modules \
+		--modules=/usr/lib/worker/modules \
 		--libdir=/usr/lib/$(DEB_HOST_MULTIARCH) \
+		--pkgconfigdir=/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig \
 		--cc-opt="$(CFLAGS)" \
 		--ld-opt="$(LDFLAGS)"
 	touch $@
 
-configure.unit_debug: config.env.unit_debug
-	cd $(BUILDDIR_unit_debug) && \
+configure.worker_debug: config.env.worker_debug
+	cd $(BUILDDIR_worker_debug) && \
 	PKG_CONFIG_PATH=$(CURDIR)/pkg/contrib/njs/build \
 	CFLAGS= ./configure \
 		%%CONFIGURE_ARGS%% \
-		--modules=/usr/lib/unit/debug-modules \
+		--modules=/usr/lib/worker/debug-modules \
 		--libdir=/usr/lib/$(DEB_HOST_MULTIARCH) \
+		--pkgconfigdir=/usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig \
 		--cc-opt="$(CFLAGS)" \
 		--ld-opt="$(LDFLAGS)" \
 		--debug
@@ -73,7 +75,7 @@ configure.unit_debug: config.env.unit_debug
 build-arch.%: configure.%
 	dh_testdir
 	$(MAKE) -C $(BUILDDIR_$*)
-	$(MAKE) -C $(BUILDDIR_$*) build/libunit.a
+	$(MAKE) -C $(BUILDDIR_$*) build/libworker.a
 ifeq ($(DOTESTS), 1)
 	$(MAKE) -C $(BUILDDIR_$*) tests
 endif
@@ -82,8 +84,8 @@ endif
 do.tests: build
 	dh_testdir
 ifeq ($(DOTESTS), 1)
-	cd $(BUILDDIR_unit) && ./build/tests
-	cd $(BUILDDIR_unit_debug) && ./build/tests
+	cd $(BUILDDIR_worker) && ./build/tests
+	cd $(BUILDDIR_worker_debug) && ./build/tests
 endif
 	touch $@
 
@@ -91,7 +93,7 @@ build-indep:
 	dh_testdir
 	touch $@
 
-build-arch: build-arch.unit build-arch.unit_debug
+build-arch: build-arch.worker build-arch.worker_debug
 	dh_testdir
 	touch $@
 
@@ -104,25 +106,25 @@ clean:
 	dh_testroot
 	dh_clean
 	find $(CURDIR) -maxdepth 1 -size 0 -delete
-	rm -rf $(BUILDDIR_unit) $(BUILDDIR_unit_debug)
+	rm -rf $(BUILDDIR_worker) $(BUILDDIR_worker_debug)
 
 install: build do.tests
 	dh_testdir
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	dh_installsystemd -punit --name=unit unit.service
-	dh_installsystemd -punit --name=unit-debug --no-start --no-enable unit-debug.service
+	dh_installsystemd -pworker --name=worker worker.service
+	dh_installsystemd -pworker --name=worker-debug --no-start --no-enable worker-debug.service
 	dh_installlogrotate
-	cd $(BUILDDIR_unit) && DESTDIR=$(INSTALLDIR) make install
-	cd $(BUILDDIR_unit) && DESTDIR=$(INSTALLDIR_dev) make libunit-install
-	install -m 755 $(BUILDDIR_unit_debug)/build/unitd $(INSTALLDIR)/usr/sbin/unitd-debug
-	install -m 644 $(BUILDDIR_unit_debug)/build/libunit.a $(INSTALLDIR_dev)/usr/lib/$(DEB_HOST_MULTIARCH)/libunit-debug.a
-	mkdir -p $(INSTALLDIR)/usr/share/doc/unit/examples
-	install -m 644 debian/unit.example.config $(INSTALLDIR)/usr/share/doc/unit/examples/example.config
-	install -m 644 CHANGES $(INSTALLDIR)/usr/share/doc/unit/changelog
-	install -m 644 README $(INSTALLDIR)/usr/share/doc/unit/
-	install -m 644 NOTICE $(INSTALLDIR)/usr/share/doc/unit/
+	cd $(BUILDDIR_worker) && DESTDIR=$(INSTALLDIR) make install
+	cd $(BUILDDIR_worker) && DESTDIR=$(INSTALLDIR_dev) make libworker-install
+	install -m 755 $(BUILDDIR_worker_debug)/build/workerd $(INSTALLDIR)/usr/sbin/workerd-debug
+	install -m 644 $(BUILDDIR_worker_debug)/build/libworker.a $(INSTALLDIR_dev)/usr/lib/$(DEB_HOST_MULTIARCH)/libworker-debug.a
+	mkdir -p $(INSTALLDIR)/usr/share/doc/worker/examples
+	install -m 644 debian/worker.example.config $(INSTALLDIR)/usr/share/doc/worker/examples/example.config
+	install -m 644 CHANGES $(INSTALLDIR)/usr/share/doc/worker/changelog
+	install -m 644 README $(INSTALLDIR)/usr/share/doc/worker/
+	install -m 644 NOTICE $(INSTALLDIR)/usr/share/doc/worker/
 
 binary-indep: build install
 	dh_testdir
@@ -130,7 +132,7 @@ binary-indep: build install
 	dh_installdocs
 	dh_installchangelogs
 	dh_link
-	dh_strip --dbg-package=unit-dbg
+	dh_strip --dbg-package=worker-dbg
 	dh_shlibdeps
 	dh_compress
 	dh_fixperms

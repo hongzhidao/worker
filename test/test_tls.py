@@ -4,8 +4,8 @@ import subprocess
 import time
 
 import pytest
-from unit.applications.tls import ApplicationTLS
-from unit.option import option
+from worker.applications.tls import ApplicationTLS
+from worker.option import option
 
 prerequisites = {'modules': {'python': 'any', 'openssl': 'any'}}
 

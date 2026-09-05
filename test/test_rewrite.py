@@ -1,7 +1,7 @@
 import os
 
 import pytest
-from unit.applications.proto import ApplicationProto
+from worker.applications.proto import ApplicationProto
 
 
 client = ApplicationProto()

@@ -2,8 +2,8 @@ import os
 import socket
 
 import pytest
-from unit.applications.proto import ApplicationProto
-from unit.utils import waitforfiles
+from worker.applications.proto import ApplicationProto
+from worker.utils import waitforfiles
 
 
 client = ApplicationProto()
@@ -314,5 +314,5 @@ Content-Length: 6\r
         raw_resp=True,
         raw=True,
         sock_type='unix',
-        addr=temp_dir + '/control.unit.sock',
+        addr=temp_dir + '/control.worker.sock',
     ), 'mime_types invalid'

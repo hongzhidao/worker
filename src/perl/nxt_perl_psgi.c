@@ -313,7 +313,7 @@ XS(XS_NGINX__Unit__Sandbox_cb)
 
     if (array_len < 2) {
         obj = sv_bless(newRV_noinc((SV *) newHV()),
-                       gv_stashpv("NGINX::Unit::Sandbox", GV_ADD));
+                       gv_stashpv("Worker::Sandbox", GV_ADD));
         ST(0) = obj;
 
         XSRETURN(1);
@@ -330,7 +330,7 @@ nxt_perl_psgi_xs_init(pTHX)
 {
 /*
     nxt_perl_psgi_xs_core_global_changes(my_perl, "CORE::GLOBAL::exit",
-                                         "NGINX::Unit::PSGI::exit",
+                                         "Worker::PSGI::exit",
                                          XS_NGINX__Unit__PSGI_exit);
 */
     nxt_perl_psgi_layer_stream_init(aTHX);
@@ -338,13 +338,13 @@ nxt_perl_psgi_xs_init(pTHX)
     /* DynaLoader for Perl modules who use XS */
     newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, __FILE__);
 
-    nxt_perl_psgi_write = newXS("NGINX::Unit::Sandbox::write",
+    nxt_perl_psgi_write = newXS("Worker::Sandbox::write",
                                 XS_NGINX__Unit__Sandbox_write, __FILE__);
 
-    nxt_perl_psgi_close = newXS("NGINX::Unit::Sandbox::close",
+    nxt_perl_psgi_close = newXS("Worker::Sandbox::close",
                                 XS_NGINX__Unit__Sandbox_close, __FILE__);
 
-    nxt_perl_psgi_cb = newXS("NGINX::Unit::Sandbox::cb",
+    nxt_perl_psgi_cb = newXS("Worker::Sandbox::cb",
                              XS_NGINX__Unit__Sandbox_cb, __FILE__);
 }
 
@@ -427,7 +427,7 @@ nxt_perl_psgi_module_create(const char *script)
     size_t  length;
 
     static nxt_str_t  prefix = nxt_string(
-        "package NGINX::Unit::Sandbox;"
+        "package Worker::Sandbox;"
         "sub new {"
         "   return bless {}, $_[0];"
         "}"

@@ -13,17 +13,17 @@ import time
 from multiprocessing import Process
 
 import pytest
-from unit.check.discover_available import discover_available
-from unit.check.check_prerequisites import check_prerequisites
-from unit.http import HTTP1
-from unit.log import Log
-from unit.log import print_log_on_assert
-from unit.option import option
-from unit.status import Status
-from unit.utils import check_findmnt
-from unit.utils import public_dir
-from unit.utils import waitforfiles
-from unit.utils import waitforunmount
+from worker.check.discover_available import discover_available
+from worker.check.check_prerequisites import check_prerequisites
+from worker.http import HTTP1
+from worker.log import Log
+from worker.log import print_log_on_assert
+from worker.option import option
+from worker.status import Status
+from worker.utils import check_findmnt
+from worker.utils import public_dir
+from worker.utils import waitforfiles
+from worker.utils import waitforunmount
 
 
 def pytest_addoption(parser):
@@ -37,13 +37,13 @@ def pytest_addoption(parser):
         "--print-log",
         default=False,
         action="store_true",
-        help="Print unit.log to stdout in case of errors",
+        help="Print worker.log to stdout in case of errors",
     )
     parser.addoption(
         "--save-log",
         default=False,
         action="store_true",
-        help="Save unit.log after the test execution",
+        help="Save worker.log after the test execution",
     )
     parser.addoption(
         "--unsafe",
@@ -54,7 +54,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--user",
         type=str,
-        help="Default user for non-privileged processes of unitd",
+        help="Default user for non-privileged processes of workerd",
     )
     parser.addoption(
         "--fds-threshold",
@@ -66,17 +66,17 @@ def pytest_addoption(parser):
         "--restart",
         default=False,
         action="store_true",
-        help="Force Unit to restart after every test",
+        help="Force Worker to restart after every test",
     )
 
 
-unit_instance = {}
+worker_instance = {}
 _processes = []
 _fds_info = {
     'main': {'fds': 0, 'skip': False},
-    'router': {'name': 'unit: router', 'pid': -1, 'fds': 0, 'skip': False},
+    'router': {'name': 'worker: router', 'pid': -1, 'fds': 0, 'skip': False},
     'controller': {
-        'name': 'unit: controller',
+        'name': 'worker: controller',
         'pid': -1,
         'fds': 0,
         'skip': False,
@@ -103,7 +103,7 @@ def pytest_configure(config):
     )
     option.test_dir = f'{option.current_dir}/test'
 
-    option.cache_dir = tempfile.mkdtemp(prefix='unit-test-cache-')
+    option.cache_dir = tempfile.mkdtemp(prefix='worker-test-cache-')
     public_dir(option.cache_dir)
 
     # set stdout to non-blocking
@@ -163,18 +163,18 @@ Unexpected prerequisite version "{version}" for module "{module}".
 
 
 def pytest_sessionstart():
-    unit = unit_run()
+    worker = worker_run()
 
-    discover_available(unit)
+    discover_available(worker)
 
     _clear_conf()
 
-    unit_stop()
+    worker_stop()
 
     Log.check_alerts()
 
     if option.restart:
-        shutil.rmtree(unit['temp_dir'])
+        shutil.rmtree(worker['temp_dir'])
     else:
         _clear_temp_dir()
 
@@ -199,7 +199,7 @@ def check_prerequisites_module(request):
 
 @pytest.fixture(autouse=True)
 def run(request):
-    unit = unit_run()
+    worker = worker_run()
 
     option.skip_alerts = [
         r'read signalfd\(4\) failed',
@@ -214,9 +214,9 @@ def run(request):
 
     yield
 
-    # stop unit
+    # stop worker
 
-    error_stop_unit = unit_stop()
+    error_stop_unit = worker_stop()
     error_stop_processes = stop_processes()
 
     # prepare log
@@ -226,7 +226,7 @@ def run(request):
         Log.set_pos(f.tell())
 
     if not option.save_log and option.restart:
-        shutil.rmtree(unit['temp_dir'])
+        shutil.rmtree(worker['temp_dir'])
         Log.set_pos(0)
 
     # clean temp_dir before the next test
@@ -239,7 +239,7 @@ def run(request):
 
     _check_fds(log=log)
 
-    # print unit.log in case of error
+    # print worker.log in case of error
 
     if hasattr(request.node, 'rep_call') and request.node.rep_call.failed:
         Log.print_log(log)
@@ -247,27 +247,27 @@ def run(request):
     if error_stop_unit or error_stop_processes:
         Log.print_log(log)
 
-    # check unit.log for errors
+    # check worker.log for errors
 
-    assert error_stop_unit is None, 'stop unit'
+    assert error_stop_unit is None, 'stop worker'
     assert error_stop_processes is None, 'stop processes'
 
     Log.check_alerts(log=log)
 
 
-def unit_run(state_dir=None):
-    global unit_instance
+def worker_run(state_dir=None):
+    global worker_instance
 
-    if not option.restart and 'unitd' in unit_instance:
-        return unit_instance
+    if not option.restart and 'workerd' in worker_instance:
+        return worker_instance
 
     build_dir = option.current_dir + '/build'
-    unitd = build_dir + '/unitd'
+    workerd = build_dir + '/workerd'
 
-    if not os.path.isfile(unitd):
-        exit('Could not find unit')
+    if not os.path.isfile(workerd):
+        exit('Could not find worker')
 
-    temp_dir = tempfile.mkdtemp(prefix='unit-test-')
+    temp_dir = tempfile.mkdtemp(prefix='worker-test-')
     option.temp_dir = temp_dir
     public_dir(temp_dir)
 
@@ -278,44 +278,44 @@ def unit_run(state_dir=None):
     if not os.path.isdir(state):
         os.mkdir(state)
 
-    unitd_args = [
-        unitd,
+    workerd_args = [
+        workerd,
         '--no-daemon',
         '--modules',
         build_dir,
         '--state',
         state,
         '--pid',
-        temp_dir + '/unit.pid',
+        temp_dir + '/worker.pid',
         '--log',
-        temp_dir + '/unit.log',
+        temp_dir + '/worker.log',
         '--control',
-        'unix:' + temp_dir + '/control.unit.sock',
+        'unix:' + temp_dir + '/control.worker.sock',
         '--tmp',
         temp_dir,
     ]
 
     if option.user:
-        unitd_args.extend(['--user', option.user])
+        workerd_args.extend(['--user', option.user])
 
-    with open(temp_dir + '/unit.log', 'w') as log:
-        unit_instance['process'] = subprocess.Popen(unitd_args, stderr=log)
+    with open(temp_dir + '/worker.log', 'w') as log:
+        worker_instance['process'] = subprocess.Popen(workerd_args, stderr=log)
 
-    if not waitforfiles(temp_dir + '/control.unit.sock'):
+    if not waitforfiles(temp_dir + '/control.worker.sock'):
         Log.print_log()
-        exit('Could not start unit')
+        exit('Could not start worker')
 
-    unit_instance['temp_dir'] = temp_dir
-    unit_instance['control_sock'] = temp_dir + '/control.unit.sock'
-    unit_instance['unitd'] = unitd
+    worker_instance['temp_dir'] = temp_dir
+    worker_instance['control_sock'] = temp_dir + '/control.worker.sock'
+    worker_instance['workerd'] = workerd
 
-    with open(temp_dir + '/unit.pid', 'r') as f:
-        unit_instance['pid'] = f.read().rstrip()
+    with open(temp_dir + '/worker.pid', 'r') as f:
+        worker_instance['pid'] = f.read().rstrip()
 
     if state_dir is None:
         _clear_conf()
 
-    _fds_info['main']['fds'] = _count_fds(unit_instance['pid'])
+    _fds_info['main']['fds'] = _count_fds(worker_instance['pid'])
 
     router = _fds_info['router']
     router['pid'] = pid_by_name(router['name'])
@@ -327,17 +327,17 @@ def unit_run(state_dir=None):
 
     Status._check_zeros()
 
-    return unit_instance
+    return worker_instance
 
 
-def unit_stop():
+def worker_stop():
     if not option.restart:
         if inspect.stack()[1].function.startswith('test_'):
             pytest.skip('no restart mode')
 
         return
 
-    p = unit_instance['process']
+    p = worker_instance['process']
 
     if p.poll() is not None:
         return
@@ -355,12 +355,12 @@ def unit_stop():
 
     except:
         p.kill()
-        return 'Could not terminate unit'
+        return 'Could not terminate worker'
 
 
 @print_log_on_assert
 def _clear_conf(*, log=None):
-    sock = unit_instance['control_sock']
+    sock = worker_instance['control_sock']
 
     resp = http.put(
         url='/config',
@@ -405,7 +405,7 @@ def _clear_conf(*, log=None):
 
 
 def _clear_temp_dir():
-    temp_dir = unit_instance['temp_dir']
+    temp_dir = worker_instance['temp_dir']
 
     if is_findmnt and not waitforunmount(temp_dir, timeout=600):
         Log.print_log()
@@ -413,10 +413,10 @@ def _clear_temp_dir():
 
     for item in os.listdir(temp_dir):
         if item not in [
-            'control.unit.sock',
+            'control.worker.sock',
             'state',
-            'unit.pid',
-            'unit.log',
+            'worker.pid',
+            'worker.log',
         ]:
             path = os.path.join(temp_dir, item)
             public_dir(path)
@@ -451,7 +451,7 @@ def _check_fds(*, log=None):
     ps = _fds_info['main']
     if not ps['skip']:
         fds_diff = waitforfds(
-            lambda: _count_fds(unit_instance['pid']) - ps['fds']
+            lambda: _count_fds(worker_instance['pid']) - ps['fds']
         )
         ps['fds'] += fds_diff
 
@@ -460,7 +460,7 @@ def _check_fds(*, log=None):
         ), 'descriptors leak main process'
 
     else:
-        ps['fds'] = _count_fds(unit_instance['pid'])
+        ps['fds'] = _count_fds(worker_instance['pid'])
 
     for name in ['controller', 'router']:
         ps = _fds_info[name]
@@ -537,13 +537,13 @@ def stop_processes():
 def pid_by_name(name):
     output = subprocess.check_output(['ps', 'ax', '-O', 'ppid']).decode()
     m = re.search(
-        r'\s*(\d+)\s*' + str(unit_instance['pid']) + r'.*' + name, output
+        r'\s*(\d+)\s*' + str(worker_instance['pid']) + r'.*' + name, output
     )
     return None if m is None else m.group(1)
 
 
 def find_proc(name, ps_output):
-    return re.findall(str(unit_instance['pid']) + r'.*' + name, ps_output)
+    return re.findall(str(worker_instance['pid']) + r'.*' + name, ps_output)
 
 
 def pytest_sessionfinish():
@@ -552,7 +552,7 @@ def pytest_sessionfinish():
 
     option.restart = True
 
-    unit_stop()
+    worker_stop()
 
     public_dir(option.cache_dir)
     shutil.rmtree(option.cache_dir)
@@ -595,7 +595,7 @@ def require():
 
 @pytest.fixture
 def search_in_file():
-    def _search_in_file(pattern, name='unit.log', flags=re.M):
+    def _search_in_file(pattern, name='worker.log', flags=re.M):
         return re.search(pattern, Log.read(name), flags)
 
     return _search_in_file
@@ -631,12 +631,12 @@ def system():
 
 @pytest.fixture
 def temp_dir():
-    return unit_instance['temp_dir']
+    return worker_instance['temp_dir']
 
 
 @pytest.fixture
-def unit_pid():
-    return unit_instance['process'].pid
+def worker_pid():
+    return worker_instance['process'].pid
 
 
 @pytest.fixture

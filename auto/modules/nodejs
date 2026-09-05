@@ -121,15 +121,15 @@ if grep ^$NXT_NODE: $NXT_MAKEFILE 2>&1 > /dev/null; then
 fi
 
 
-NXT_NODE_TMP=${NXT_BUILD_DIR}/src/${NXT_NODE}/unit-http
-NXT_NODE_TMP_G=${NXT_BUILD_DIR}/src/${NXT_NODE}/unit-http-g
-NXT_NODE_TARBALL=${NXT_BUILD_DIR}/${NXT_NODE}-unit-http.tar.gz
-NXT_NODE_TARBALL_G=${NXT_BUILD_DIR}/${NXT_NODE}-unit-http-g.tar.gz
+NXT_NODE_TMP=${NXT_BUILD_DIR}/src/${NXT_NODE}/worker-http
+NXT_NODE_TMP_G=${NXT_BUILD_DIR}/src/${NXT_NODE}/worker-http-g
+NXT_NODE_TARBALL=${NXT_BUILD_DIR}/${NXT_NODE}-worker-http.tar.gz
+NXT_NODE_TARBALL_G=${NXT_BUILD_DIR}/${NXT_NODE}-worker-http-g.tar.gz
 NXT_NODE_VERSION_FILE=${NXT_BUILD_DIR}/src/${NXT_NODE}/version.h
 NXT_NODE_PACKAGE_FILE=${NXT_BUILD_DIR}/src/${NXT_NODE}/package.json
-NXT_NODE_EXPORTS="export UNIT_SRC_PATH=${PWD}/src \
-    && export UNIT_BUILD_PATH=${PWD}/${NXT_BUILD_DIR} \
-    && export UNIT_LIB_STATIC_PATH=${PWD}/${NXT_BUILD_DIR}/libunit.a"
+NXT_NODE_EXPORTS="export WORKER_SRC_PATH=${PWD}/src \
+    && export WORKER_BUILD_PATH=${PWD}/${NXT_BUILD_DIR} \
+    && export WORKER_LIB_STATIC_PATH=${PWD}/${NXT_BUILD_DIR}/libworker.a"
 
 if [ -n "$NXT_NODE_LOCAL" ]; then
     NXT_NODE_INSTALL=local-install
@@ -155,13 +155,13 @@ ${NXT_NODE}: ${NXT_NODE}-copy $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
 
 ${NXT_NODE}-copy: ${NXT_NODE_VERSION_FILE} ${NXT_NODE_PACKAGE_FILE}
 	mkdir -p ${NXT_NODE_TMP}
-	cp -rp src/nodejs/unit-http/* ${NXT_NODE_TMP}/
+	cp -rp src/nodejs/worker-http/* ${NXT_NODE_TMP}/
 	cp -p ${NXT_NODE_VERSION_FILE} ${NXT_NODE_PACKAGE_FILE} ${NXT_NODE_TMP}/
 	rm -f ${NXT_NODE_TMP}/binding_pub.gyp
 
 ${NXT_NODE}-copy-g: ${NXT_NODE_VERSION_FILE} ${NXT_NODE_PACKAGE_FILE}
 	mkdir -p ${NXT_NODE_TMP_G}
-	cp -rp src/nodejs/unit-http/* ${NXT_NODE_TMP_G}/
+	cp -rp src/nodejs/worker-http/* ${NXT_NODE_TMP_G}/
 	cp -p ${NXT_NODE_VERSION_FILE} ${NXT_NODE_PACKAGE_FILE} ${NXT_NODE_TMP_G}/
 	mv ${NXT_NODE_TMP_G}/binding_pub.gyp ${NXT_NODE_TMP_G}/binding.gyp
 
@@ -169,27 +169,27 @@ ${NXT_NODE_VERSION_FILE}: ${NXT_VERSION_H}
 	mkdir -p ${NXT_BUILD_DIR}/src/${NXT_NODE}
 	$echo '#define NXT_NODE_VERNUM \$(NXT_VERNUM)' > $NXT_NODE_VERSION_FILE
 
-${NXT_NODE_PACKAGE_FILE}: ${NXT_VERSION_H} src/nodejs/unit-http/package.json
+${NXT_NODE_PACKAGE_FILE}: ${NXT_VERSION_H} src/nodejs/worker-http/package.json
 	mkdir -p ${NXT_BUILD_DIR}/src/${NXT_NODE}
 	sed -e "s|%%VERSION%%|\$(NXT_VERSION)|" \
-		src/nodejs/unit-http/package.json > ${NXT_NODE_PACKAGE_FILE}
+		src/nodejs/worker-http/package.json > ${NXT_NODE_PACKAGE_FILE}
 
 ${NXT_NODE_TARBALL}: ${NXT_NODE}-copy
 	cd ${NXT_NODE_TMP} && npm pack
-	mv ${NXT_NODE_TMP}/unit-http-\$(NXT_VERSION).tgz ${NXT_NODE_TARBALL}
+	mv ${NXT_NODE_TMP}/worker-http-\$(NXT_VERSION).tgz ${NXT_NODE_TARBALL}
 
 ${NXT_NODE_TARBALL_G}: ${NXT_NODE}-copy-g
 	cd ${NXT_NODE_TMP_G} && npm pack
-	mv ${NXT_NODE_TMP_G}/unit-http-\$(NXT_VERSION).tgz ${NXT_NODE_TARBALL_G}
+	mv ${NXT_NODE_TMP_G}/worker-http-\$(NXT_VERSION).tgz ${NXT_NODE_TARBALL_G}
 
 
 install: ${NXT_NODE}-$NXT_NODE_INSTALL
 
-${NXT_NODE}-install: ${NXT_NODE_TARBALL_G} libunit-install
+${NXT_NODE}-install: ${NXT_NODE_TARBALL_G} libworker-install
 	${NXT_NPM} install -g --unsafe-perm ${PWD}/${NXT_NODE_TARBALL_G}
 
 ${NXT_NODE}-uninstall:
-	${NXT_NPM} uninstall -g unit-http
+	${NXT_NPM} uninstall -g worker-http
 
 ${NXT_NODE}-local-check:
 	@test -n "\$(DESTDIR)$NXT_NODE_LOCAL" \\

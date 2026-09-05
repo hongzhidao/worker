@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from unit.applications.proto import ApplicationProto
+from worker.applications.proto import ApplicationProto
 
 prerequisites = {'features': {'chroot': True}, 'privileged_user': True}
 

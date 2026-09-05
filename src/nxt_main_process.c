@@ -308,6 +308,11 @@ static nxt_conf_map_t  nxt_java_app_conf[] = {
         offsetof(nxt_common_app_conf_t, u.java.unit_jars),
     },
     {
+        nxt_string("worker_jars"),
+        NXT_CONF_MAP_CSTRZ,
+        offsetof(nxt_common_app_conf_t, u.java.unit_jars),
+    },
+    {
         nxt_string("threads"),
         NXT_CONF_MAP_INT32,
         offsetof(nxt_common_app_conf_t, u.java.threads),
@@ -720,7 +725,7 @@ nxt_main_process_title(nxt_task_t *task)
 
     end = title + sizeof(title) - 1;
 
-    p = nxt_sprintf(title, end, "unit: main v" NXT_VERSION " [%s",
+    p = nxt_sprintf(title, end, "worker: main v" NXT_VERSION " [%s",
                     nxt_process_argv[0]);
 
     for (i = 1; nxt_process_argv[i] != NULL; i++) {

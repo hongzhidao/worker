@@ -32,7 +32,7 @@ nxt_java_initHeadersEnumeration(JNIEnv *env, jobject cl)
     int     res;
     jclass  cls;
 
-    cls = nxt_java_loadClass(env, cl, "nginx.unit.HeadersEnumeration");
+    cls = nxt_java_loadClass(env, cl, "worker.HeadersEnumeration");
     if (cls == NULL) {
         return NXT_UNIT_ERROR;
     }

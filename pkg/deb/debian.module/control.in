@@ -7,16 +7,16 @@ Build-Depends: debhelper (>= 11),
                libssl-dev,
                libpcre2-dev%%MODULE_BUILD_DEPENDS%%
 Standards-Version: 4.1.4
-Homepage: https://unit.nginx.org
+Homepage: https://github.com/hongzhidao/worker
 
 Package: %%NAME%%
 Section: admin
 Architecture: any
 Depends: lsb-base,
          ${misc:Depends}, ${shlibs:Depends},
-         unit (= %%UNIT_VERSION%%-%%UNIT_RELEASE%%~%%CODENAME%%)%%MODULE_DEPENDS%%
+         worker (= %%WORKER_VERSION%%-%%WORKER_RELEASE%%~%%CODENAME%%)%%MODULE_DEPENDS%%
 Description: %%SUMMARY%%
- NGINX Unit is a runtime and delivery environment for modern distributed
+ Worker is a runtime and delivery environment for modern distributed
  applications. It runs the application code in multiple languages
  (PHP, Python, Go, etc.), and tightly couples it with traffic delivery
  in and out of the application. Take this application server and proxy

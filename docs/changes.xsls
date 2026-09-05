@@ -3,7 +3,7 @@ X:stylesheet {
 X:output method="text";
 
 X:param format="'generic'";
-X:param pkgname="'unit'";
+X:param pkgname="'worker'";
 X:param configuration="'change_log_conf.xml'";
 X:param curdate;
 X:param curtime;
@@ -68,7 +68,7 @@ X:template = "changes" {
     X:var pkgname_ = { !beautify(pkgname="$pkgname") }
 
     X:choose {
-    X:when "$pkgname='unit' and $format='generic' and @rev!=1" {}
+    X:when "$pkgname='worker' and $format='generic' and @rev!=1" {}
     X:otherwise {
     X:if "$apply=$pkgname" {
 
@@ -91,7 +91,7 @@ X:template = "changes" {
                  $conf/changes/month[number(substring($date_, 6, 2))],
                  $pday, ' ',
                  substring($date_, 1, 4), ' ', @packager, ' - ',
-                 @ver, '-', @rev, '%{?dist}.ngx')}
+                 @ver, '-', @rev, '%{?dist}')}
     }
 
     X:if "$format='deb'" {
@@ -249,7 +249,7 @@ X:template string_in_list(list, string) {
 
 X:template beautify(pkgname) {
     X:choose {
-        X:when "$pkgname='unit'" {Unit}
+        X:when "$pkgname='worker'" {Worker}
         X:otherwise {
             !{$pkgname}
         }

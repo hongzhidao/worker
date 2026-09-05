@@ -10,19 +10,19 @@ default:
 	@echo "valid targets: all publish clean"
 
 copy:
-	cp -rp ../../src/nodejs/unit-http .
-	echo '#define NXT_NODE_VERNUM ${VERNUM}' > unit-http/version.h
-	mv unit-http/binding_pub.gyp unit-http/binding.gyp
+	cp -rp ../../src/nodejs/worker-http .
+	echo '#define NXT_NODE_VERNUM ${VERNUM}' > worker-http/version.h
+	mv worker-http/binding_pub.gyp worker-http/binding.gyp
 	sed -e 's/"version"\s*:.*/"version": "${VERSION}",/' \
-		unit-http/package.json > unit-http/package.json.tmp
-	mv unit-http/package.json.tmp unit-http/package.json
+		worker-http/package.json > worker-http/package.json.tmp
+	mv worker-http/package.json.tmp worker-http/package.json
 
 publish: copy
-	cd unit-http && $(NPM) publish
+	cd worker-http && $(NPM) publish
 
 all: copy
 
 clean:
-	rm -rf unit-http
+	rm -rf worker-http
 
 .PHONY: default all copy publish clean

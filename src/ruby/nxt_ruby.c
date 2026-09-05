@@ -200,7 +200,7 @@ nxt_ruby_hook_procs_load(VALUE path)
 {
     VALUE  module, file, file_obj;
 
-    module = rb_define_module("Unit");
+    module = rb_define_module("Worker");
 
     nxt_ruby_hook_procs = rb_hash_new();
 
@@ -266,7 +266,7 @@ nxt_ruby_start(nxt_task_t *task, nxt_process_data_t *data)
     nxt_ruby_rack_init_t   rack_init;
     nxt_common_app_conf_t  *conf;
 
-    static char  *argv[2] = { (char *) "NGINX_Unit", (char *) "-e0" };
+    static char  *argv[2] = { (char *) "Worker", (char *) "-e0" };
 
     conf = data->app;
     c = &conf->u.ruby;
@@ -278,7 +278,7 @@ nxt_ruby_start(nxt_task_t *task, nxt_process_data_t *data)
     RUBY_INIT_STACK
     ruby_init();
     ruby_options(2, argv);
-    ruby_script("NGINX_Unit");
+    ruby_script("Worker");
 
     ruby_ctx.env = Qnil;
     ruby_ctx.io_input = Qnil;

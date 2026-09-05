@@ -1,8 +1,8 @@
 from distutils.version import LooseVersion
 
 import pytest
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
 
 prerequisites = {
     'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}

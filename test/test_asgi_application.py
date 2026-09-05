@@ -3,7 +3,7 @@ import time
 from distutils.version import LooseVersion
 
 import pytest
-from unit.applications.lang.python import ApplicationPython
+from worker.applications.lang.python import ApplicationPython
 
 prerequisites = {
     'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
@@ -35,7 +35,7 @@ custom-header: BLAH
     assert resp['status'] == 200, 'status'
     headers = resp['headers']
     header_server = headers.pop('Server')
-    assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
+    assert re.search(r'Worker/[\d\.]+', header_server), 'server header'
 
     date = headers.pop('Date')
     assert date[-4:] == ' GMT', 'date header timezone'

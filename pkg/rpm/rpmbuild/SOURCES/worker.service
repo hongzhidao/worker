@@ -1,0 +1,27 @@
+# Modifying this file in-place is not recommended, because changes
+# will be overwritten during package upgrades.  To customize the
+# behaviour, run "systemctl edit worker" to create an override file.
+
+# For example, to change options given to the workerd binary at startup,
+# create an override file (as is done by systemctl edit) and enter
+# the following:
+
+#       [Service]
+#       Environment="WORKERD_OPTIONS=--log /var/log/worker/worker.log --pid /var/run/worker/worker.pid"
+
+[Unit]
+Description=Worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=forking
+Environment="WORKERD_OPTIONS=--log /var/log/worker/worker.log --pid /var/run/worker/worker.pid"
+ExecStart=/usr/sbin/workerd $WORKERD_OPTIONS
+ExecReload=
+RuntimeDirectory=worker
+RuntimeDirectoryMode=0755
+PIDFile=/run/worker/worker.pid
+
+[Install]
+WantedBy=multi-user.target

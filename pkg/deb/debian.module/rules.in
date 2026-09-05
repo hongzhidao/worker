@@ -13,8 +13,8 @@ export DEB_BUILD_MAINT_OPTIONS=hardening=+all,-pie
 DPKG_EXPORT_BUILDFLAGS = 1
 include /usr/share/dpkg/buildflags.mk
 
-BUILDDIR_unit = $(CURDIR)/debian/build-unit
-BUILDDIR_unit_debug = $(CURDIR)/debian/build-unit-debug
+BUILDDIR_worker = $(CURDIR)/debian/build-worker
+BUILDDIR_worker_debug = $(CURDIR)/debian/build-worker-debug
 INSTALLDIR = $(CURDIR)/debian/%%NAME%%
 BASEDIR = $(CURDIR)
 
@@ -35,20 +35,20 @@ config.env.%:
 	cp -Pa $(CURDIR)/go $(BUILDDIR_$*)/
 	touch $@
 
-configure.unit: config.env.unit
-	cd $(BUILDDIR_unit) && \
+configure.worker: config.env.worker
+	cd $(BUILDDIR_worker) && \
 	CFLAGS= ./configure \
 		%%CONFIGURE_ARGS%% \
-		--modules=/usr/lib/unit/modules \
+		--modules=/usr/lib/worker/modules \
 		--cc-opt="$(CFLAGS)" && \
 	./configure %%MODULE_CONFARGS%%
 	touch $@
 
-configure.unit_debug: config.env.unit_debug
-	cd $(BUILDDIR_unit_debug) && \
+configure.worker_debug: config.env.worker_debug
+	cd $(BUILDDIR_worker_debug) && \
 	CFLAGS= ./configure \
 		%%CONFIGURE_ARGS%% \
-		--modules=/usr/lib/unit/debug-modules \
+		--modules=/usr/lib/worker/debug-modules \
 		--cc-opt="$(CFLAGS)" \
 		--debug && \
 	./configure %%MODULE_CONFARGS%%
@@ -63,7 +63,7 @@ build-indep:
 	dh_testdir
 	touch $@
 
-build-arch: build-arch.unit build-arch.unit_debug
+build-arch: build-arch.worker build-arch.worker_debug
 	dh_testdir
 	touch $@
 
@@ -76,7 +76,7 @@ clean:
 	dh_testroot
 	dh_clean
 	find $(CURDIR) -maxdepth 1 -size 0 -delete
-	rm -rf $(BUILDDIR_unit) $(BUILDDIR_unit_debug)
+	rm -rf $(BUILDDIR_worker) $(BUILDDIR_worker_debug)
 
 install: build
 	dh_testdir
@@ -86,9 +86,9 @@ install: build
 	dh_installinit
 	dh_installlogrotate
 %%MODULE_PREINSTALL%%
-	cd $(BUILDDIR_unit) && \
+	cd $(BUILDDIR_worker) && \
 	DESTDIR=$(INSTALLDIR) make %%MODULE_INSTARGS%%
-	cd $(BUILDDIR_unit_debug) && \
+	cd $(BUILDDIR_worker_debug) && \
 	DESTDIR=$(INSTALLDIR) make %%MODULE_INSTARGS%%
 %%MODULE_POSTINSTALL%%
 

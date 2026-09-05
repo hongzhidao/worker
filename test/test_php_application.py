@@ -5,8 +5,8 @@ import signal
 import time
 
 import pytest
-from unit.applications.lang.php import ApplicationPHP
-from unit.option import option
+from worker.applications.lang.php import ApplicationPHP
+from worker.option import option
 
 prerequisites = {'modules': {'php': 'all'}}
 
@@ -52,7 +52,7 @@ def test_php_application_variables(date_to_sec_epoch, sec_epoch):
     assert resp['status'] == 200, 'status'
     headers = resp['headers']
     header_server = headers.pop('Server')
-    assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
+    assert re.search(r'Worker/[\d\.]+', header_server), 'server header'
     assert (
         headers.pop('Server-Software') == header_server
     ), 'server software header'
@@ -122,7 +122,7 @@ def test_php_application_query_string_rewrite():
     resp = client.get(url='/old?arg=val')
     assert resp['status'] == 200
     assert resp['headers']['Query-String'] == 'arg=val'
-def test_php_application_fastcgi_finish_request(findall, unit_pid):
+def test_php_application_fastcgi_finish_request(findall, worker_pid):
     client.load('fastcgi_finish_request')
 
     assert 'success' in client.conf(
@@ -132,13 +132,13 @@ def test_php_application_fastcgi_finish_request(findall, unit_pid):
 
     assert client.get()['body'] == '0123'
 
-    os.kill(unit_pid, signal.SIGUSR1)
+    os.kill(worker_pid, signal.SIGUSR1)
 
     errs = findall(r'Error in fastcgi_finish_request')
 
     assert len(errs) == 0, 'no error'
 
-def test_php_application_fastcgi_finish_request_2(findall, unit_pid):
+def test_php_application_fastcgi_finish_request_2(findall, worker_pid):
     client.load('fastcgi_finish_request')
 
     assert 'success' in client.conf(
@@ -150,7 +150,7 @@ def test_php_application_fastcgi_finish_request_2(findall, unit_pid):
     assert resp['status'] == 200
     assert resp['body'] == ''
 
-    os.kill(unit_pid, signal.SIGUSR1)
+    os.kill(worker_pid, signal.SIGUSR1)
 
     errs = findall(r'Error in fastcgi_finish_request')
 

@@ -4,9 +4,9 @@ import time
 
 import pytest
 from conftest import run_process
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
-from unit.utils import waitforsocket
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
+from worker.utils import waitforsocket
 
 prerequisites = {'modules': {'python': 'any'}}
 

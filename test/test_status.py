@@ -1,8 +1,8 @@
 import time
 
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
-from unit.status import Status
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
+from worker.status import Status
 
 prerequisites = {'modules': {'python': 'any'}}
 

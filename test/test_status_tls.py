@@ -1,5 +1,5 @@
-from unit.applications.tls import ApplicationTLS
-from unit.status import Status
+from worker.applications.tls import ApplicationTLS
+from worker.status import Status
 
 prerequisites = {'modules': {'openssl': 'any'}}
 

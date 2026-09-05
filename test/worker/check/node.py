@@ -1,0 +1,16 @@
+import os
+import subprocess
+
+from worker.option import option
+
+def check_node():
+    if not os.path.exists(f'{option.current_dir}/node/node_modules'):
+        return False
+
+    try:
+        v_bytes = subprocess.check_output(['/usr/bin/env', 'node', '-v'])
+
+        return [str(v_bytes, 'utf-8').lstrip('v').rstrip()]
+
+    except subprocess.CalledProcessError:
+        return False

@@ -715,7 +715,7 @@ nxt_tls_ticket_keys(nxt_task_t *task, SSL_CTX *ctx, nxt_tls_init_t *tls_init,
         == 0)
     {
         nxt_openssl_log_error(task, NXT_LOG_ALERT,
-                      "Unit was built with Session Tickets support, however, "
+                      "Worker was built with Session Tickets support, however, "
                       "now it is linked dynamically to an OpenSSL library "
                       "which has no tlsext support, therefore Session Tickets "
                       "are not available");

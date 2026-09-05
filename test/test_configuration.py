@@ -1,7 +1,7 @@
 import socket
 
 import pytest
-from unit.control import Control
+from worker.control import Control
 
 prerequisites = {'modules': {'python': 'any'}}
 

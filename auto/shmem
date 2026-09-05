@@ -20,7 +20,7 @@ nxt_feature_test="#include <sys/mman.h>
 
                   int main(void) {
                       int         ret;
-                      static char name[] = \"/unit.configure\";
+                      static char name[] = \"/worker.configure\";
 
                       shm_unlink(name);
 
@@ -63,7 +63,7 @@ if [ $nxt_found = no ]; then
                       #include <sys/types.h>
 
                       int main(void) {
-                          static char name[] = \"/tmp/unit.configure\";
+                          static char name[] = \"/tmp/worker.configure\";
 
                           shm_unlink(name);
 
@@ -120,7 +120,7 @@ nxt_feature_test="#include <linux/memfd.h>
                   #include <sys/syscall.h>
 
                   int main(void) {
-                      static char name[] = \"/unit.configure\";
+                      static char name[] = \"/worker.configure\";
 
                       int fd = syscall(SYS_memfd_create, name, MFD_CLOEXEC);
                       if (fd == -1)

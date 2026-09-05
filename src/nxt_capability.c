@@ -82,7 +82,7 @@ nxt_capability_specific_set(nxt_task_t *task, nxt_capabilities_t *cap)
     /*
      * Ask the kernel the preferred capability version
      * instead of using _LINUX_CAPABILITY_VERSION from header.
-     * This is safer when distributing a pre-compiled Unit binary.
+     * This is safer when distributing a pre-compiled Worker binary.
      */
     hdr.version = nxt_capability_linux_get_version();
     hdr.pid = nxt_pid;

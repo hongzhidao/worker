@@ -2,8 +2,8 @@ import os
 import subprocess
 
 import pytest
-from unit.applications.lang.java import ApplicationJava
-from unit.option import option
+from worker.applications.lang.java import ApplicationJava
+from worker.option import option
 
 prerequisites = {'modules': {'java': 'all'}, 'privileged_user': True}
 
@@ -57,7 +57,7 @@ def test_java_isolation_rootfs_chroot_war(temp_dir):
     )
 
     assert 'success' in client.conf(
-        '"/jars"', 'applications/empty_war/unit_jars'
+        '"/jars"', 'applications/empty_war/worker_jars'
     )
     assert 'success' in client.conf(
         '"/java/empty.war"', 'applications/empty_war/webapp'

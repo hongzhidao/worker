@@ -1,9 +1,9 @@
 import pytest
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
-from unit.utils import findmnt
-from unit.utils import waitformount
-from unit.utils import waitforunmount
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
+from worker.utils import findmnt
+from worker.utils import waitformount
+from worker.utils import waitforunmount
 
 prerequisites = {'modules': {'python': 'any'}, 'features': {'isolation': True}}
 

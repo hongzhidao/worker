@@ -1,4 +1,4 @@
-from unit.applications.lang.php import ApplicationPHP
+from worker.applications.lang.php import ApplicationPHP
 
 prerequisites = {'modules': {'php': 'any'}, 'features': {'isolation': True}}
 
@@ -82,4 +82,4 @@ def test_php_isolation_rootfs_extensions(is_su, require, temp_dir):
     extensions = client.getjson()['body']
 
     assert 'json' in extensions, 'json in extensions list'
-    assert 'unit' in extensions, 'unit in extensions list'
+    assert 'worker' in extensions, 'worker in extensions list'

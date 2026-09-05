@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"unit.nginx.org/go"
+	"github.com/hongzhidao/worker/go"
 	"os"
 	"strconv"
 	"io/ioutil"
@@ -97,5 +97,5 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	unit.ListenAndServe(":8080", nil)
+	worker.ListenAndServe(":8080", nil)
 }

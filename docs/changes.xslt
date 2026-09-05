@@ -4,7 +4,7 @@
 <xsl:output method="text"/>
 
 <xsl:param select="'generic'" name="format"/>
-<xsl:param select="'unit'" name="pkgname"/>
+<xsl:param select="'worker'" name="pkgname"/>
 <xsl:param select="'change_log_conf.xml'" name="configuration"/>
 <xsl:param name="curdate"/>
 <xsl:param name="curtime"/>
@@ -69,7 +69,7 @@
     <xsl:variable name="pkgname_"> <xsl:call-template name="beautify"><xsl:with-param select="$pkgname" name="pkgname"/></xsl:call-template></xsl:variable>
 
     <xsl:choose>
-    <xsl:when test="$pkgname='unit' and $format='generic' and @rev!=1"/>
+    <xsl:when test="$pkgname='worker' and $format='generic' and @rev!=1"/>
     <xsl:otherwise>
     <xsl:if test="$apply=$pkgname">
 
@@ -92,7 +92,7 @@
                  $conf/changes/month[number(substring($date_, 6, 2))],
                  $pday, ' ',
                  substring($date_, 1, 4), ' ', @packager, ' - ',
-                 @ver, '-', @rev, '%{?dist}.ngx')"/>
+                 @ver, '-', @rev, '%{?dist}')"/>
     </xsl:if>
 
     <xsl:if test="$format='deb'">
@@ -241,7 +241,7 @@
 
 <xsl:template name="beautify"><xsl:param name="pkgname"/>
     <xsl:choose>
-        <xsl:when test="$pkgname='unit'">Unit</xsl:when>
+        <xsl:when test="$pkgname='worker'">Worker</xsl:when>
         <xsl:otherwise>
             <xsl:value-of select="$pkgname"/>
         </xsl:otherwise>

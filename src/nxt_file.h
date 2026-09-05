@@ -139,7 +139,7 @@ NXT_EXPORT nxt_int_t nxt_file_openat2(nxt_task_t *task, nxt_file_t *file,
 #else
 /*
  * O_PATH is used in combination with O_RDONLY.  The last one is ignored
- * if O_PATH is used, but it allows Unit to not fail when it was built on
+ * if O_PATH is used, but it allows Worker to not fail when it was built on
  * modern system (i.e. glibc 2.14+) and run with a kernel older than 2.6.39.
  * Then O_PATH is unknown to the kernel and ignored, while O_RDONLY is used.
  */

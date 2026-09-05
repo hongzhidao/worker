@@ -4,9 +4,9 @@ import re
 import time
 
 import pytest
-from unit.applications.proto import ApplicationProto
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
+from worker.applications.proto import ApplicationProto
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
 
 
 client = ApplicationProto()
@@ -414,7 +414,7 @@ def test_variables_response_header(temp_dir, wait_for_record):
 
     assert client.get()['status'] == 200
     assert (
-        wait_for_record(r'return@Unit/.*@.*GMT@0@close', 'access.log')
+        wait_for_record(r'return@Worker/.*@.*GMT@0@close', 'access.log')
         is not None
     )
 
@@ -446,7 +446,7 @@ def test_variables_response_header(temp_dir, wait_for_record):
     assert client.get(url='/foo/index.html')['status'] == 200
     assert (
         wait_for_record(
-            r'share@.*GMT@".*"@text/html@Unit/.*@.*GMT@5@close', 'access.log'
+            r'share@.*GMT@".*"@text/html@Worker/.*@.*GMT@5@close', 'access.log'
         )
         is not None
     )
@@ -461,7 +461,7 @@ def test_variables_response_header(temp_dir, wait_for_record):
 
     assert client.get(url='/foo')['status'] == 301
     assert (
-        wait_for_record(r'redirect@/foo/@Unit/.*@.*GMT@0@close', 'access.log')
+        wait_for_record(r'redirect@/foo/@Worker/.*@.*GMT@0@close', 'access.log')
         is not None
     )
 
@@ -475,7 +475,7 @@ def test_variables_response_header(temp_dir, wait_for_record):
 
     assert client.get(url='/blah')['status'] == 404
     assert (
-        wait_for_record(r'error@text/html@Unit/.*@.*GMT@54@close', 'access.log')
+        wait_for_record(r'error@text/html@Worker/.*@.*GMT@54@close', 'access.log')
         is not None
     )
 

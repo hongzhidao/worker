@@ -25,7 +25,7 @@ nxt_ruby_stream_io_input_init(void)
 {
     VALUE  stream_io;
 
-    stream_io = rb_define_class("NGINX_Unit_Stream_IO_Read", rb_cObject);
+    stream_io = rb_define_class("Worker_Stream_IO_Read", rb_cObject);
 
     rb_undef_alloc_func(stream_io);
 
@@ -48,7 +48,7 @@ nxt_ruby_stream_io_error_init(void)
 {
     VALUE  stream_io;
 
-    stream_io = rb_define_class("NGINX_Unit_Stream_IO_Error", rb_cObject);
+    stream_io = rb_define_class("Worker_Stream_IO_Error", rb_cObject);
 
     rb_undef_alloc_func(stream_io);
 

@@ -2,8 +2,8 @@ import ssl
 import subprocess
 
 import pytest
-from unit.applications.tls import ApplicationTLS
-from unit.option import option
+from worker.applications.tls import ApplicationTLS
+from worker.option import option
 
 prerequisites = {'modules': {'openssl': 'any'}}
 

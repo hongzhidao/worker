@@ -1,6 +1,6 @@
-from unit.applications.lang.ruby import ApplicationRuby
-from unit.option import option
-from unit.utils import waitforglob
+from worker.applications.lang.ruby import ApplicationRuby
+from worker.option import option
+from worker.utils import waitforglob
 
 prerequisites = {'modules': {'ruby': 'all'}}
 

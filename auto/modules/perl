@@ -20,7 +20,7 @@ for nxt_option; do
             cat << END
 
     --perl=FILE           set perl executable, default: perl
-    --module=NAME         set unit perl module name
+    --module=NAME         set worker perl module name
 
 END
             exit 0
@@ -139,7 +139,7 @@ if grep ^$NXT_PERL_MODULE: $NXT_MAKEFILE 2>&1 > /dev/null; then
     exit 1;
 fi
 
-$echo " + Perl module: ${NXT_PERL_MODULE}.unit.so"
+$echo " + Perl module: ${NXT_PERL_MODULE}.worker.so"
 
 . auto/cc/deps
 
@@ -185,10 +185,10 @@ cat << END >> $NXT_MAKEFILE
 
 all: ${NXT_PERL_MODULE}
 
-${NXT_PERL_MODULE}:	$NXT_BUILD_DIR/${NXT_PERL_MODULE}.unit.so
+${NXT_PERL_MODULE}:	$NXT_BUILD_DIR/${NXT_PERL_MODULE}.worker.so
 
-$NXT_BUILD_DIR/${NXT_PERL_MODULE}.unit.so:	$nxt_objs
-	\$(NXT_MODULE_LINK) -o $NXT_BUILD_DIR/${NXT_PERL_MODULE}.unit.so \\
+$NXT_BUILD_DIR/${NXT_PERL_MODULE}.worker.so:	$nxt_objs
+	\$(NXT_MODULE_LINK) -o $NXT_BUILD_DIR/${NXT_PERL_MODULE}.worker.so \\
 	$nxt_objs $NXT_PERL_LDOPTS $NXT_LD_OPT
 
 
@@ -196,14 +196,14 @@ install: ${NXT_PERL_MODULE}-install
 
 ${NXT_PERL_MODULE}-install: ${NXT_PERL_MODULE} install-check
 	install -d \$(DESTDIR)$NXT_MODULES
-	install -p $NXT_BUILD_DIR/${NXT_PERL_MODULE}.unit.so \\
+	install -p $NXT_BUILD_DIR/${NXT_PERL_MODULE}.worker.so \\
 		\$(DESTDIR)$NXT_MODULES/
 
 
 uninstall: ${NXT_PERL_MODULE}-uninstall
 
 ${NXT_PERL_MODULE}-uninstall:
-	rm -f \$(DESTDIR)$NXT_MODULES/${NXT_PERL_MODULE}.unit.so
+	rm -f \$(DESTDIR)$NXT_MODULES/${NXT_PERL_MODULE}.worker.so
 	@rmdir -p \$(DESTDIR)$NXT_MODULES 2>/dev/null || true
 
 END

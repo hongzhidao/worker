@@ -6,7 +6,7 @@
  * Copyright (C) NGINX, Inc.
  */
 
-package unit
+package worker
 
 /*
 #cgo LDFLAGS: -L/opt/homebrew/lib

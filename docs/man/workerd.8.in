@@ -1,0 +1,75 @@
+.\" (C) 2026, Zhidao HONG
+.\" (C) 2017-2021, NGINX, Inc.
+.\"
+.Dd September 4, 2026
+.Dt WORKERD 8
+.Os
+.Sh NAME
+.Nm workerd
+.Nd "runs the Worker application server"
+.Sh SYNOPSIS
+.Nm
+.Op Fl Fl no-daemon
+.Op Fl Fl control Ar socket
+.Op Fl Fl group Ar name
+.Op Fl Fl user Ar name
+.Op Fl Fl log Ar file
+.Op Fl Fl modules Ar directory
+.Op Fl Fl pid Ar file
+.Op Fl Fl state Ar directory
+.Nm
+.Op Fl h | Fl Fl help | v | Fl Fl version
+.Sh DESCRIPTION
+Worker is a dynamically configured application server for UNIX-like systems.
+It runs application code in multiple language runtimes and manages application
+processes through a JSON control API.
+.Sh OPTIONS
+.Bl -tag -width indent
+.It Fl h , Fl Fl help
+Displays a summary of Worker's command-line options and their compile-time
+defaults.
+.It Fl v , Fl Fl version
+Displays Worker's version and the
+.Pa ./configure
+settings it was built with.
+.It Fl Fl no-daemon
+Runs Worker in non-daemon mode.
+.It Fl Fl control Ar socket
+Overrides the control API's socket address in IPv4, IPv6, or UNIX-domain
+format.
+.It Fl Fl group Ar name , Fl Fl user Ar name
+Override the group and user used to run Worker's non-privileged processes.
+.It Fl Fl log Ar file
+Overrides the pathname for Worker's log.
+.It Fl Fl modules Ar directory
+Overrides the directory path for Worker language module
+.Po Pa *.worker.so
+.Pc files.
+.It Fl Fl pid Ar file
+Overrides the pathname for the PID file of Worker's main process.
+.It Fl Fl state Ar directory
+Overrides the directory path for Worker's state storage.
+.El
+.Sh EXIT STATUS
+Exit status is 0 on success, or 1 if the daemon encounters an error.
+.Sh FILES
+.Bl -tag -width indent
+.It Pa %%PID_PATH%%
+The PID file of Worker's main process.
+.It Pa %%ERROR_LOG_PATH%%
+A general-purpose log for diagnostics and troubleshooting.
+.El
+.Sh SOCKETS
+.Bl -tag -width indent
+.It Pa %%SOCKET_PATH%%
+The socket address of Worker's control API.
+.El
+.Sh AUTHORS
+(C) 2026, Zhidao HONG
+.Pp
+Worker is derived from NGINX Unit.  Original copyright notices are retained in
+the NOTICE file.
+.Sh SEE ALSO
+.Pp
+GitHub:
+.Pa https://github.com/hongzhidao/worker

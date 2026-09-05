@@ -1,0 +1,1 @@
+DAEMON_ARGS="--log /var/log/worker.log --pid /var/run/worker.pid"

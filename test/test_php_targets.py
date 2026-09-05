@@ -1,5 +1,5 @@
-from unit.applications.lang.php import ApplicationPHP
-from unit.option import option
+from worker.applications.lang.php import ApplicationPHP
+from worker.option import option
 
 prerequisites = {'modules': {'php': 'any'}}
 

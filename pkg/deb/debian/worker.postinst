@@ -1,0 +1,44 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" != "configure" ]; then
+    exit 0
+fi
+
+if [ -n "$2" ]; then
+    if dpkg --compare-versions "${2%%-*}" le "1.21.0"; then
+      cat <<BANNER
+----------------------------------------------------------------------
+
+WARNING:
+
+Since version 1.22.0, Worker's non-privileged processes run as worker:worker by
+default.  Review your system permissions and Worker configuration so apps and
+routes that relied on these processes running as nobody:nogroup stay working.
+
+More info: https://github.com/hongzhidao/worker
+
+----------------------------------------------------------------------
+BANNER
+    fi
+fi
+
+if ! getent group worker >/dev/null; then
+    groupadd --system worker >/dev/null
+fi
+
+if ! getent passwd worker >/dev/null; then
+    useradd \
+      --system \
+      --gid worker \
+      --no-create-home \
+      --home /nonexistent \
+      --comment "worker user" \
+      --shell /bin/false \
+      worker >/dev/null
+fi
+
+#DEBHELPER#
+
+exit 0

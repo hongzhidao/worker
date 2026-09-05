@@ -58,12 +58,12 @@ static PyAsyncMethods nxt_py_asgi_async_methods = {
 static PyTypeObject nxt_py_asgi_http_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
 
-    .tp_name      = "unit._asgi_http",
+    .tp_name      = "worker._asgi_http",
     .tp_basicsize = sizeof(nxt_py_asgi_http_t),
     .tp_dealloc   = nxt_py_asgi_dealloc,
     .tp_as_async  = &nxt_py_asgi_async_methods,
     .tp_flags     = Py_TPFLAGS_DEFAULT,
-    .tp_doc       = "unit ASGI HTTP request object",
+    .tp_doc       = "worker ASGI HTTP request object",
     .tp_iter      = nxt_py_asgi_iter,
     .tp_iternext  = nxt_py_asgi_next,
     .tp_methods   = nxt_py_asgi_http_methods,

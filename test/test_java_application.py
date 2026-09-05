@@ -3,9 +3,9 @@ import os
 import re
 import time
 
-from unit.applications.lang.java import ApplicationJava
-from unit.option import option
-from unit.utils import public_dir
+from worker.applications.lang.java import ApplicationJava
+from worker.option import option
+from worker.utils import public_dir
 
 prerequisites = {'modules': {'java': 'all'}}
 
@@ -28,7 +28,7 @@ def test_java_conf_error(temp_dir, skip_alert):
                     "processes": 1,
                     "working_directory": option.test_dir + "/java/empty",
                     "webapp": temp_dir + "/java",
-                    "unit_jars": temp_dir + "/no_such_dir",
+                    "worker_jars": temp_dir + "/no_such_dir",
                 }
             },
         }
@@ -43,6 +43,24 @@ def test_java_war(temp_dir):
     ), 'configure war'
 
     assert client.get()['status'] == 200, 'war'
+
+
+def test_java_jars_alias():
+    client.load('empty')
+
+    app = client.conf_get('applications/empty')
+    jars = app.pop('worker_jars')
+    app['unit_jars'] = jars
+
+    assert 'success' in client.conf(app, 'applications/empty')
+    assert client.get()['status'] == 200, 'legacy jars path'
+
+    app['unit_jars'] = jars + '/no_such_dir'
+    app['worker_jars'] = jars
+
+    assert 'success' in client.conf(app, 'applications/empty')
+    assert client.get()['status'] == 200, 'worker jars path takes precedence'
+
 
 def test_java_application_cookies():
     client.load('cookies')
@@ -274,7 +292,7 @@ def test_java_application_jsp():
 
     headers = client.get(url='/index.jsp')['headers']
 
-    assert headers['X-Unit-JSP'] == 'ok', 'JSP Ok header'
+    assert headers['X-Worker-JSP'] == 'ok', 'JSP Ok header'
 
 def test_java_application_url_pattern():
     client.load('url_pattern')
@@ -490,7 +508,7 @@ def test_java_application_welcome_files():
 
     headers = client.get(url='/dir2/')['headers']
 
-    assert headers['X-Unit-JSP'] == 'ok', 'JSP Ok header'
+    assert headers['X-Worker-JSP'] == 'ok', 'JSP Ok header'
     assert headers['X-JSP-Filter'] == '1', 'JSP Filter header'
 
     headers = client.get(url='/dir3/')['headers']

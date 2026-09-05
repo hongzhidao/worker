@@ -1,4 +1,4 @@
 usr/sbin
-etc/unit
-usr/lib/unit
-var/lib/unit
+etc/worker
+usr/lib/worker
+var/lib/worker

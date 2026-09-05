@@ -373,7 +373,7 @@ nxt_shm_open(nxt_task_t *task, size_t size)
 
     u_char    *p, name[64];
 
-    p = nxt_sprintf(name, name + sizeof(name), NXT_SHM_PREFIX "unit.%PI.%uxD",
+    p = nxt_sprintf(name, name + sizeof(name), NXT_SHM_PREFIX "worker.%PI.%uxD",
                     nxt_pid, nxt_random(&task->thread->random));
     *p = '\0';
 

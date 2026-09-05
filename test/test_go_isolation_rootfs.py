@@ -1,4 +1,4 @@
-from unit.applications.lang.go import ApplicationGo
+from worker.applications.lang.go import ApplicationGo
 
 prerequisites = {
     'modules': {'go': 'all'},

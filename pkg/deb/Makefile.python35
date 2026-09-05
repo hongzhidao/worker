@@ -1,7 +1,7 @@
 MODULES+=			python35
 MODULE_SUFFIX_python35=		python3.5
 
-MODULE_SUMMARY_python35=	Python 3.5 module for NGINX Unit
+MODULE_SUMMARY_python35=	Python 3.5 module for Worker
 
 MODULE_VERSION_python35=	$(VERSION)
 MODULE_RELEASE_python35=	1
@@ -10,8 +10,8 @@ MODULE_CONFARGS_python35=	python --config=python3.5-config
 MODULE_MAKEARGS_python35=	python3.5
 MODULE_INSTARGS_python35=	python3.5-install
 
-MODULE_SOURCES_python35=	unit.example-python-app \
-				unit.example-python3.5-config
+MODULE_SOURCES_python35=	worker.example-python-app \
+				worker.example-python3.5-config
 
 BUILD_DEPENDS_python35=	python3.5-dev
 BUILD_DEPENDS+=		$(BUILD_DEPENDS_python35)
@@ -19,9 +19,9 @@ BUILD_DEPENDS+=		$(BUILD_DEPENDS_python35)
 MODULE_BUILD_DEPENDS_python35=,python3.5-dev
 
 define MODULE_PREINSTALL_python35
-	mkdir -p debian/unit-python3.5/usr/share/doc/unit-python3.5/examples/python-app
-	install -m 644 -p debian/unit.example-python-app debian/unit-python3.5/usr/share/doc/unit-python3.5/examples/python-app/wsgi.py
-	install -m 644 -p debian/unit.example-python3.5-config debian/unit-python3.5/usr/share/doc/unit-python3.5/examples/unit.config
+	mkdir -p debian/worker-python3.5/usr/share/doc/worker-python3.5/examples/python-app
+	install -m 644 -p debian/worker.example-python-app debian/worker-python3.5/usr/share/doc/worker-python3.5/examples/python-app/wsgi.py
+	install -m 644 -p debian/worker.example-python3.5-config debian/worker-python3.5/usr/share/doc/worker-python3.5/examples/worker.config
 endef
 export MODULE_PREINSTALL_python35
 
@@ -33,12 +33,12 @@ The $(MODULE_SUMMARY_python35) has been installed.
 
 To check out the sample app, run these commands:
 
- sudo service unit restart
- cd /usr/share/doc/unit-$(MODULE_SUFFIX_python35)/examples
- sudo curl -X PUT --data-binary @unit.config --unix-socket /var/run/control.unit.sock http://localhost/config
+ sudo service worker restart
+ cd /usr/share/doc/worker-$(MODULE_SUFFIX_python35)/examples
+ sudo curl -X PUT --data-binary @worker.config --unix-socket /var/run/control.worker.sock http://localhost/config
  curl http://localhost:8400/
 
-Online documentation is available at https://unit.nginx.org
+Online documentation is available at https://github.com/hongzhidao/worker
 
 ----------------------------------------------------------------------
 BANNER

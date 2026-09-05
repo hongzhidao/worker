@@ -1,4 +1,4 @@
-from unit.applications.tls import ApplicationTLS
+from worker.applications.tls import ApplicationTLS
 
 prerequisites = {'modules': {'openssl': 'any'}}
 

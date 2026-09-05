@@ -1,9 +1,9 @@
 import os
 
 import pytest
-from unit.applications.proto import ApplicationProto
-from unit.option import option
-from unit.utils import waitforfiles
+from worker.applications.proto import ApplicationProto
+from worker.option import option
+from worker.utils import waitforfiles
 
 prerequisites = {'modules': {'njs': 'any'}}
 

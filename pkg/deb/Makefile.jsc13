@@ -1,34 +1,34 @@
 MODULES+=		jsc13
 MODULE_SUFFIX_jsc13=	jsc13
 
-MODULE_SUMMARY_jsc13=	Java 13 module for NGINX Unit
+MODULE_SUMMARY_jsc13=	Java 13 module for Worker
 
 MODULE_VERSION_jsc13=	$(VERSION)
 MODULE_RELEASE_jsc13=	1
 
-MODULE_CONFARGS_jsc13=	java --module=java13 --home=/usr/lib/jvm/java-13-openjdk-$$\(DEB_HOST_ARCH\) --jars=/usr/share/unit-jsc-common/
+MODULE_CONFARGS_jsc13=	java --module=java13 --home=/usr/lib/jvm/java-13-openjdk-$$\(DEB_HOST_ARCH\) --jars=/usr/share/worker-jsc-common/
 MODULE_MAKEARGS_jsc13=	java13
 MODULE_INSTARGS_jsc13=	java13-install
 
-MODULE_SOURCES_jsc13=	unit.example-jsc-app \
-			unit.example-jsc13-config
+MODULE_SOURCES_jsc13=	worker.example-jsc-app \
+			worker.example-jsc13-config
 
 BUILD_DEPENDS_jsc13=	openjdk-13-jdk-headless openjdk-13-jre-headless
 BUILD_DEPENDS+=		$(BUILD_DEPENDS_jsc13)
 
 MODULE_BUILD_DEPENDS_jsc13=,openjdk-13-jdk-headless
-MODULE_DEPENDS_jsc13=,openjdk-13-jre-headless,unit-jsc-common (= $(MODULE_VERSION_jsc_common)-$(MODULE_RELEASE_jsc_common)~$(CODENAME))
+MODULE_DEPENDS_jsc13=,openjdk-13-jre-headless,worker-jsc-common (= $(MODULE_VERSION_jsc_common)-$(MODULE_RELEASE_jsc_common)~$(CODENAME))
 
 define MODULE_PREINSTALL_jsc13
-	mkdir -p debian/unit-jsc13/usr/share/doc/unit-jsc13/examples/jsc-app
-	install -m 644 -p debian/unit.example-jsc-app debian/unit-jsc13/usr/share/doc/unit-jsc13/examples/jsc-app/index.jsp
-	install -m 644 -p debian/unit.example-jsc13-config debian/unit-jsc13/usr/share/doc/unit-jsc13/examples/unit.config
-	install -m 644 -p src/java/README.JSR-340 debian/unit-jsc13/usr/share/doc/unit-jsc13/
+	mkdir -p debian/worker-jsc13/usr/share/doc/worker-jsc13/examples/jsc-app
+	install -m 644 -p debian/worker.example-jsc-app debian/worker-jsc13/usr/share/doc/worker-jsc13/examples/jsc-app/index.jsp
+	install -m 644 -p debian/worker.example-jsc13-config debian/worker-jsc13/usr/share/doc/worker-jsc13/examples/worker.config
+	install -m 644 -p src/java/README.JSR-340 debian/worker-jsc13/usr/share/doc/worker-jsc13/
 endef
 export MODULE_PREINSTALL_jsc13
 
 define MODULE_POSTINSTALL_jsc13
-	cd $$\(BUILDDIR_unit\) \&\& \
+	cd $$\(BUILDDIR_worker\) \&\& \
         DESTDIR=$$\(INSTALLDIR\) make java-shared-uninstall
 endef
 export MODULE_POSTINSTALL_jsc13
@@ -41,18 +41,18 @@ The $(MODULE_SUMMARY_jsc13) has been installed.
 
 To check out the sample app, run these commands:
 
- sudo service unit restart
- cd /usr/share/doc/unit-$(MODULE_SUFFIX_jsc13)/examples
- sudo curl -X PUT --data-binary @unit.config --unix-socket /var/run/control.unit.sock http://localhost/config
+ sudo service worker restart
+ cd /usr/share/doc/worker-$(MODULE_SUFFIX_jsc13)/examples
+ sudo curl -X PUT --data-binary @worker.config --unix-socket /var/run/control.worker.sock http://localhost/config
  curl http://localhost:8800/
 
-Online documentation is available at https://unit.nginx.org
+Online documentation is available at https://github.com/hongzhidao/worker
 
 NOTICE:
 
-This version of Unit code is made available in support of the open source
+This version of Worker code is made available in support of the open source
 development process.  This is an intermediate build made available for
-testing purposes only.  This Unit code is untested and presumed incompatible
+testing purposes only.  This Worker code is untested and presumed incompatible
 with the JSR 340 Java Servlet 3.1 specification.  You should not deploy or
 write to this code.  You should instead deploy and write production
 applications on pre-built binaries that have been tested and certified

@@ -1,9 +1,9 @@
 import os
 from distutils.version import LooseVersion
 
-from conftest import unit_stop
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
+from conftest import worker_stop
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
 
 prerequisites = {
     'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
@@ -47,7 +47,7 @@ def test_asgi_lifespan():
 
     assert client.get()['status'] == 204
 
-    unit_stop()
+    worker_stop()
 
     assert_cookies('')
 
@@ -90,7 +90,7 @@ def test_asgi_lifespan_targets():
     assert client.get(url="/1")['status'] == 204
     assert client.get(url="/2")['status'] == 204
 
-    unit_stop()
+    worker_stop()
 
     assert_cookies('')
     assert_cookies('app2_')

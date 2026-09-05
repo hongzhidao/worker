@@ -3,17 +3,19 @@
 DEST=	../build
 XSLS?=	xslscript.pl
 
-PACKAGES=	unit 							\
-		unit-php 						\
-		unit-python unit-python2.7 unit-python3.4		\
-		unit-python3.5 unit-python3.6 unit-python3.7		\
-		unit-python3.8 unit-python3.9				\
-		unit-go unit-go1.7 unit-go1.8 unit-go1.9 unit-go1.10	\
-		unit-go1.12 unit-go1.13					\
-		unit-perl						\
-		unit-ruby						\
-		unit-jsc-common unit-jsc8 unit-jsc10 unit-jsc11		\
-		unit-jsc13 unit-jsc14 unit-jsc15 unit-jsc16 unit-jsc17
+PACKAGES=	worker 							\
+		worker-php 						\
+		worker-python worker-python2.7 worker-python3.4		\
+		worker-python3.5 worker-python3.6 worker-python3.7		\
+		worker-python3.8 worker-python3.9				\
+		worker-python3.10 worker-python3.13			\
+		worker-go worker-go1.7 worker-go1.8 worker-go1.9 worker-go1.10	\
+		worker-go1.12 worker-go1.13					\
+		worker-perl						\
+		worker-ruby						\
+		worker-jsc-common worker-jsc8 worker-jsc10 worker-jsc11		\
+		worker-jsc13 worker-jsc14 worker-jsc15 worker-jsc16 worker-jsc17 \
+		worker-jsc18
 
 CURDATE:=$(shell date +"%Y-%m-%d")
 CURTIME:=$(shell date +"%H:%M:%S %z")

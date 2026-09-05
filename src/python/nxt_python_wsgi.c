@@ -93,12 +93,12 @@ static int nxt_python_write(nxt_python_ctx_t *pctx, PyObject *bytes);
 
 
 static PyMethodDef nxt_py_start_resp_method[] = {
-    {"unit_start_response", nxt_py_start_resp, METH_VARARGS, ""}
+    {"worker_start_response", nxt_py_start_resp, METH_VARARGS, ""}
 };
 
 
 static PyMethodDef nxt_py_write_method[] = {
-    {"unit_write", nxt_py_write, METH_O, ""}
+    {"worker_write", nxt_py_write, METH_O, ""}
 };
 
 
@@ -113,11 +113,11 @@ static PyMethodDef nxt_py_input_methods[] = {
 static PyTypeObject nxt_py_input_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
 
-    .tp_name      = "unit._input",
+    .tp_name      = "worker._input",
     .tp_basicsize = sizeof(nxt_python_ctx_t),
     .tp_dealloc   = (destructor) nxt_py_input_dealloc,
     .tp_flags     = Py_TPFLAGS_DEFAULT,
-    .tp_doc       = "unit input object.",
+    .tp_doc       = "worker input object.",
     .tp_iter      = nxt_py_input_iter,
     .tp_iternext  = nxt_py_input_next,
     .tp_methods   = nxt_py_input_methods,

@@ -171,7 +171,7 @@ zend_auto_global  *nxt_php_server_ag;
 
 static zend_module_entry  nxt_php_unit_module = {
     STANDARD_MODULE_HEADER,
-    "unit",
+    "worker",
     nxt_php_ext_functions,       /* function table */
     PHP_MINIT(nxt_php_ext),      /* initialization */
     NULL,                        /* shutdown */
@@ -278,7 +278,7 @@ PHP_FUNCTION(fastcgi_finish_request)
 static sapi_module_struct  nxt_php_sapi_module =
 {
     (char *) "cli-server",
-    (char *) "unit",
+    (char *) "worker",
 
     nxt_php_startup,             /* startup */
     php_module_shutdown_wrapper, /* shutdown */

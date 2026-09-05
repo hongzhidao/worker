@@ -1,4 +1,4 @@
-from unit.applications.lang.python import ApplicationPython
+from worker.applications.lang.python import ApplicationPython
 
 prerequisites = {'modules': {'python': 'any'}, 'privileged_user': True}
 

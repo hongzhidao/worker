@@ -3,9 +3,9 @@ import os
 import pwd
 
 import pytest
-from unit.applications.lang.go import ApplicationGo
-from unit.option import option
-from unit.utils import getns
+from worker.applications.lang.go import ApplicationGo
+from worker.option import option
+from worker.utils import getns
 
 prerequisites = {'modules': {'go': 'any'}, 'features': {'isolation': True}}
 
@@ -54,7 +54,7 @@ def test_isolation_unpriv_user(require):
 
     nobody_uid, nogroup_gid, nogroup = unpriv_creds()
 
-    # unprivileged unit map itself to nobody in the container by default
+    # unprivileged worker map itself to nobody in the container by default
     assert obj['UID'] == nobody_uid, 'uid of nobody'
     assert obj['GID'] == nogroup_gid, 'gid of %s' % nogroup
 
@@ -113,7 +113,7 @@ def test_isolation_priv_user(require):
 
     obj = client.getjson()['body']
 
-    # privileged unit map app creds in the container by default
+    # privileged worker map app creds in the container by default
     assert obj['UID'] == nobody_uid, 'uid nobody'
     assert obj['GID'] == nogroup_gid, 'gid nobody'
 

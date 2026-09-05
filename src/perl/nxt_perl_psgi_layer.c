@@ -52,9 +52,9 @@ static void nxt_perl_psgi_layer_stream_set_ptrcnt(pTHX_ PerlIO *f,
     STDCHAR *ptr, SSize_t cnt);
 
 
-static PERLIO_FUNCS_DECL(PerlIO_NGINX_Unit) = {
+static PERLIO_FUNCS_DECL(PerlIO_Worker) = {
     sizeof(PerlIO_funcs),
-    "NGINX_Unit_PSGI_Layer_Stream",
+    "Worker_PSGI_Layer_Stream",
     sizeof(nxt_perl_psgi_layer_stream_t),
     PERLIO_K_BUFFERED | PERLIO_K_RAW,
     nxt_perl_psgi_layer_stream_pushed,
@@ -341,7 +341,7 @@ nxt_perl_psgi_layer_stream_set_ptrcnt(pTHX_ PerlIO *f,
 void
 nxt_perl_psgi_layer_stream_init(pTHX)
 {
-    PerlIO_define_layer(aTHX_ PERLIO_FUNCS_CAST(&PerlIO_NGINX_Unit));
+    PerlIO_define_layer(aTHX_ PERLIO_FUNCS_CAST(&PerlIO_Worker));
 }
 
 
@@ -360,7 +360,7 @@ nxt_perl_psgi_layer_stream_fp_create(pTHX_ nxt_perl_psgi_io_arg_t *arg,
 
     sv_setptrref(arg_rv, arg);
 
-    fp = PerlIO_openn(aTHX_ "NGINX_Unit_PSGI_Layer_Stream",
+    fp = PerlIO_openn(aTHX_ "Worker_PSGI_Layer_Stream",
                       mode, 0, 0, 0, NULL, 1, &arg_rv);
 
     if (fp == NULL) {

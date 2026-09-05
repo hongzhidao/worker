@@ -45,9 +45,9 @@ static nxt_gid_t gids[] = {1000, 10000, 60000};
 static nxt_clone_creds_testcase_t testcases[] = {
     {
         /*
-         * Unprivileged unit
+         * Unprivileged worker
          *
-         * if no uid mapping and app creds and unit creds are the same,
+         * if no uid mapping and app creds and worker creds are the same,
          * then we automatically add a map for the creds->uid.
          * Then, child process can safely setuid(creds->uid) in
          * the new namespace.
@@ -104,7 +104,7 @@ static nxt_clone_creds_testcase_t testcases[] = {
         {"root", 0, 0, 0, NULL},
         1000, 1000,
         NXT_ERROR,
-        nxt_string("\"uidmap\" field has 2 entries but unprivileged unit has "
+        nxt_string("\"uidmap\" field has 2 entries but unprivileged worker has "
                    "a maximum of 1 map.")
     },
     {
@@ -170,9 +170,9 @@ static nxt_clone_creds_testcase_t testcases[] = {
     },
     {
         /*
-         * Unprivileged unit
+         * Unprivileged worker
          *
-         * if no gid mapping and app creds and unit creds are the same,
+         * if no gid mapping and app creds and worker creds are the same,
          * then we automatically add a map for the creds->base_gid.
          * Then, child process can safely setgid(creds->base_gid) in
          * the new namespace.
@@ -187,7 +187,7 @@ static nxt_clone_creds_testcase_t testcases[] = {
     },
     {
         /*
-         * Unprivileged unit
+         * Unprivileged worker
          *
          * Inside the new namespace, we can have any gid but it
          * should map to parent gid (in this case 1000) in parent
@@ -212,7 +212,7 @@ static nxt_clone_creds_testcase_t testcases[] = {
     },
     {
         /*
-         * Unprivileged unit
+         * Unprivileged worker
          *
          * There's no mapping for "johndoe" (gid 1000) inside the namespace.
          */
@@ -233,7 +233,7 @@ static nxt_clone_creds_testcase_t testcases[] = {
         1000, 1000,
         NXT_ERROR,
         nxt_string("\"gidmap\" field has an entry with \"size\": 2, but "
-                    "for unprivileged unit it must be 1.")
+                    "for unprivileged worker it must be 1.")
     },
     {
         GIDMAP,
@@ -243,7 +243,7 @@ static nxt_clone_creds_testcase_t testcases[] = {
         1000, 1000,
         NXT_ERROR,
         nxt_string("\"gidmap\" field has an entry for host gid 1001 but "
-                    "unprivileged unit can only map itself (gid 1000) "
+                    "unprivileged worker can only map itself (gid 1000) "
                     "into child namespaces.")
     },
     {
@@ -253,11 +253,11 @@ static nxt_clone_creds_testcase_t testcases[] = {
         {"johndoe", 1000, 1000, 3, gids},
         1000, 1000,
         NXT_ERROR,
-        nxt_string("unprivileged unit disallow supplementary groups for "
+        nxt_string("unprivileged worker disallow supplementary groups for "
                     "new namespace (user \"johndoe\" has 3 groups).")
     },
 
-    /* privileged unit */
+    /* privileged worker */
 
     /* not root with capabilities */
     {

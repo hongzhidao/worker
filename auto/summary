@@ -5,7 +5,7 @@
 
 cat << END
 
-Unit configuration summary:
+Worker configuration summary:
 
   bin directory: ............. "$NXT_BINDIR"
   sbin directory: ............ "$NXT_SBINDIR"

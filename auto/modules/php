@@ -23,7 +23,7 @@ for nxt_option; do
             cat << END
 
     --config=FILE         set php-config filename
-    --module=NAME         set unit php module name
+    --module=NAME         set worker php module name
     --lib-path=DIRECTORY  set directory path to libphp.so library
     --lib-static          enable linking with static libphp.a library
 
@@ -219,7 +219,7 @@ if grep ^$NXT_PHP_MODULE: $NXT_MAKEFILE 2>&1 > /dev/null; then
 fi
 
 
-$echo " + PHP module: ${NXT_PHP_MODULE}.unit.so"
+$echo " + PHP module: ${NXT_PHP_MODULE}.worker.so"
 
 . auto/cc/deps
 
@@ -265,10 +265,10 @@ cat << END >> $NXT_MAKEFILE
 
 all: ${NXT_PHP_MODULE}
 
-${NXT_PHP_MODULE}:	$NXT_BUILD_DIR/${NXT_PHP_MODULE}.unit.so
+${NXT_PHP_MODULE}:	$NXT_BUILD_DIR/${NXT_PHP_MODULE}.worker.so
 
-$NXT_BUILD_DIR/${NXT_PHP_MODULE}.unit.so:	$nxt_objs
-	\$(NXT_MODULE_LINK) -o $NXT_BUILD_DIR/${NXT_PHP_MODULE}.unit.so \\
+$NXT_BUILD_DIR/${NXT_PHP_MODULE}.worker.so:	$nxt_objs
+	\$(NXT_MODULE_LINK) -o $NXT_BUILD_DIR/${NXT_PHP_MODULE}.worker.so \\
 	$nxt_objs ${NXT_PHP_LIB} ${NXT_PHP_LDFLAGS} $NXT_LD_OPT
 
 
@@ -276,14 +276,14 @@ install: ${NXT_PHP_MODULE}-install
 
 ${NXT_PHP_MODULE}-install: ${NXT_PHP_MODULE} install-check
 	install -d \$(DESTDIR)$NXT_MODULES
-	install -p $NXT_BUILD_DIR/${NXT_PHP_MODULE}.unit.so \\
+	install -p $NXT_BUILD_DIR/${NXT_PHP_MODULE}.worker.so \\
 		\$(DESTDIR)$NXT_MODULES/
 
 
 uninstall: ${NXT_PHP_MODULE}-uninstall
 
 ${NXT_PHP_MODULE}-uninstall:
-	rm -f \$(DESTDIR)$NXT_MODULES/${NXT_PHP_MODULE}.unit.so
+	rm -f \$(DESTDIR)$NXT_MODULES/${NXT_PHP_MODULE}.worker.so
 	@rmdir -p \$(DESTDIR)$NXT_MODULES 2>/dev/null || true
 
 END

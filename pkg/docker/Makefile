@@ -6,8 +6,6 @@ include ../shasum.mak
 DEFAULT_VERSION := $(NXT_VERSION)
 
 VERSION ?= $(DEFAULT_VERSION)
-PATCHLEVEL ?= 1
-
 EXPORT_DIR := $(VERSION)
 
 MODULES ?= go jsc node perl php python ruby
@@ -25,28 +23,28 @@ VERSIONS_go ?=		1.17
 VARIANT_go ?=		$(VARIANT)
 $(foreach goversion, $(VERSIONS_go), $(eval CONTAINER_go$(goversion) = golang:$(goversion)-$(VARIANT_go)))
 CONFIGURE_go ?=		go --go-path=$$GOPATH
-INSTALL_go ?=		go-install-src libunit-install
+INSTALL_go ?=		go-install-src libworker-install
 define COPY_go
-COPY --from=BUILDER /usr/lib/x86_64-linux-gnu/libunit.a /usr/lib/x86_64-linux-gnu/\n\$
+COPY --from=BUILDER /usr/lib/x86_64-linux-gnu/libworker.a /usr/lib/x86_64-linux-gnu/\n\$
 COPY --from=BUILDER /usr/include/nxt_* /usr/include/\n\$
 COPY --from=BUILDER /go/src/ /go/src/
 endef
 
 VERSIONS_jsc ?=		11
 $(foreach jscversion, $(VERSIONS_jsc), $(eval CONTAINER_jsc$(jscversion) = openjdk:$(jscversion)-jdk))
-CONFIGURE_jsc ?=	java --jars=/usr/share/unit-jsc-common/
+CONFIGURE_jsc ?=	java --jars=/usr/share/worker-jsc-common/
 INSTALL_jsc ?=		java-shared-install java-install
-COPY_jsc =	 		COPY --from=BUILDER /usr/share/unit-jsc-common/ /usr/share/unit-jsc-common/
+COPY_jsc =	 		COPY --from=BUILDER /usr/share/worker-jsc-common/ /usr/share/worker-jsc-common/
 
 VERSIONS_node ?=	16
 VARIANT_node ?=		$(VARIANT)
 $(foreach nodeversion, $(VERSIONS_node), $(eval CONTAINER_node$(nodeversion) = node:$(nodeversion)-$(VARIANT_node)))
 CONFIGURE_node ?=	nodejs --node-gyp=/usr/local/lib/node_modules/npm/bin/node-gyp-bin/node-gyp
-INSTALL_node ?=		node node-install libunit-install
+INSTALL_node ?=		node node-install libworker-install
 define COPY_node
-COPY --from=BUILDER /usr/lib/x86_64-linux-gnu/libunit.a /usr/lib/x86_64-linux-gnu/\n\$
+COPY --from=BUILDER /usr/lib/x86_64-linux-gnu/libworker.a /usr/lib/x86_64-linux-gnu/\n\$
 COPY --from=BUILDER /usr/include/nxt_* /usr/include/\n\$
-COPY --from=BUILDER /usr/local/lib/node_modules/unit-http/ /usr/local/lib/node_modules/unit-http/
+COPY --from=BUILDER /usr/local/lib/node_modules/worker-http/ /usr/local/lib/node_modules/worker-http/
 endef
 
 VERSIONS_perl ?=	5.34
@@ -88,13 +86,12 @@ dockerfiles: $(addprefix Dockerfile., $(MODVERSIONS))
 build: $(addprefix build-,$(MODVERSIONS))
 tag: $(addprefix tag-,$(MODVERSIONS))
 push: $(addprefix push-,$(MODVERSIONS))
-export: $(addsuffix .tar.gz,$(addprefix $(EXPORT_DIR)/nginx-unit-$(VERSION)-,$(MODVERSIONS))) $(addsuffix .tar.gz.sha512, $(addprefix $(EXPORT_DIR)/nginx-unit-$(VERSION)-,$(MODVERSIONS)))
+export: $(addsuffix .tar.gz,$(addprefix $(EXPORT_DIR)/worker-$(VERSION)-,$(MODVERSIONS))) $(addsuffix .tar.gz.sha512, $(addprefix $(EXPORT_DIR)/worker-$(VERSION)-,$(MODVERSIONS)))
 
 Dockerfile.%: ../../version
 	@echo "===> Building $@"
 	cat template.Dockerfile | sed \
 			-e 's,@@VERSION@@,$(VERSION),g' \
-			-e 's,@@PATCHLEVEL@@,$(PATCHLEVEL),g' \
 			-e 's,@@CONTAINER@@,$(CONTAINER_$*),g' \
 			-e 's,@@CONFIGURE@@,$(CONFIGURE_$(call modname, $*)),g' \
 			-e 's,@@INSTALL@@,$(INSTALL_$(call modname, $*)),g' \
@@ -103,21 +100,21 @@ Dockerfile.%: ../../version
 
 build-%: Dockerfile.%
 	docker pull $(CONTAINER_$*)
-	docker build --no-cache -t unit:$(VERSION)-$* -f Dockerfile.$* .
+	docker build --no-cache -t worker:$(VERSION)-$* -f Dockerfile.$* .
 
 tag-%: build-%
-	docker tag unit:$(VERSION)-$* nginx/unit:$(VERSION)-$*
+	docker tag worker:$(VERSION)-$* hongzhidao/worker:$(VERSION)-$*
 
 push-%: tag-%
-	docker push nginx/unit:$(VERSION)-$*
+	docker push hongzhidao/worker:$(VERSION)-$*
 
 $(EXPORT_DIR):
 	mkdir -p $@
 
-$(EXPORT_DIR)/nginx-unit-$(VERSION)-%.tar.gz: $(EXPORT_DIR) tag-%
-	docker save nginx/unit:$(VERSION)-$* | gzip > $@
+$(EXPORT_DIR)/worker-$(VERSION)-%.tar.gz: $(EXPORT_DIR) tag-%
+	docker save hongzhidao/worker:$(VERSION)-$* | gzip > $@
 
-$(EXPORT_DIR)/nginx-unit-$(VERSION)-%.tar.gz.sha512: $(EXPORT_DIR)/nginx-unit-$(VERSION)-%.tar.gz
+$(EXPORT_DIR)/worker-$(VERSION)-%.tar.gz.sha512: $(EXPORT_DIR)/worker-$(VERSION)-%.tar.gz
 	$(SHA512SUM) $< | sed 's,$(EXPORT_DIR)/,,' > $@
 
 all: $(addprefix Dockerfile., $(MODVERSIONS))

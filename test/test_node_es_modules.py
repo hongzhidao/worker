@@ -1,7 +1,7 @@
 from distutils.version import LooseVersion
 
-from unit.applications.lang.node import ApplicationNode
-from unit.applications.websockets import ApplicationWebsocket
+from worker.applications.lang.node import ApplicationNode
+from worker.applications.websockets import ApplicationWebsocket
 
 prerequisites = {
     'modules': {
@@ -10,10 +10,9 @@ prerequisites = {
 }
 
 
-client = ApplicationNode()
+client = ApplicationNode(es_modules=True)
 
 
-es_modules = True
 ws = ApplicationWebsocket()
 
 def assert_basic_application():

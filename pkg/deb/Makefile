@@ -8,14 +8,14 @@ DEFAULT_RELEASE := 1
 VERSION ?= $(DEFAULT_VERSION)
 RELEASE ?= $(DEFAULT_RELEASE)
 
-PACKAGE_VENDOR = NGINX Packaging <nginx-packaging@f5.com>
+PACKAGE_VENDOR = Worker Project <hongzhidao@gmail.com>
 
-SRCDIR=	unit-$(VERSION)
+SRCDIR=	worker-$(VERSION)
 
 CODENAME = $(shell lsb_release -cs)
 
-BUILD_DEPENDS_unit = build-essential debhelper devscripts fakeroot libxml2-utils lintian lsb-release xsltproc libssl-dev
-BUILD_DEPENDS = $(BUILD_DEPENDS_unit)
+BUILD_DEPENDS_worker = build-essential debhelper devscripts fakeroot libxml2-utils lintian lsb-release xsltproc libssl-dev
+BUILD_DEPENDS = $(BUILD_DEPENDS_worker)
 
 MODULES=
 
@@ -103,13 +103,13 @@ endif
 
 CONFIGURE_ARGS_COMMON=\
 	--prefix=/usr \
-	--state=/var/lib/unit \
-	--control="unix:/var/run/control.unit.sock" \
-	--pid=/var/run/unit.pid \
-	--log=/var/log/unit.log \
+	--state=/var/lib/worker \
+	--control="unix:/var/run/control.worker.sock" \
+	--pid=/var/run/worker.pid \
+	--log=/var/log/worker.log \
 	--tmp=/var/tmp \
-	--user=unit \
-	--group=unit \
+	--user=worker \
+	--group=worker \
 	--tests \
 	--openssl
 
@@ -120,18 +120,18 @@ CONFIGURE_ARGS=\
 export CR=\\n
 
 default:
-	@echo "valid targets: all modules unit $(addprefix unit-, $(MODULES)) test test-debug clean"
+	@echo "valid targets: all modules worker $(addprefix worker-, $(MODULES)) test test-debug clean"
 
-all: check-build-depends-all unit modules
+all: check-build-depends-all worker modules
 
-modules: $(addprefix unit-, $(MODULES))
+modules: $(addprefix worker-, $(MODULES))
 
 check-build-depends-%:
 	@{ \
 	case "$*" in \
 		all) pkgs="$(BUILD_DEPENDS)" ;; \
-		unit) pkgs="$(BUILD_DEPENDS_unit)" ;; \
-		*) pkgs="$(BUILD_DEPENDS_unit) $(BUILD_DEPENDS_$*)" ;; \
+		worker) pkgs="$(BUILD_DEPENDS_worker)" ;; \
+		*) pkgs="$(BUILD_DEPENDS_worker) $(BUILD_DEPENDS_$*)" ;; \
 	esac ; \
 	not_installed= ; \
 	for pkg in $${pkgs}; do \
@@ -172,53 +172,53 @@ debuild/$(SRCDIR)/debian:
 	}
 
 debuild/$(SRCDIR)/debian/changelog: ../../docs/changes.xml | debuild/$(SRCDIR)/debian
-	cd ../../docs && make ../build/unit.deb-changelog
+	cd ../../docs && make ../build/worker.deb-changelog
 ifneq ($(DEFAULT_VERSION)$(DEFAULT_RELEASE), $(VERSION)$(RELEASE))
-	cat ../../build/unit.deb-changelog | sed \
-		-e "s/unit ($(DEFAULT_VERSION)-$(DEFAULT_RELEASE)~/unit ($(VERSION)-$(RELEASE)~/" \
+	cat ../../build/worker.deb-changelog | sed \
+		-e "s/worker ($(DEFAULT_VERSION)-$(DEFAULT_RELEASE)~/worker ($(VERSION)-$(RELEASE)~/" \
 		-e "s#%%CODENAME%%#$(CODENAME)#g" \
 		> debuild/$(SRCDIR)/debian/changelog
 else
-	cat ../../build/unit.deb-changelog | sed \
+	cat ../../build/worker.deb-changelog | sed \
 		-e "s#%%CODENAME%%#$(CODENAME)#g" \
 		> debuild/$(SRCDIR)/debian/changelog
 endif
 
-debuild/unit_$(VERSION).orig.tar.gz: | debuild/$(SRCDIR)/debian
+debuild/worker_$(VERSION).orig.tar.gz: | debuild/$(SRCDIR)/debian
 	cd ../.. && tar -czf pkg/deb/debuild/$(SRCDIR).tar.gz \
 		--transform "s#^#$(SRCDIR)/#" \
-		LICENSE NOTICE CHANGES README configure auto src test version go pkg/contrib docs/man/unitd.8.in
-	mv debuild/$(SRCDIR).tar.gz debuild/unit_$(VERSION).orig.tar.gz
-	cd debuild && tar zxf unit_$(VERSION).orig.tar.gz
+		LICENSE NOTICE CHANGES README configure auto src test version go pkg/contrib docs/man/workerd.8.in
+	mv debuild/$(SRCDIR).tar.gz debuild/worker_$(VERSION).orig.tar.gz
+	cd debuild && tar zxf worker_$(VERSION).orig.tar.gz
 
-unit: check-build-depends-unit debuild/unit_$(VERSION).orig.tar.gz debuild/$(SRCDIR)/debian/changelog
+worker: check-build-depends-worker debuild/worker_$(VERSION).orig.tar.gz debuild/$(SRCDIR)/debian/changelog
 	@echo "===> Building $@ package"
 	cd debuild/$(SRCDIR) && debuild -us -uc
 	mkdir -p debs
 	find debuild/ -maxdepth 1 -type f -exec cp {} debs/ \;
 	ln -s debuild/$(SRCDIR)/build $@
 
-debuild-%: debuild/unit_$(VERSION).orig.tar.gz ../../docs/changes.xml
+debuild-%: debuild/worker_$(VERSION).orig.tar.gz ../../docs/changes.xml
 	mkdir $@
-	cp debuild/unit_$(VERSION).orig.tar.gz debuild-$*/unit-$(MODULE_SUFFIX_$*)_$(VERSION).orig.tar.gz
-	cd $@ && tar zxf unit-$(MODULE_SUFFIX_$*)_$(VERSION).orig.tar.gz
+	cp debuild/worker_$(VERSION).orig.tar.gz debuild-$*/worker-$(MODULE_SUFFIX_$*)_$(VERSION).orig.tar.gz
+	cd $@ && tar zxf worker-$(MODULE_SUFFIX_$*)_$(VERSION).orig.tar.gz
 	mkdir $@/$(SRCDIR)/debian
 	echo '11' > $@/$(SRCDIR)/debian/compat
 	mkdir $@/$(SRCDIR)/debian/source
 	echo '3.0 (quilt)' > $@/$(SRCDIR)/debian/source/format
-	cd ../../docs && make ../build/unit-$(MODULE_SUFFIX_$*).deb-changelog
+	cd ../../docs && make ../build/worker-$(MODULE_SUFFIX_$*).deb-changelog
 ifneq ($(DEFAULT_VERSION)$(DEFAULT_RELEASE), $(VERSION)$(RELEASE))
-	cat ../../build/unit-$(MODULE_SUFFIX_$*).deb-changelog | sed \
-		-e "s/unit-$* ($(DEFAULT_VERSION)-$(DEFAULT_RELEASE)~/unit-$* ($(VERSION)-$(RELEASE)~/" \
+	cat ../../build/worker-$(MODULE_SUFFIX_$*).deb-changelog | sed \
+		-e "s/worker-$* ($(DEFAULT_VERSION)-$(DEFAULT_RELEASE)~/worker-$* ($(VERSION)-$(RELEASE)~/" \
 		-e "s#%%CODENAME%%#$(CODENAME)#g" \
 		> $@/$(SRCDIR)/debian/changelog
 else
-	cat ../../build/unit-$(MODULE_SUFFIX_$*).deb-changelog | sed \
+	cat ../../build/worker-$(MODULE_SUFFIX_$*).deb-changelog | sed \
 		-e "s#%%CODENAME%%#$(CODENAME)#g" \
 		> $@/$(SRCDIR)/debian/changelog
 endif
-	if [ -f debian.module/copyright.unit-$(MODULE_SUFFIX_$*) ]; then \
-		cp debian.module/copyright.unit-$(MODULE_SUFFIX_$*) debuild-$*/$(SRCDIR)/debian/copyright ; \
+	if [ -f debian.module/copyright.worker-$(MODULE_SUFFIX_$*) ]; then \
+		cp debian.module/copyright.worker-$(MODULE_SUFFIX_$*) debuild-$*/$(SRCDIR)/debian/copyright ; \
 	else \
 		cp debian/copyright debuild-$*/$(SRCDIR)/debian/ ; \
 	fi
@@ -233,11 +233,11 @@ endif
 	postinstall=`echo "$$MODULE_POSTINSTALL_$*" | sed -e ':a' -e 'N' -e '$$!ba' -e "s/\n/\$$CR/g"` ; \
 	post=`echo "$$MODULE_POST_$*" | sed -e ':a' -e 'N' -e '$$!ba' -e "s/\n/\$$CR/g"` ; \
 	cat debian.module/$(if $(MODULE_NOARCH_$*),control-noarch.in,control.in) | sed \
-                -e "s#%%NAME%%#unit-$(MODULE_SUFFIX_$*)#g" \
+                -e "s#%%NAME%%#worker-$(MODULE_SUFFIX_$*)#g" \
                 -e "s#%%SUMMARY%%#$(MODULE_SUMMARY_$*)#g" \
                 -e "s#%%CODENAME%%#$(CODENAME)#g" \
-                -e "s#%%UNIT_VERSION%%#$(VERSION)#g" \
-                -e "s#%%UNIT_RELEASE%%#$(RELEASE)#g" \
+                -e "s#%%WORKER_VERSION%%#$(VERSION)#g" \
+                -e "s#%%WORKER_RELEASE%%#$(RELEASE)#g" \
                 -e "s#%%VERSION%%#$(MODULE_VERSION_$*)#g" \
                 -e "s#%%RELEASE%%#$(MODULE_RELEASE_$*)#g" \
                 -e "s#%%PACKAGE_VENDOR%%#$(PACKAGE_VENDOR)#g" \
@@ -245,10 +245,10 @@ endif
                 -e "s#%%MODULE_DEPENDS%%#$(MODULE_DEPENDS_$*)#g" \
         > $@/$(SRCDIR)/debian/control ; \
         cat debian.module/$(if $(MODULE_NOARCH_$*),rules-noarch.in,rules.in) | sed \
-                -e "s#%%NAME%%#unit-$(MODULE_SUFFIX_$*)#g" \
+                -e "s#%%NAME%%#worker-$(MODULE_SUFFIX_$*)#g" \
                 -e "s#%%CODENAME%%#$(CODENAME)#g" \
-                -e "s#%%UNIT_VERSION%%#$(VERSION)#g" \
-                -e "s#%%UNIT_RELEASE%%#$(RELEASE)#g" \
+                -e "s#%%WORKER_VERSION%%#$(VERSION)#g" \
+                -e "s#%%WORKER_RELEASE%%#$(RELEASE)#g" \
                 -e "s#%%CONFIGURE_ARGS%%#$(CONFIGURE_ARGS_COMMON)#g" \
                 -e "s#%%MODULE_CONFARGS%%#$(MODULE_CONFARGS_$*)#g" \
                 -e "s#%%MODULE_MAKEARGS%%#$(MODULE_MAKEARGS_$*)#g" \
@@ -264,33 +264,33 @@ endif
         chmod +x $@/$(SRCDIR)/debian/rules ; \
 	}
 
-unit-%: check-build-depends-% | debuild-%
+worker-%: check-build-depends-% | debuild-%
 	@echo "===> Building $@ package"
 	cd debuild-$*/$(SRCDIR) && debuild -us -uc
 	mkdir -p debs
 	find debuild-$*/ -maxdepth 1 -type f -exec cp {} debs/ \;
 	ln -s debuild-$*/$(SRCDIR)/build $@
 
-test: unit modules
+test: worker modules
 	@{ \
-	for so in `find debuild-*/unit-$(VERSION)/debian/build-unit/ -type f \( -name "*.so" -o -name "*.jar" \)`; do \
+	for so in `find debuild-*/worker-$(VERSION)/debian/build-worker/ -type f \( -name "*.so" -o -name "*.jar" \)`; do \
 		soname=`basename $${so}` ; \
-		test "$${soname}" = "java.unit.so" && continue ; \
-		test -h debuild/unit-$(VERSION)/debian/build-unit/build/$${soname} || \
-		ln -fs `pwd`/$${so} debuild/unit-$(VERSION)/debian/build-unit/build/$${soname} ; \
+		test "$${soname}" = "java.worker.so" && continue ; \
+		test -h debuild/worker-$(VERSION)/debian/build-worker/build/$${soname} || \
+		ln -fs `pwd`/$${so} debuild/worker-$(VERSION)/debian/build-worker/build/$${soname} ; \
 	done ; \
-	( cd debuild/unit-$(VERSION)/debian/build-unit && env python3 -m pytest --user=nobody $(PYTEST_ARGS) ) ; \
+	( cd debuild/worker-$(VERSION)/debian/build-worker && env python3 -m pytest --user=nobody $(PYTEST_ARGS) ) ; \
 	}
 
-test-debug: unit modules
+test-debug: worker modules
 	@{ \
-	for so in `find debuild-*/unit-$(VERSION)/debian/build-unit-debug/ -type f \( -name "*.so" -o -name "*.jar" \)`; do \
+	for so in `find debuild-*/worker-$(VERSION)/debian/build-worker-debug/ -type f \( -name "*.so" -o -name "*.jar" \)`; do \
 		soname=`basename $${so}` ; \
-		test "$${soname}" = "java.unit.so" && continue ; \
-		test -h debuild/unit-$(VERSION)/debian/build-unit-debug/build/$${soname} || \
-		ln -fs `pwd`/$${so} debuild/unit-$(VERSION)/debian/build-unit-debug/build/$${soname} ; \
+		test "$${soname}" = "java.worker.so" && continue ; \
+		test -h debuild/worker-$(VERSION)/debian/build-worker-debug/build/$${soname} || \
+		ln -fs `pwd`/$${so} debuild/worker-$(VERSION)/debian/build-worker-debug/build/$${soname} ; \
 	done ; \
-	( cd debuild/unit-$(VERSION)/debian/build-unit-debug && env python3 -m pytest --user=nobody $(PYTEST_ARGS) ) ; \
+	( cd debuild/worker-$(VERSION)/debian/build-worker-debug && env python3 -m pytest --user=nobody $(PYTEST_ARGS) ) ; \
 	}
 
 clean:

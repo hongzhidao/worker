@@ -4,7 +4,7 @@ import subprocess
 import time
 
 import pytest
-from unit.applications.lang.python import ApplicationPython
+from worker.applications.lang.python import ApplicationPython
 
 prerequisites = {'modules': {'python': 'any'}}
 

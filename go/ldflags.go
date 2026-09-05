@@ -2,9 +2,9 @@
  * Copyright (C) NGINX, Inc.
  */
 
-package unit
+package worker
 
 /*
-#cgo LDFLAGS: -lunit
+#cgo LDFLAGS: -lworker
 */
 import "C"

@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"unit.nginx.org/go"
+	"github.com/hongzhidao/worker/go"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -15,5 +15,5 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handler)
-	unit.ListenAndServe(":8080", nil)
+	worker.ListenAndServe(":8080", nil)
 }

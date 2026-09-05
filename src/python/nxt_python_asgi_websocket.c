@@ -83,12 +83,12 @@ static PyAsyncMethods nxt_py_asgi_async_methods = {
 static PyTypeObject nxt_py_asgi_websocket_type = {
     PyVarObject_HEAD_INIT(NULL, 0)
 
-    .tp_name      = "unit._asgi_websocket",
+    .tp_name      = "worker._asgi_websocket",
     .tp_basicsize = sizeof(nxt_py_asgi_websocket_t),
     .tp_dealloc   = nxt_py_asgi_dealloc,
     .tp_as_async  = &nxt_py_asgi_async_methods,
     .tp_flags     = Py_TPFLAGS_DEFAULT,
-    .tp_doc       = "unit ASGI WebSocket connection object",
+    .tp_doc       = "worker ASGI WebSocket connection object",
     .tp_iter      = nxt_py_asgi_iter,
     .tp_iternext  = nxt_py_asgi_next,
     .tp_methods   = nxt_py_asgi_websocket_methods,

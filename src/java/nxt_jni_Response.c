@@ -115,7 +115,7 @@ nxt_java_initResponse(JNIEnv *env, jobject cl)
     int     res;
     jclass  cls;
 
-    cls = nxt_java_loadClass(env, cl, "nginx.unit.Response");
+    cls = nxt_java_loadClass(env, cl, "worker.Response");
     if (cls == NULL) {
         return NXT_UNIT_ERROR;
     }
@@ -160,7 +160,7 @@ nxt_java_initResponse(JNIEnv *env, jobject cl)
           nxt_java_Response_getStatus },
 
         { (char *) "getRequest",
-          (char *) "(J)Lnginx/unit/Request;",
+          (char *) "(J)Lworker/Request;",
           nxt_java_Response_getRequest },
 
         { (char *) "commit",

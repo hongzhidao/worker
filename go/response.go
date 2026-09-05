@@ -3,7 +3,7 @@
  * Copyright (C) NGINX, Inc.
  */
 
-package unit
+package worker
 
 /*
 #include "nxt_cgo_lib.h"

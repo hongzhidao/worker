@@ -2,7 +2,7 @@
  * Copyright (C) NGINX, Inc.
  */
 
-package unit
+package worker
 
 import (
 	"sync"

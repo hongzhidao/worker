@@ -1,8 +1,8 @@
 import re
 
 import pytest
-from unit.applications.lang.node import ApplicationNode
-from unit.utils import waitforfiles
+from worker.applications.lang.node import ApplicationNode
+from worker.utils import waitforfiles
 
 prerequisites = {'modules': {'node': 'all'}}
 
@@ -21,7 +21,7 @@ def test_node_application_basic():
     assert_basic_application()
 
 def test_node_application_loader_unit_http():
-    client.load('loader/unit_http')
+    client.load('loader/worker_http')
 
     assert_basic_application()
 
@@ -54,7 +54,7 @@ def test_node_application_variables(date_to_sec_epoch, sec_epoch):
     assert resp['status'] == 200, 'status'
     headers = resp['headers']
     header_server = headers.pop('Server')
-    assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
+    assert re.search(r'Worker/[\d\.]+', header_server), 'server header'
 
     date = headers.pop('Date')
     assert date[-4:] == ' GMT', 'date header timezone'

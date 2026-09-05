@@ -1,5 +1,5 @@
-from unit.applications.proto import ApplicationProto
-from unit.option import option
+from worker.applications.proto import ApplicationProto
+from worker.option import option
 
 prerequisites = {'modules': {'njs': 'any'}}
 

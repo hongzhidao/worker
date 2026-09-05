@@ -10,13 +10,13 @@ default:
 	@echo "available targets: dist rpm deb docker npm"
 
 dist:
-	rm -f unit-$(VERSION).tar.gz
+	rm -f worker-$(VERSION).tar.gz
 	cd .. && git archive \
-		--output pkg/unit-$(VERSION).tar.gz \
-		--prefix unit-$(VERSION)/ \
+		--output pkg/worker-$(VERSION).tar.gz \
+		--prefix worker-$(VERSION)/ \
 		--worktree-attributes \
 		$(VERSION) ./
-	$(SHA512SUM) unit-$(VERSION).tar.gz > unit-$(VERSION).tar.gz.sha512
+	$(SHA512SUM) worker-$(VERSION).tar.gz > worker-$(VERSION).tar.gz.sha512
 
 rpm:
 	@cd rpm && VERSION=$(VERSION) RELEASE=$(RELEASE) make all
@@ -39,7 +39,7 @@ clean:
 	@cd docker && make clean
 	@cd npm && make clean
 	@cd contrib && make clean
-	rm -f unit-$(VERSION).tar.gz
-	rm -f unit-$(VERSION).tar.gz.sha512
+	rm -f worker-$(VERSION).tar.gz
+	rm -f worker-$(VERSION).tar.gz.sha512
 
 .PHONY: default rpm deb docker npm clean

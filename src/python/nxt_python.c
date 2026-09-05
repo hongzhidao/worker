@@ -261,7 +261,7 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
         goto fail;
     }
 
-    obj = Py_BuildValue("[s]", "unit");
+    obj = Py_BuildValue("[s]", "worker");
     if (nxt_slow_path(obj == NULL)) {
         nxt_alert(task, "Python failed to create the \"sys.argv\" list");
         goto fail;

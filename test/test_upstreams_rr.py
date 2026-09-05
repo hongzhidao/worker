@@ -2,8 +2,8 @@ import os
 import re
 
 import pytest
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
 
 prerequisites = {'modules': {'python': 'any'}}
 

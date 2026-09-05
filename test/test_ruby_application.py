@@ -2,7 +2,7 @@ import re
 import subprocess
 
 import pytest
-from unit.applications.lang.ruby import ApplicationRuby
+from worker.applications.lang.ruby import ApplicationRuby
 
 prerequisites = {'modules': {'ruby': 'all'}}
 
@@ -28,7 +28,7 @@ def test_ruby_application(date_to_sec_epoch, sec_epoch):
     assert resp['status'] == 200, 'status'
     headers = resp['headers']
     header_server = headers.pop('Server')
-    assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
+    assert re.search(r'Worker/[\d\.]+', header_server), 'server header'
     assert (
         headers.pop('Server-Software') == header_server
     ), 'server software header'

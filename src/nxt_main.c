@@ -16,7 +16,7 @@ main(int argc, char **argv)
 {
     nxt_int_t  ret;
 
-    if (nxt_lib_start("unit", argv, &environ) != NXT_OK) {
+    if (nxt_lib_start("worker", argv, &environ) != NXT_OK) {
         return 1;
     }
 
@@ -30,7 +30,7 @@ main(int argc, char **argv)
         return 1;
     }
 
-    nxt_log(&nxt_main_task, NXT_LOG_INFO, "unit " NXT_VERSION " started");
+    nxt_log(&nxt_main_task, NXT_LOG_INFO, "worker " NXT_VERSION " started");
 
     nxt_event_engine_start(nxt_main_task.thread->engine);
 

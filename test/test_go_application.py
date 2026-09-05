@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from unit.applications.lang.go import ApplicationGo
+from worker.applications.lang.go import ApplicationGo
 
 prerequisites = {'modules': {'go': 'all'}}
 
@@ -28,7 +28,7 @@ def test_go_application_variables(date_to_sec_epoch, sec_epoch):
     assert resp['status'] == 200, 'status'
     headers = resp['headers']
     header_server = headers.pop('Server')
-    assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
+    assert re.search(r'Worker/[\d\.]+', header_server), 'server header'
 
     date = headers.pop('Date')
     assert date[-4:] == ' GMT', 'date header timezone'

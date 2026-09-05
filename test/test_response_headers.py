@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import pytest
-from unit.applications.proto import ApplicationProto
-from unit.applications.lang.python import ApplicationPython
-from unit.option import option
+from worker.applications.proto import ApplicationProto
+from worker.applications.lang.python import ApplicationPython
+from worker.option import option
 
 client = ApplicationProto()
 client_python = ApplicationPython()

@@ -88,7 +88,7 @@ nxt_java_initRequest(JNIEnv *env, jobject cl)
     int     res;
     jclass  cls;
 
-    cls = nxt_java_loadClass(env, cl, "nginx.unit.Request");
+    cls = nxt_java_loadClass(env, cl, "worker.Request");
     if (cls == NULL) {
         return NXT_UNIT_ERROR;
     }
@@ -97,7 +97,7 @@ nxt_java_initRequest(JNIEnv *env, jobject cl)
     (*env)->DeleteLocalRef(env, cls);
     cls = nxt_java_Request_class;
 
-    nxt_java_Request_ctor = (*env)->GetMethodID(env, cls, "<init>", "(Lnginx/unit/Context;JJ)V");
+    nxt_java_Request_ctor = (*env)->GetMethodID(env, cls, "<init>", "(Lworker/Context;JJ)V");
     if (nxt_java_Request_ctor == NULL) {
         (*env)->DeleteGlobalRef(env, cls);
         return NXT_UNIT_ERROR;
@@ -213,7 +213,7 @@ nxt_java_initRequest(JNIEnv *env, jobject cl)
           nxt_java_Request_trace },
 
         { (char *) "getResponse",
-          (char *) "(J)Lnginx/unit/Response;",
+          (char *) "(J)Lworker/Response;",
           nxt_java_Request_getResponse },
 
         { (char *) "sendWsFrame",

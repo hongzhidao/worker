@@ -396,7 +396,7 @@ nxt_process_setup(nxt_task_t *task, nxt_process_t *process)
 
     nxt_debug(task, "%s setup", process->name);
 
-    nxt_process_title(task, "unit: %s", process->name);
+    nxt_process_title(task, "worker: %s", process->name);
 
     thread = task->thread;
     rt     = thread->runtime;

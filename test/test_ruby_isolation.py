@@ -1,4 +1,4 @@
-from unit.applications.lang.ruby import ApplicationRuby
+from worker.applications.lang.ruby import ApplicationRuby
 
 prerequisites = {'modules': {'ruby': 'any'}, 'features': {'isolation': True}}
 

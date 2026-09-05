@@ -8,7 +8,7 @@ import venv
 
 import pytest
 from packaging import version
-from unit.applications.lang.python import ApplicationPython
+from worker.applications.lang.python import ApplicationPython
 
 prerequisites = {'modules': {'python': 'all'}}
 
@@ -39,7 +39,7 @@ custom-header: BLAH
     assert resp['status'] == 200, 'status'
     headers = resp['headers']
     header_server = headers.pop('Server')
-    assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
+    assert re.search(r'Worker/[\d\.]+', header_server), 'server header'
     assert (
         headers.pop('Server-Software') == header_server
     ), 'server software header'

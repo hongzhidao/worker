@@ -1,0 +1,221 @@
+# distribution specific definitions
+%define bdir %{_builddir}/%{name}-%{version}
+%define dotests 0
+
+%if 0%{?rhel}%{?fedora}
+BuildRequires: gcc
+%if 0%{?amzn2}
+BuildRequires: openssl11-devel
+%else
+BuildRequires: openssl-devel
+%endif
+%endif
+
+%if 0%{?rhel}
+%if 0%{?amzn} == 0
+%define dist .el%{?rhel}
+%endif
+%endif
+
+%if 0%{?suse_version} >= 1315
+BuildRequires: libopenssl-devel
+%endif
+
+%define CC_OPT %{optflags} -fPIC
+%define LD_OPT -Wl,-z,relro -Wl,-z,now -pie
+
+%define CONFIGURE_ARGS $(echo "%%CONFIGURE_ARGS%%")
+
+
+Name: worker
+Summary: Worker
+Version: %%VERSION%%
+Release: %%RELEASE%%%{?dist}
+License: ASL 2.0
+Vendor: %%PACKAGE_VENDOR%%
+URL: https://github.com/hongzhidao/worker
+Group: System Environment/Daemons
+
+Source0: worker-%{version}.tar.gz
+Source1: worker.service
+Source2: worker-debug.service
+Source3: worker.example.config
+Source4: worker.logrotate
+
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires: systemd
+Requires(post):    systemd
+Requires(preun):   systemd
+Requires(postun):  systemd
+
+BuildRequires: pcre2-devel
+BuildRequires: pkgconfig
+
+%description
+Worker is a runtime and delivery environment for modern distributed
+applications. It runs the application code in multiple languages
+(PHP, Python, Go, etc.), and tightly couples it with traffic delivery
+in and out of the application. Take this application server and proxy
+directly in the cloud / container environments and fully control your app
+dynamically via an API.
+
+%if 0%{?suse_version}
+%debug_package
+%endif
+
+%if (0%{?fedora}) || (0%{?rhel} >= 8)
+%define _debugsource_template %{nil}
+%endif
+
+%package devel
+Summary: Worker (development files)
+Version: %%VERSION%%
+Release: %%RELEASE%%%{?dist}
+Group: Development/Libraries
+Requires: worker == %%VERSION%%-%%RELEASE%%%{?dist}
+%description devel
+Library and include files required for Worker modules development.
+
+%prep
+%setup -q
+
+%build
+%{__make} %{?_smp_mflags} -C pkg/contrib .njs
+
+PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
+./configure \
+	%{CONFIGURE_ARGS} \
+	--modules=%{_libdir}/worker/debug-modules \
+	--libdir=%{_libdir} \
+	--pkgconfigdir=%{_libdir}/pkgconfig \
+	--sbindir=%{_sbindir} \
+	--cc-opt="%{CC_OPT}" \
+	--ld-opt="%{LD_OPT}" \
+	--debug
+%{__make} %{?_smp_mflags}
+%{__make} %{?_smp_mflags} build/libworker.a
+%{__mv} build build-debug
+
+PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
+./configure \
+	%{CONFIGURE_ARGS} \
+	--modules=%{_libdir}/worker/modules \
+	--libdir=%{_libdir} \
+	--pkgconfigdir=%{_libdir}/pkgconfig \
+	--sbindir=%{_sbindir} \
+	--cc-opt="%{CC_OPT}" \
+	--ld-opt="%{LD_OPT}"
+%{__make} %{?_smp_mflags}
+%{__mv} build build-nodebug
+
+%install
+%{__rm} -rf %{buildroot}
+%{__ln_s} build-nodebug build
+DESTDIR=%{buildroot} make workerd-install libworker-install manpage-install
+%{__install} -m755 %{bdir}/build-debug/workerd \
+    %{buildroot}%{_sbindir}/workerd-debug
+%{__install} -m644 %{bdir}/build-debug/libworker.a \
+    %{buildroot}%{_libdir}/libworker-debug.a
+%{__mkdir} -p %{buildroot}%{_libdir}/worker/modules
+%{__mkdir} -p %{buildroot}%{_libdir}/worker/debug-modules
+%{__mkdir} -p %{buildroot}%{_sharedstatedir}/worker
+%{__mkdir} -p %{buildroot}%{_localstatedir}/log/worker
+%{__mkdir} -p %{buildroot}%{_localstatedir}/run/worker
+%{__mkdir} -p %{buildroot}%{_sysconfdir}/logrotate.d
+%{__install} -m 644 -p %{SOURCE4} \
+    %{buildroot}%{_sysconfdir}/logrotate.d/worker
+%{__mkdir} -p %{buildroot}%{_sysconfdir}/worker
+%{__mkdir} -p %{buildroot}%{_datadir}/doc/worker/examples
+%{__install} -m 644 -p %{SOURCE3} \
+    %{buildroot}%{_datadir}/doc/worker/examples/example.config
+%{__install} -m 644 -p CHANGES \
+    %{buildroot}%{_datadir}/doc/worker/
+%{__install} -m 644 -p NOTICE \
+    %{buildroot}%{_datadir}/doc/worker/COPYRIGHT
+%{__install} -m 644 -p README \
+    %{buildroot}%{_datadir}/doc/worker/
+
+%{__rm} -rf %{buildroot}%{_initrddir}/
+%{__install} -p -D -m 0644 %{SOURCE1} %{buildroot}%{_unitdir}/worker.service
+%{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_unitdir}/worker-debug.service
+# relocate when sbindir is /usr/bin
+sed -e 's:/usr/sbin:%{_sbindir}:' -i %{buildroot}%{_unitdir}/*.service
+
+
+QA_SKIP_BUILD_ROOT=1
+export QA_SKIP_BUILD_ROOT
+
+%check
+%if %{dotests}
+cd %{bdir} && make tests && ./build/tests
+%endif
+%{__rm} -rf %{buildroot}/usr/src
+cd %{bdir}
+grep -v 'usr/src' debugfiles.list > debugfiles.list.new && mv debugfiles.list.new debugfiles.list
+cat /dev/null > debugsources.list
+%if 0%{?suse_version} >= 1500
+cat /dev/null > debugsourcefiles.list
+%endif
+
+%clean
+%{__rm} -rf %{buildroot}
+
+%post
+getent group worker >/dev/null || groupadd -r worker
+getent passwd worker >/dev/null || \
+    useradd -r -g worker -s /sbin/nologin \
+    -d /nonexistent -c "worker user" worker
+if [ $1 -eq 1 ]; then
+    /usr/bin/systemctl preset worker.service >/dev/null 2>&1 ||:
+    /usr/bin/systemctl preset worker-debug.service >/dev/null 2>&1 ||:
+    cat <<BANNER
+----------------------------------------------------------------------
+
+Thank you for installing Worker!
+
+Additional modules are available in standalone packages.
+To see the available modules, run "yum list available worker-\*".
+
+Online documentation is available at https://github.com/hongzhidao/worker
+
+----------------------------------------------------------------------
+BANNER
+fi
+
+%preun
+if [ $1 -eq 0 ]; then
+    /usr/bin/systemctl --no-reload disable worker.service >/dev/null 2>&1 ||:
+    /usr/bin/systemctl stop worker.service >/dev/null 2>&1 ||:
+fi
+
+%postun
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 ||:
+if [ $1 -ge 1 ]; then
+    /usr/bin/systemctl try-restart worker.service >/dev/null 2>&1 ||:
+fi
+
+
+%files
+%defattr(-,root,root,-)
+%attr(0755,root,root) %{_sbindir}/workerd
+%attr(0755,root,root) %{_sbindir}/workerd-debug
+%dir %{_sysconfdir}/worker
+%{_unitdir}/worker.service
+%{_unitdir}/worker-debug.service
+%dir %attr(0755,root,root) %ghost %{_localstatedir}/run/worker
+%dir %{_datadir}/doc/worker
+%{_datadir}/doc/worker/*
+%dir %{_libdir}/worker/modules
+%dir %{_libdir}/worker/debug-modules
+%dir %{_sharedstatedir}/worker
+%dir %attr(0755,root,root) %{_localstatedir}/log/worker
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%{_mandir}/man8/workerd.8*
+
+%files devel
+%{_libdir}/libworker.a
+%{_libdir}/libworker-debug.a
+%{_includedir}/nxt_*.h
+%{_libdir}/pkgconfig/worker.pc
+
+%changelog

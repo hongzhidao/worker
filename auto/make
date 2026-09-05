@@ -26,7 +26,7 @@ all: $NXT_DAEMON manpage
 
 .PHONY: $NXT_DAEMON manpage
 $NXT_DAEMON: $NXT_BUILD_DIR/$NXT_DAEMON
-manpage: $NXT_BUILD_DIR/unitd.8
+manpage: $NXT_BUILD_DIR/workerd.8
 
 END
 
@@ -100,8 +100,8 @@ $NXT_BUILD_DIR/$NXT_LIB_STATIC:	\$(NXT_LIB_OBJS)
 		\$(NXT_LIB_OBJS)
 
 $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC:	\$(NXT_LIB_UNIT_OBJS) \\
-		$NXT_BUILD_DIR/share/pkgconfig/unit.pc \\
-		$NXT_BUILD_DIR/share/pkgconfig/unit-uninstalled.pc
+		$NXT_BUILD_DIR/share/pkgconfig/worker.pc \\
+		$NXT_BUILD_DIR/share/pkgconfig/worker-uninstalled.pc
 	$NXT_STATIC_LINK $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \\
 		\$(NXT_LIB_UNIT_OBJS)
 
@@ -296,7 +296,7 @@ done
 $echo >> $NXT_MAKEFILE
 
 
-# unit executable.
+# worker executable.
 
 cat << END >> $NXT_MAKEFILE
 
@@ -309,20 +309,20 @@ $NXT_BUILD_DIR/$NXT_DAEMON:	$NXT_BUILD_DIR/$NXT_LIB_STATIC \\
 END
 
 
-# unitd man page
+# workerd man page
 
 cat << END >> $NXT_MAKEFILE
 
-$NXT_BUILD_DIR/unitd.8: docs/man/unitd.8.in $NXT_BUILD_DIR/nxt_auto_config.h
+$NXT_BUILD_DIR/workerd.8: docs/man/workerd.8.in $NXT_BUILD_DIR/nxt_auto_config.h
 	sed -e "s|%%ERROR_LOG_PATH%%|$NXT_LOG|" \\
 		-e "s|%%PID_PATH%%|$NXT_PID|" \\
 		-e "s|%%SOCKET_PATH%%|$NXT_CONTROL|" \\
-		< docs/man/unitd.8.in > \$@
+		< docs/man/workerd.8.in > \$@
 
 END
 
 
-# unit object files.
+# worker object files.
 
 for nxt_src in $NXT_MAKE_SRCS
 do
@@ -371,7 +371,7 @@ ${NXT_DAEMON}-install: $NXT_DAEMON install-check
 
 manpage-install: manpage install-check
 	install -d \$(DESTDIR)$NXT_MANDIR/man8
-	install -p -m644 $NXT_BUILD_DIR/unitd.8 \$(DESTDIR)$NXT_MANDIR/man8/
+	install -p -m644 $NXT_BUILD_DIR/workerd.8 \$(DESTDIR)$NXT_MANDIR/man8/
 
 .PHONY: uninstall ${NXT_DAEMON}-uninstall manpage-uninstall
 
@@ -382,21 +382,21 @@ ${NXT_DAEMON}-uninstall:
 	@rmdir -p \$(DESTDIR)$NXT_SBINDIR 2>/dev/null || true
 
 manpage-uninstall:
-	rm -f \$(DESTDIR)$NXT_MANDIR/man8/unitd.8
+	rm -f \$(DESTDIR)$NXT_MANDIR/man8/workerd.8
 	@rmdir -p \$(DESTDIR)$NXT_MANDIR/man8 2>/dev/null || true
 
 END
 
 cat << END >> $NXT_MAKEFILE
 
-.PHONY: libunit-install libunit-uninstall
+.PHONY: libworker-install libworker-uninstall
 
-libunit-install: $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
+libworker-install: $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
 	install -d \$(DESTDIR)$NXT_LIBDIR
 	install -p -m u=rw,go=r $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \
 		\$(DESTDIR)$NXT_LIBDIR/
 	install -d \$(DESTDIR)$NXT_PKGCONFIGDIR
-	install -p -m u=rw,go=r $NXT_BUILD_DIR/share/pkgconfig/unit.pc \
+	install -p -m u=rw,go=r $NXT_BUILD_DIR/share/pkgconfig/worker.pc \
 		\$(DESTDIR)$NXT_PKGCONFIGDIR/
 	install -d \$(DESTDIR)$NXT_INCDIR
 	install -p -m u=rw,go=r src/nxt_unit.h \
@@ -411,10 +411,10 @@ libunit-install: $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
 		src/nxt_websocket_header.h \
 		\$(DESTDIR)$NXT_INCDIR/
 
-libunit-uninstall:
+libworker-uninstall:
 	rm -f \$(DESTDIR)$NXT_LIBDIR/$NXT_LIB_UNIT_STATIC
 	@rmdir -p \$(DESTDIR)$NXT_LIBDIR 2>/dev/null || true
-	rm -f \$(DESTDIR)$NXT_PKGCONFIGDIR/unit.pc
+	rm -f \$(DESTDIR)$NXT_PKGCONFIGDIR/worker.pc
 	@rmdir -p \$(DESTDIR)$NXT_PKGCONFIGDIR 2>/dev/null || true
 	rm -f \$(DESTDIR)$NXT_INCDIR/nxt_unit.h \
 		\$(DESTDIR)$NXT_INCDIR/nxt_unit_field.h \
@@ -434,7 +434,7 @@ END
 
 cat << END >> $NXT_MAKEFILE
 
-$NXT_BUILD_DIR/share/pkgconfig/unit.pc: src/unit.pc.in
+$NXT_BUILD_DIR/share/pkgconfig/worker.pc: src/worker.pc.in
 	sed -e "s|@PREFIX@|$NXT_PREFIX|" \\
 		-e "s|@LIBDIR@|$NXT_LIBDIR|" \\
 		-e "s|@CFLAGS@|-I$NXT_INCDIR|" \\
@@ -442,16 +442,16 @@ $NXT_BUILD_DIR/share/pkgconfig/unit.pc: src/unit.pc.in
 		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS|" \\
 		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||' -e 's| --njs||')|" \\
 		-e "s|@MODULESDIR@|$NXT_MODULES|" \\
-	< src/unit.pc.in > \$@
+	< src/worker.pc.in > \$@
 
-$NXT_BUILD_DIR/share/pkgconfig/unit-uninstalled.pc: src/unit.pc.in
+$NXT_BUILD_DIR/share/pkgconfig/worker-uninstalled.pc: src/worker.pc.in
 	sed -e "s|@PREFIX@|$(pwd)/$NXT_BUILD_DIR|" \\
 		-e "s|@LIBDIR@|$(pwd)/$NXT_BUILD_DIR|" \\
 		-e "s|@CFLAGS@|-I$(pwd)/src -I$(pwd)/$NXT_BUILD_DIR|" \\
 		-e "s|@VERSION@|\$(NXT_VERSION)|" \\
 		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS|" \\
 		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||' -e 's| --njs||')|" \\
-	< src/unit.pc.in > \$@
+	< src/worker.pc.in > \$@
 
 END
 

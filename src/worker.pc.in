@@ -1,0 +1,11 @@
+prefix=@PREFIX@
+libdir=@LIBDIR@
+confargs=@CONFARGS@
+modulesdir=@MODULESDIR@
+
+Name: worker
+Description: library to embed Worker
+Version: @VERSION@
+URL: https://github.com/hongzhidao/worker
+Cflags: @CFLAGS@
+Libs: -L${libdir} -lworker @EXTRA_LIBS@

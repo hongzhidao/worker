@@ -792,7 +792,7 @@ nxt_runtime_conf_init(nxt_task_t *task, nxt_runtime_t *rt)
         }
 
     } else {
-        nxt_log(task, NXT_LOG_WARN, "Unit is running unprivileged, then it "
+        nxt_log(task, NXT_LOG_WARN, "Worker is running unprivileged, then it "
                 "cannot use arbitrary user and group.");
     }
 
@@ -827,7 +827,7 @@ nxt_runtime_conf_init(nxt_task_t *task, nxt_runtime_t *rt)
         slash = "/";
     }
 
-    ret = nxt_file_name_create(rt->mem_pool, &file_name, "%s%s*.unit.so%Z",
+    ret = nxt_file_name_create(rt->mem_pool, &file_name, "%s%s*.worker.so%Z",
                                rt->modules, slash);
     if (nxt_slow_path(ret != NXT_OK)) {
         return NXT_ERROR;
@@ -934,7 +934,7 @@ nxt_runtime_conf_read_cmd(nxt_task_t *task, nxt_runtime_t *rt)
     u_char  buf[1024];
 
     static const char  version[] =
-        "unit version: " NXT_VERSION "\n"
+        "worker version: " NXT_VERSION "\n"
         "configured as ./configure" NXT_CONFIGURE_OPTIONS "\n";
 
     static const char  no_control[] =
@@ -950,11 +950,11 @@ nxt_runtime_conf_read_cmd(nxt_task_t *task, nxt_runtime_t *rt)
 
     static const char  help[] =
         "\n"
-        "unit options:\n"
+        "worker options:\n"
         "\n"
-        "  --version            print unit version and configure options\n"
+        "  --version            print worker version and configure options\n"
         "\n"
-        "  --no-daemon          run unit in non-daemon mode\n"
+        "  --no-daemon          run worker in non-daemon mode\n"
         "\n"
         "  --control ADDRESS    set address of control API socket\n"
         "                       default: \"" NXT_CONTROL_SOCK "\"\n"

@@ -30,9 +30,9 @@ nxt_java_initContext(JNIEnv *env, jobject cl)
     int     res;
     jclass  cls;
 
-    cls = nxt_java_loadClass(env, cl, "nginx.unit.Context");
+    cls = nxt_java_loadClass(env, cl, "worker.Context");
     if (cls == NULL) {
-        nxt_unit_warn(NULL, "nginx.unit.Context not found");
+        nxt_unit_warn(NULL, "worker.Context not found");
         return NXT_UNIT_ERROR;
     }
 
@@ -41,22 +41,22 @@ nxt_java_initContext(JNIEnv *env, jobject cl)
     cls = nxt_java_Context_class;
 
     nxt_java_Context_start = (*env)->GetStaticMethodID(env, cls, "start",
-                     "(Ljava/lang/String;[Ljava/net/URL;)Lnginx/unit/Context;");
+                     "(Ljava/lang/String;[Ljava/net/URL;)Lworker/Context;");
     if (nxt_java_Context_start == NULL) {
-        nxt_unit_warn(NULL, "nginx.unit.Context.start() not found");
+        nxt_unit_warn(NULL, "worker.Context.start() not found");
         goto failed;
     }
 
     nxt_java_Context_service = (*env)->GetMethodID(env, cls, "service",
-            "(Lnginx/unit/Request;Lnginx/unit/Response;)V");
+            "(Lworker/Request;Lworker/Response;)V");
     if (nxt_java_Context_service == NULL) {
-        nxt_unit_warn(NULL, "nginx.unit.Context.service() not found");
+        nxt_unit_warn(NULL, "worker.Context.service() not found");
         goto failed;
     }
 
     nxt_java_Context_stop = (*env)->GetMethodID(env, cls, "stop", "()V");
     if (nxt_java_Context_stop == NULL) {
-        nxt_unit_warn(NULL, "nginx.unit.Context.stop() not found");
+        nxt_unit_warn(NULL, "worker.Context.stop() not found");
         goto failed;
     }
 

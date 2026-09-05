@@ -74,7 +74,7 @@ fi
 NXT_GO_PATH=${NXT_GO_PATH=`${NXT_GO} env GOPATH`}
 NXT_GO_PATH=${NXT_GO_PATH:-${PWD}/${NXT_BUILD_DIR}/${NXT_GO}}
 
-NXT_GO_PKG=unit.nginx.org/go
+NXT_GO_PKG=github.com/hongzhidao/worker/go
 
 $echo " + Go package path: \"${NXT_GO_PATH}\""
 
@@ -122,7 +122,7 @@ ${NXT_GO}-install-env: \$(DESTDIR)\$(NXT_GO_DST)/src/${NXT_GO_PKG}/env.go \
 
 \$(DESTDIR)\$(NXT_GO_DST)/src/${NXT_GO_PKG}/env.go:
 	install -d \$(DESTDIR)\$(NXT_GO_DST)/src/${NXT_GO_PKG}
-	$echo "package unit" > \$@
+	$echo "package worker" > \$@
 	$echo "/*" >> \$@
 	$echo "#cgo CFLAGS: ${CFLAGS} ${NXT_CC_OPT}" >> \$@
 	$echo "#cgo CPPFLAGS: -I${PWD}/src -I${PWD}/${NXT_BUILD_DIR}" >> \$@

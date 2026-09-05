@@ -2,8 +2,8 @@ import struct
 import time
 
 import pytest
-from unit.applications.lang.node import ApplicationNode
-from unit.applications.websockets import ApplicationWebsocket
+from worker.applications.lang.node import ApplicationNode
+from worker.applications.websockets import ApplicationWebsocket
 
 prerequisites = {'modules': {'node': 'any'}}
 
@@ -352,7 +352,7 @@ def test_node_websockets_protocol_absent():
 
 # autobahn-testsuite
 #
-# Some following tests fail because of Unit does not support UTF-8
+# Some following tests fail because of Worker does not support UTF-8
 # validation for websocket frames.  It should be implemented
 # by application, if necessary.
 
@@ -1046,7 +1046,7 @@ def test_node_websockets_6_1_1__6_4_4():
 
     close_connection(sock)
 
-#        Unit does not support UTF-8 validation
+#        Worker does not support UTF-8 validation
 #
 #        # 6_3_1 FAIL
 #
@@ -1193,7 +1193,7 @@ def test_node_websockets_7_1_1__7_5_1():
     ws.frame_write(sock, ws.OP_CLOSE, payload)
     check_close(sock, 1002)
 
-#        # 7_5_1 FAIL Unit does not support UTF-8 validation
+#        # 7_5_1 FAIL Worker does not support UTF-8 validation
 #
 #        _, sock, _ = ws.upgrade()
 #

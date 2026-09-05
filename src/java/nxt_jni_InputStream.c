@@ -37,7 +37,7 @@ nxt_java_initInputStream(JNIEnv *env, jobject cl)
     int     res;
     jclass  cls;
 
-    cls = nxt_java_loadClass(env, cl, "nginx.unit.InputStream");
+    cls = nxt_java_loadClass(env, cl, "worker.InputStream");
     if (cls == NULL) {
         return NXT_UNIT_ERROR;
     }
