@@ -1,5 +1,5 @@
+import asyncio
 import threading
-import time
 
 
 async def application(scope, receive, send):
@@ -15,7 +15,7 @@ async def application(scope, receive, send):
 
     delay = float(get_header(b'x-delay', 0))
 
-    time.sleep(delay)
+    await asyncio.sleep(delay)
 
     await send(
         {

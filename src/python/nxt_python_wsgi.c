@@ -51,14 +51,14 @@ typedef struct {
 }  nxt_python_ctx_t;
 
 
-static int nxt_python_wsgi_ctx_data_alloc(void **pdata, int main);
+static int nxt_python_wsgi_ctx_data_alloc(void **pdata);
 static void nxt_python_wsgi_ctx_data_free(void *data);
 static int nxt_python_wsgi_run(nxt_unit_ctx_t *ctx);
 static void nxt_python_wsgi_done(void);
 
 static void nxt_python_request_handler(nxt_unit_request_info_t *req);
 
-static PyObject *nxt_python_create_environ(nxt_python_app_conf_t *c);
+static PyObject *nxt_python_create_environ(void);
 static PyObject *nxt_python_copy_environ(nxt_unit_request_info_t *req);
 static PyObject *nxt_python_get_environ(nxt_python_ctx_t *pctx);
 static int nxt_python_add_sptr(nxt_python_ctx_t *pctx, PyObject *name,
@@ -183,7 +183,7 @@ nxt_python_wsgi_init(nxt_unit_init_t *init, nxt_python_proto_t *proto)
         goto fail;
     }
 
-    obj = nxt_python_create_environ(init->data);
+    obj = nxt_python_create_environ();
     if (nxt_slow_path(obj == NULL)) {
         goto fail;
     }
@@ -206,7 +206,7 @@ fail:
 
 
 static int
-nxt_python_wsgi_ctx_data_alloc(void **pdata, int main)
+nxt_python_wsgi_ctx_data_alloc(void **pdata)
 {
     nxt_python_ctx_t  *pctx;
 
@@ -449,7 +449,7 @@ done:
 
 
 static PyObject *
-nxt_python_create_environ(nxt_python_app_conf_t *c)
+nxt_python_create_environ(void)
 {
     PyObject  *obj, *err, *environ;
 
@@ -499,7 +499,7 @@ nxt_python_create_environ(nxt_python_app_conf_t *c)
 
 
     if (nxt_slow_path(PyDict_SetItemString(environ, "wsgi.multithread",
-                                           c->threads > 1 ? Py_True : Py_False)
+                                           Py_False)
         != 0))
     {
         nxt_unit_alert(NULL,

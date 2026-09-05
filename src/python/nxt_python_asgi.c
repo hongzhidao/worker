@@ -19,7 +19,7 @@
 static PyObject *nxt_python_asgi_get_func(PyObject *obj);
 static PyObject *nxt_python_asgi_get_event_loop(PyObject *asyncio,
     const char *event_loop_func);
-static int nxt_python_asgi_ctx_data_alloc(void **pdata, int main);
+static int nxt_python_asgi_ctx_data_alloc(void **pdata);
 static void nxt_python_asgi_ctx_data_free(void *data);
 static int nxt_python_asgi_startup(void *data);
 static int nxt_python_asgi_run(nxt_unit_ctx_t *ctx);
@@ -234,17 +234,16 @@ nxt_python_asgi_get_event_loop(PyObject *asyncio, const char *event_loop_func)
 
 
 static int
-nxt_python_asgi_ctx_data_alloc(void **pdata, int main)
+nxt_python_asgi_ctx_data_alloc(void **pdata)
 {
     uint32_t                i;
     PyObject                *asyncio, *loop, *obj;
-    const char              *event_loop_func;
     nxt_py_asgi_ctx_data_t  *ctx_data;
 
 #if PY_VERSION_HEX < NXT_PYTHON_VER(3, 7)
-    static const char       *main_event_loop_func = "get_event_loop";
+    static const char       *event_loop_func = "get_event_loop";
 #else
-    static const char       *main_event_loop_func = "get_running_loop";
+    static const char       *event_loop_func = "get_running_loop";
 #endif
 
     ctx_data = nxt_unit_malloc(NULL, sizeof(nxt_py_asgi_ctx_data_t));
@@ -279,17 +278,11 @@ nxt_python_asgi_ctx_data_alloc(void **pdata, int main)
         goto fail;
     }
 
-    event_loop_func = main ? main_event_loop_func : "new_event_loop";
-
     loop = nxt_python_asgi_get_event_loop(asyncio, event_loop_func);
     if (loop == NULL) {
 #if PY_VERSION_HEX < NXT_PYTHON_VER(3, 7)
         goto fail;
 #else
-        if (!main) {
-            goto fail;
-        }
-
         PyErr_Clear();
 
         loop = nxt_python_asgi_get_event_loop(asyncio, "new_event_loop");

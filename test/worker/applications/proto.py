@@ -24,7 +24,6 @@ class ApplicationProto(Control):
                     'group',
                     'isolation',
                     'processes',
-                    'threads',
                 ]:
                     if key in kwargs:
                         app_conf[key] = kwargs[key]

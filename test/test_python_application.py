@@ -929,8 +929,20 @@ def test_python_application_path_invalid():
     check_path('{}')
     check_path('["/blah", []]')
 
-def test_python_application_threads():
-    client.load('threads', threads=4)
+@pytest.mark.parametrize(
+    'name,value',
+    [('threads', 1), ('threads', 4), ('thread_stack_size', 65536)],
+)
+def test_python_application_thread_options_rejected(name, value):
+    client.load('empty')
+    conf = client.conf_get()
+
+    assert 'error' in client.conf(str(value), f'applications/empty/{name}')
+    assert client.conf_get() == conf, 'configuration unchanged'
+    assert client.get()['status'] == 200, 'application still works'
+
+def test_python_application_single_thread():
+    client.load('threads', processes=1)
 
     socks = []
 
@@ -938,7 +950,7 @@ def test_python_application_threads():
         sock = client.get(
             headers={
                 'Host': 'localhost',
-                'X-Delay': '2',
+                'X-Delay': '0.05',
                 'Connection': 'close',
             },
             no_recv=True,
@@ -959,8 +971,8 @@ def test_python_application_threads():
 
         threads.add(resp['headers']['X-Thread'])
 
-        assert resp['headers']['Wsgi-Multithread'] == 'True', 'multithread'
+        assert resp['headers']['Wsgi-Multithread'] == 'False', 'multithread'
 
         sock.close()
 
-    assert len(socks) == len(threads), 'threads differs'
+    assert len(threads) == 1, 'one request thread per process'

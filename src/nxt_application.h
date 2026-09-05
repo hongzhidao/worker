@@ -50,8 +50,6 @@ typedef struct {
     nxt_str_t                  module;
     char                       *callable;
     nxt_str_t                  protocol;
-    uint32_t                   threads;
-    uint32_t                   thread_stack_size;
     nxt_conf_value_t           *targets;
 } nxt_python_app_conf_t;
 
@@ -64,7 +62,6 @@ typedef struct {
 
 typedef struct {
     nxt_str_t  script;
-    uint32_t   threads;
     nxt_str_t  hooks;
 } nxt_ruby_app_conf_t;
 

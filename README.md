@@ -79,6 +79,12 @@ EOF
 
 ## Manage Applications
 
+Python and Ruby application processes each use a single request-handling thread.
+The `threads` and `thread_stack_size` application options are not supported.
+Use `processes` to scale request handling; ASGI also supports concurrent requests
+within its event loop. Ruby's `on_thread_boot` and `on_thread_shutdown` hooks run
+once per application process.
+
 Set the application to two processes:
 
 ```sh

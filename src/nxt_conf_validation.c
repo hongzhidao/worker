@@ -85,10 +85,6 @@ static nxt_int_t nxt_conf_vldt_python_path_element(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value);
 static nxt_int_t nxt_conf_vldt_python_protocol(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_threads(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_thread_stack_size(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_app_name(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_app(nxt_conf_validation_t *vldt,
@@ -282,14 +278,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_python_common_members[] = {
         .name       = nxt_string("protocol"),
         .type       = NXT_CONF_VLDT_STRING,
         .validator  = nxt_conf_vldt_python_protocol,
-    }, {
-        .name       = nxt_string("threads"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-        .validator  = nxt_conf_vldt_threads,
-    }, {
-        .name       = nxt_string("thread_stack_size"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-        .validator  = nxt_conf_vldt_thread_stack_size,
     },
 
     NXT_CONF_VLDT_NEXT(nxt_conf_vldt_common_members)
@@ -454,10 +442,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_ruby_members[] = {
         .name       = nxt_string("script"),
         .type       = NXT_CONF_VLDT_STRING,
         .flags      = NXT_CONF_VLDT_REQUIRED,
-    }, {
-        .name       = nxt_string("threads"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-        .validator  = nxt_conf_vldt_threads,
     }, {
         .name       = nxt_string("hooks"),
         .type       = NXT_CONF_VLDT_STRING
@@ -954,53 +938,6 @@ nxt_conf_vldt_python_protocol(nxt_conf_validation_t *vldt,
 
     return nxt_conf_vldt_error(vldt, "The \"protocol\" can either be "
                                      "\"wsgi\" or \"asgi\".");
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_threads(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    int64_t  threads;
-
-    threads = nxt_conf_get_number(value);
-
-    if (threads < 1) {
-        return nxt_conf_vldt_error(vldt, "The \"threads\" number must be "
-                                   "equal to or greater than 1.");
-    }
-
-    if (threads > NXT_INT32_T_MAX) {
-        return nxt_conf_vldt_error(vldt, "The \"threads\" number must "
-                                   "not exceed %d.", NXT_INT32_T_MAX);
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_thread_stack_size(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    int64_t  size, min_size;
-
-    size = nxt_conf_get_number(value);
-    min_size = sysconf(_SC_THREAD_STACK_MIN);
-
-    if (size < min_size) {
-        return nxt_conf_vldt_error(vldt, "The \"thread_stack_size\" number "
-                                   "must be equal to or greater than %d.",
-                                   min_size);
-    }
-
-    if ((size % nxt_pagesize) != 0) {
-        return nxt_conf_vldt_error(vldt, "The \"thread_stack_size\" number "
-                             "must be a multiple of the system page size (%d).",
-                             nxt_pagesize);
-    }
-
-    return NXT_OK;
 }
 
 

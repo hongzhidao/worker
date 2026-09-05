@@ -391,8 +391,8 @@ def test_asgi_application_threading(wait_for_record):
         wait_for_record(r'\(5\) Thread: 100', wait=50) is not None
     ), 'last thread finished'
 
-def test_asgi_application_threads():
-    client.load('threads', threads=2)
+def test_asgi_application_single_thread():
+    client.load('threads', processes=1)
 
     socks = []
 
@@ -400,15 +400,13 @@ def test_asgi_application_threads():
         sock = client.get(
             headers={
                 'Host': 'localhost',
-                'X-Delay': '3',
+                'X-Delay': '0.1',
                 'Connection': 'close',
             },
             no_recv=True,
         )
 
         socks.append(sock)
-
-        time.sleep(1.0)  # required to avoid greedy request reading
 
     threads = set()
 
@@ -425,7 +423,7 @@ def test_asgi_application_threads():
 
         sock.close()
 
-    assert len(socks) == len(threads), 'threads differs'
+    assert len(threads) == 1, 'one event loop thread per process'
 
 def test_asgi_application_legacy():
     client.load('legacy')

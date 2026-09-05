@@ -50,7 +50,6 @@ class ApplicationPython(ApplicationProto):
             'path',
             'protocol',
             'targets',
-            'threads',
         ):
             if attr in kwargs:
                 app[attr] = kwargs.pop(attr)

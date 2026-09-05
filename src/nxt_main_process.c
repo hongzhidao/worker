@@ -204,21 +204,9 @@ static nxt_conf_map_t  nxt_python_app_conf[] = {
     },
 
     {
-        nxt_string("threads"),
-        NXT_CONF_MAP_INT32,
-        offsetof(nxt_common_app_conf_t, u.python.threads),
-    },
-
-    {
         nxt_string("targets"),
         NXT_CONF_MAP_PTR,
         offsetof(nxt_common_app_conf_t, u.python.targets),
-    },
-
-    {
-        nxt_string("thread_stack_size"),
-        NXT_CONF_MAP_INT32,
-        offsetof(nxt_common_app_conf_t, u.python.thread_stack_size),
     },
 };
 
@@ -243,11 +231,6 @@ static nxt_conf_map_t  nxt_ruby_app_conf[] = {
         nxt_string("script"),
         NXT_CONF_MAP_STR,
         offsetof(nxt_common_app_conf_t, u.ruby.script),
-    },
-    {
-        nxt_string("threads"),
-        NXT_CONF_MAP_INT32,
-        offsetof(nxt_common_app_conf_t, u.ruby.threads),
     },
     {
         nxt_string("hooks"),

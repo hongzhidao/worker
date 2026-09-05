@@ -386,12 +386,19 @@ def test_ruby_application_constants():
     assert len(headers['X-Revision']) > 0, 'RUBY_REVISION'
     assert len(headers['X-Version']) > 0, 'RUBY_VERSION'
 
-def test_ruby_application_threads():
-    client.load('threads')
+@pytest.mark.parametrize('threads', [1, 4])
+def test_ruby_application_thread_options_rejected(threads):
+    client.load('empty')
+    conf = client.conf_get()
 
-    assert 'success' in client.conf(
-        '4', 'applications/threads/threads'
-    ), 'configure 4 threads'
+    assert 'error' in client.conf(str(threads), 'applications/empty/threads')
+    assert client.conf_get() == conf, 'configuration unchanged'
+    resp = client.post(body='still running')
+    assert resp['status'] == 200, 'application still works'
+    assert resp['body'] == 'still running', 'response body'
+
+def test_ruby_application_single_thread():
+    client.load('threads', processes=1)
 
     socks = []
 
@@ -399,7 +406,7 @@ def test_ruby_application_threads():
         sock = client.get(
             headers={
                 'Host': 'localhost',
-                'X-Delay': '2',
+                'X-Delay': '0.05',
                 'Connection': 'close',
             },
             no_recv=True,
@@ -420,8 +427,8 @@ def test_ruby_application_threads():
 
         threads.add(resp['headers']['X-Thread'])
 
-        assert resp['headers']['Rack-Multithread'] == 'true', 'multithread'
+        assert resp['headers']['Rack-Multithread'] == 'false', 'multithread'
 
         sock.close()
 
-    assert len(socks) == len(threads), 'threads differs'
+    assert len(threads) == 1, 'one request thread per process'
