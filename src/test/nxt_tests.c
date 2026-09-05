@@ -74,10 +74,6 @@ main(int argc, char **argv)
         return 1;
     }
 
-    if (nxt_term_parse_test(thr) != NXT_OK) {
-        return 1;
-    }
-
     if (nxt_msec_diff_test(thr, nxt_msec_less) != NXT_OK) {
         return 1;
     }
@@ -107,18 +103,6 @@ main(int argc, char **argv)
     }
 
     if (nxt_mp_test(thr, 1000, 100, 64 * 1024 - 1) != NXT_OK) {
-        return 1;
-    }
-
-    if (nxt_mem_zone_test(thr, 100, 20000, 128 - 1) != NXT_OK) {
-        return 1;
-    }
-
-    if (nxt_mem_zone_test(thr, 100, 10000, 4096 - 1) != NXT_OK) {
-        return 1;
-    }
-
-    if (nxt_mem_zone_test(thr, 1000, 40, 64 * 1024 - 1) != NXT_OK) {
         return 1;
     }
 

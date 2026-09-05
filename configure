@@ -126,10 +126,6 @@ NXT_LIBRT=
 . auto/unix
 . auto/os/conf
 
-if [ $NXT_REGEX = YES ]; then
-    . auto/pcre
-fi
-
 . auto/isolation
 . auto/capability
 
@@ -160,11 +156,6 @@ END
 . auto/test_build
 . auto/sources
 . auto/save
-
-# LOOK
-
-NXT_LIB_AUX_CFLAGS="$NXT_PCRE_CFLAGS"
-NXT_LIB_AUX_LIBS="$NXT_PCRE_LIB"
 
 . auto/make
 . auto/summary

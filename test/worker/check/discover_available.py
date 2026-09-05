@@ -1,18 +1,12 @@
-import subprocess
 import sys
 
 from worker.check.go import check_go
 from worker.check.isolation import check_isolation
-from worker.check.regex import check_regex
 from worker.log import Log
 from worker.option import option
 
 
 def discover_available(worker):
-    output_version = subprocess.check_output(
-        [worker['workerd'], '--version'], stderr=subprocess.STDOUT
-    ).decode()
-
     # wait for controller start
 
     if Log.wait_for_record(r'controller started') is None:
@@ -29,7 +23,6 @@ def discover_available(worker):
     # discover modules using check
 
     option.available['modules']['go'] = check_go()
-    option.available['modules']['regex'] = check_regex(output_version)
 
     # Discover features using check. Features should be discovered after
     # modules since some features can require modules.

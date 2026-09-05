@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.version="@@VERSION@@"
 
 RUN set -ex \
     && apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential libpcre2-dev \
+    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates git build-essential \
     && mkdir -p /usr/lib/worker/modules /usr/lib/worker/debug-modules \
     && git clone --depth 1 --branch @@VERSION@@ https://github.com/hongzhidao/worker.git worker \
     && cd worker \

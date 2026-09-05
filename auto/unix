@@ -91,55 +91,6 @@ if [ $nxt_found = no ]; then
 fi
 
 
-nxt_feature="ucontext"
-nxt_feature_name=NXT_HAVE_UCONTEXT
-nxt_feature_run=
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <stdlib.h>
-                  #include <ucontext.h>
-
-                  int main(void) {
-                      ucontext_t  uc;
-
-                      if (getcontext(&uc) == 0) {
-                          makecontext(&uc, NULL, 0);
-                          setcontext(&uc);
-                      }
-
-                      return 0;
-                  }"
-. auto/feature
-
-
-if [ $nxt_found = no ]; then
-
-    # MacOSX 10.6 (Snow Leopard) has deprecated ucontext
-    # and requires _XOPEN_SOURCE to be defined.
-
-    nxt_feature="_XOPEN_SOURCE ucontext"
-    nxt_feature_name=NXT_HAVE_UCONTEXT
-    nxt_feature_run=
-    nxt_feature_incs=
-    nxt_feature_libs=
-    nxt_feature_test="#define _XOPEN_SOURCE
-                      #include <stdlib.h>
-                      #include <ucontext.h>
-
-                      int main(void) {
-                          ucontext_t  uc;
-
-                          if (getcontext(&uc) == 0) {
-                              makecontext(&uc, NULL, 0);
-                              setcontext(&uc);
-                          }
-
-                          return 0;
-                      }"
-    . auto/feature
-fi
-
-
 # FreeBSD dlopen() is in libc.
 # MacOSX libdl.dylib is a symlink to libSystem.dylib.
 # GCC5 AddressSanitizer intercepts dlopen() and dlclose() but not dlsym()

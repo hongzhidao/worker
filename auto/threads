@@ -123,60 +123,6 @@ if [ $nxt_found = yes ]; then
 fi
 
 
-nxt_feature="sem_timedwait()"
-nxt_feature_name=NXT_HAVE_SEM_TIMEDWAIT
-nxt_feature_run=yes
-nxt_feature_incs=
-nxt_feature_libs=
-nxt_feature_test="#include <semaphore.h>
-
-                  int main(void) {
-                      sem_t            sem;
-                      struct timespec  ts;
-
-                      if (sem_init(&sem, 0, 0) != 0)
-                          return 1;
-                      if (sem_post(&sem) != 0)
-                          return 1;
-
-                      ts.tv_sec = 0;
-                      ts.tv_nsec = 0;
-                      if (sem_timedwait(&sem, &ts) != 0)
-                          return 1;
-
-                      if (sem_destroy(&sem) != 0)
-                          return 1;
-                      return 0;
-                  }"
-. auto/feature
-
-
-if [ $nxt_found = no ]; then
-
-    if [ -n "$NXT_PTHREAD" ]; then
-
-        # Linux requires libpthread.
-
-        nxt_feature="sem_timedwait() in libpthread"
-        nxt_feature_libs=$NXT_PTHREAD
-        . auto/feature
-    fi
-
-    if [ $nxt_found = no ]; then
-
-        # Solaris 10 requires librt.
-
-        nxt_feature="sem_timedwait() in librt"
-        nxt_feature_libs="-lrt"
-        . auto/feature
-
-        if [ $nxt_found = yes ]; then
-            NXT_LIBRT="-lrt"
-        fi
-    fi
-fi
-
-
 # Thread Local Storage / Thread Specific Data.
 #
 # Linux, FreeBSD 5.3, Solaris.

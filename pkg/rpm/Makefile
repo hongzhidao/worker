@@ -205,7 +205,7 @@ endif
 rpmbuild/SOURCES/worker-$(VERSION).tar.gz:
 	cd ../.. && tar -czf pkg/rpm/rpmbuild/SOURCES/worker-$(VERSION).tar.gz \
 		--transform "s#^#worker-$(VERSION)/#" \
-		LICENSE NOTICE CHANGES README configure auto src test version go docs/man/workerd.8.in
+		LICENSE NOTICE CHANGES README.md configure auto src test version go docs/man/workerd.8.in
 
 worker: check-build-depends-worker rpmbuild/SPECS/worker.spec rpmbuild/SOURCES/worker-$(VERSION).tar.gz
 	@echo "===> Building $@ package" ; \

@@ -419,12 +419,6 @@ nxt_process_setup(nxt_task_t *task, nxt_process_t *process)
         return NXT_ERROR;
     }
 
-    ret = nxt_runtime_thread_pool_create(thread, rt, rt->auxiliary_threads,
-                                         60000 * 1000000LL);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return NXT_ERROR;
-    }
-
     nxt_port_read_close(process->parent_port);
     nxt_port_write_enable(task, process->parent_port);
 

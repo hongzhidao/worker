@@ -93,7 +93,7 @@ libnxt:	$NXT_BUILD_DIR/$NXT_LIB_SHARED $NXT_BUILD_DIR/$NXT_LIB_STATIC
 $NXT_BUILD_DIR/$NXT_LIB_SHARED:	\$(NXT_LIB_OBJS)
 	\$(NXT_SHARED_LOCAL_LINK) -o $NXT_BUILD_DIR/$NXT_LIB_SHARED \\
 		\$(NXT_LIB_OBJS) \\
-		$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LIBM $NXT_LIBS
 
 $NXT_BUILD_DIR/$NXT_LIB_STATIC:	\$(NXT_LIB_OBJS)
 	$NXT_STATIC_LINK $NXT_BUILD_DIR/$NXT_LIB_STATIC \\
@@ -122,7 +122,7 @@ do
     cat << END >> $NXT_MAKEFILE
 
 $NXT_BUILD_DIR/$nxt_obj: $nxt_src $NXT_VERSION_H
-	\$(CC) -c \$(CFLAGS) \$(NXT_LIB_INCS) $NXT_LIB_AUX_CFLAGS \\
+	\$(CC) -c \$(CFLAGS) \$(NXT_LIB_INCS) \\
 	-o $NXT_BUILD_DIR/$nxt_obj \\
 	$nxt_dep_flags \\
 	$nxt_src
@@ -142,7 +142,7 @@ nxt_dep_post=`nxt_gen_dep_post`
 cat << END >> $NXT_MAKEFILE
 
 $NXT_BUILD_DIR/$nxt_obj: $nxt_src $NXT_VERSION_H
-	\$(CC) -c \$(CFLAGS) -DNXT_NCQ_TEST=1 \$(NXT_LIB_INCS) $NXT_LIB_AUX_CFLAGS \\
+	\$(CC) -c \$(CFLAGS) -DNXT_NCQ_TEST=1 \$(NXT_LIB_INCS) \\
 	-o $NXT_BUILD_DIR/$nxt_obj \\
 	$nxt_dep_flags \\
 	$nxt_src
@@ -160,7 +160,7 @@ nxt_dep_post=`nxt_gen_dep_post`
 cat << END >> $NXT_MAKEFILE
 
 $NXT_BUILD_DIR/$nxt_obj: $nxt_src $NXT_VERSION_H
-	\$(CC) -c \$(CFLAGS) -DNXT_NCQ_TEST=0 \$(NXT_LIB_INCS) $NXT_LIB_AUX_CFLAGS \\
+	\$(CC) -c \$(CFLAGS) -DNXT_NCQ_TEST=0 \$(NXT_LIB_INCS) \\
 	-o $NXT_BUILD_DIR/$nxt_obj \\
 	$nxt_dep_flags \\
 	$nxt_src
@@ -201,36 +201,36 @@ $NXT_BUILD_DIR/tests: \$(NXT_TEST_OBJS) \\
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/tests \\
 		\$(CFLAGS) \$(NXT_TEST_OBJS) \\
 		$NXT_BUILD_DIR/$NXT_LIB_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS
 
 $NXT_BUILD_DIR/utf8_file_name_test: $NXT_LIB_UTF8_FILE_NAME_TEST_SRCS \\
 			$NXT_BUILD_DIR/$NXT_LIB_STATIC
-	\$(CC) \$(CFLAGS) \$(NXT_LIB_INCS) $NXT_LIB_AUX_CFLAGS \\
+	\$(CC) \$(CFLAGS) \$(NXT_LIB_INCS) \\
 		-o $NXT_BUILD_DIR/utf8_file_name_test \\
 		$NXT_LIB_UTF8_FILE_NAME_TEST_SRCS \\
 		$NXT_BUILD_DIR/$NXT_LIB_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS
 
 $NXT_BUILD_DIR/ncq_test: $NXT_BUILD_DIR/src/test/nxt_ncq_test.o \\
 			$NXT_BUILD_DIR/$NXT_LIB_STATIC
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/ncq_test \\
 		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_ncq_test.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS
 
 $NXT_BUILD_DIR/vbcq_test: $NXT_BUILD_DIR/src/test/nxt_vbcq_test.o \\
 			$NXT_BUILD_DIR/$NXT_LIB_STATIC
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/vbcq_test \\
 		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_vbcq_test.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS
 
 $NXT_BUILD_DIR/unit_app_test: $NXT_BUILD_DIR/src/test/nxt_unit_app_test.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/unit_app_test \\
 		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_unit_app_test.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS
 
 $NXT_BUILD_DIR/unit_websocket_chat: \\
 		$NXT_BUILD_DIR/src/test/nxt_unit_websocket_chat.o \\
@@ -238,7 +238,7 @@ $NXT_BUILD_DIR/unit_websocket_chat: \\
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/unit_websocket_chat \\
 		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_unit_websocket_chat.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS
 
 $NXT_BUILD_DIR/unit_websocket_echo: \\
 		$NXT_BUILD_DIR/src/test/nxt_unit_websocket_echo.o \\
@@ -246,7 +246,7 @@ $NXT_BUILD_DIR/unit_websocket_echo: \\
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/unit_websocket_echo \\
 		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_unit_websocket_echo.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS
 
 END
 
@@ -304,7 +304,7 @@ $NXT_BUILD_DIR/$NXT_DAEMON:	$NXT_BUILD_DIR/$NXT_LIB_STATIC \\
 				\$(NXT_OBJS)
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/$NXT_DAEMON \$(CFLAGS) \\
 		\$(NXT_OBJS) $NXT_BUILD_DIR/$NXT_LIB_STATIC \\
-		$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
+		$NXT_LIBM $NXT_LIBS
 
 END
 
@@ -334,7 +334,6 @@ do
 
 $NXT_BUILD_DIR/$nxt_obj:	$nxt_src $NXT_VERSION_H
 	\$(CC) -c \$(CFLAGS) \$(NXT_INCS) \\
-		$NXT_LIB_AUX_CFLAGS \\
 		-o $NXT_BUILD_DIR/$nxt_obj \\
 		$nxt_dep_flags \\
 		$nxt_src
@@ -439,7 +438,7 @@ $NXT_BUILD_DIR/share/pkgconfig/worker.pc: src/worker.pc.in
 		-e "s|@LIBDIR@|$NXT_LIBDIR|" \\
 		-e "s|@CFLAGS@|-I$NXT_INCDIR|" \\
 		-e "s|@VERSION@|\$(NXT_VERSION)|" \\
-		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS|" \\
+		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS|" \\
 		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||')|" \\
 		-e "s|@MODULESDIR@|$NXT_MODULES|" \\
 	< src/worker.pc.in > \$@
@@ -449,7 +448,7 @@ $NXT_BUILD_DIR/share/pkgconfig/worker-uninstalled.pc: src/worker.pc.in
 		-e "s|@LIBDIR@|$(pwd)/$NXT_BUILD_DIR|" \\
 		-e "s|@CFLAGS@|-I$(pwd)/src -I$(pwd)/$NXT_BUILD_DIR|" \\
 		-e "s|@VERSION@|\$(NXT_VERSION)|" \\
-		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS|" \\
+		-e "s|@EXTRA_LIBS@|$NXT_LIBM $NXT_LIBS|" \\
 		-e "s|@CONFARGS@|$(echo $NXT_CONFIGURE_OPTIONS | sed -e 's| -pie||')|" \\
 	< src/worker.pc.in > \$@
 

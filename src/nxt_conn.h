@@ -309,43 +309,9 @@ ssize_t nxt_event_conn_io_send(nxt_conn_t *c, void *buf, size_t size);
 extern nxt_conn_io_t             nxt_unix_conn_io;
 
 
-typedef struct {
-    /*
-     * Client and peer connections are not embedded because already
-     * existent connections can be switched to the event connection proxy.
-     */
-    nxt_conn_t                   *client;
-    nxt_conn_t                   *peer;
-    nxt_buf_t                    *client_buffer;
-    nxt_buf_t                    *peer_buffer;
-
-    size_t                       client_buffer_size;
-    size_t                       peer_buffer_size;
-
-    nxt_msec_t                   client_wait_timeout;
-    nxt_msec_t                   connect_timeout;
-    nxt_msec_t                   reconnect_timeout;
-    nxt_msec_t                   peer_wait_timeout;
-    nxt_msec_t                   client_write_timeout;
-    nxt_msec_t                   peer_write_timeout;
-
-    uint8_t                      connected;  /* 1 bit */
-    uint8_t                      delayed;    /* 1 bit */
-    uint8_t                      retries;    /* 8 bits */
-    uint8_t                      retain;     /* 2 bits */
-
-    nxt_work_handler_t           completion_handler;
-} nxt_conn_proxy_t;
-
-
-NXT_EXPORT nxt_conn_proxy_t *nxt_conn_proxy_create(nxt_conn_t *c);
-NXT_EXPORT void nxt_conn_proxy(nxt_task_t *task, nxt_conn_proxy_t *p);
-
-
 /* STUB */
 #define nxt_event_conn_t         nxt_conn_t
 #define nxt_event_conn_state_t   nxt_conn_state_t
-#define nxt_event_conn_proxy_t   nxt_conn_proxy_t
 #define nxt_event_conn_read      nxt_conn_read
 #define nxt_event_conn_write     nxt_conn_write
 #define nxt_event_conn_close     nxt_conn_close

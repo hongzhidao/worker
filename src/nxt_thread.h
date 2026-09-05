@@ -151,21 +151,12 @@ struct nxt_thread_s {
     nxt_tid_t                tid;
     nxt_thread_handle_t      handle;
     nxt_thread_link_t        *link;
-    nxt_thread_pool_t        *thread_pool;
 
     nxt_thread_time_t        time;
 
     nxt_runtime_t            *runtime;
     nxt_event_engine_t       *engine;
     void                     *data;
-
-#if 0
-    /*
-     * Although pointer to a current fiber should be a property of
-     * engine->fibers, its placement here eliminates 2 memory accesses.
-     */
-    nxt_fiber_t              *fiber;
-#endif
 
     nxt_random_t             random;
 };

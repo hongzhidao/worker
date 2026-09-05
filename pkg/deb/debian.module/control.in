@@ -3,8 +3,7 @@ Section: admin
 Priority: extra
 Maintainer: %%PACKAGE_VENDOR%%
 Build-Depends: debhelper (>= 11),
-               linux-libc-dev,
-               libpcre2-dev%%MODULE_BUILD_DEPENDS%%
+               linux-libc-dev%%MODULE_BUILD_DEPENDS%%
 Standards-Version: 4.1.4
 Homepage: https://github.com/hongzhidao/worker
 

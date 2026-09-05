@@ -129,29 +129,6 @@ nxt_lib_stop(void)
 {
     /* TODO: stop engines */
 
-#if 0
-
-    for ( ;; ) {
-        nxt_thread_pool_t  *tp;
-
-        nxt_thread_spin_lock(&rt->lock);
-
-        tp = rt->thread_pools;
-        rt->thread_pools = (tp != NULL) ? tp->next : NULL;
-
-        nxt_thread_spin_unlock(&rt->lock);
-
-        if (tp == NULL) {
-            break;
-        }
-
-        nxt_thread_pool_destroy(tp);
-    }
-
-#else
-
     exit(0);
     nxt_unreachable();
-
-#endif
 }

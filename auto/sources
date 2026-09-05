@@ -28,7 +28,6 @@ NXT_LIB_SRCS=" \
     src/nxt_queue.c \
     src/nxt_rbtree.c \
     src/nxt_mp.c \
-    src/nxt_mem_zone.c \
     src/nxt_string.c \
     src/nxt_utf8.c \
     src/nxt_parse.c \
@@ -39,20 +38,15 @@ NXT_LIB_SRCS=" \
     src/nxt_murmur_hash.c \
     src/nxt_lvlhsh.c \
     src/nxt_array.c \
-    src/nxt_vector.c \
     src/nxt_list.c \
     src/nxt_buf.c \
-    src/nxt_buf_pool.c \
     src/nxt_recvbuf.c \
     src/nxt_sendbuf.c \
     src/nxt_thread.c \
     src/nxt_thread_mutex.c \
     src/nxt_thread_cond.c \
     src/nxt_spinlock.c \
-    src/nxt_semaphore.c \
-    src/nxt_thread_pool.c \
     src/nxt_thread_time.c \
-    src/nxt_time_parse.c \
     src/nxt_work_queue.c \
     src/nxt_service.c \
     src/nxt_log_moderation.c \
@@ -65,7 +59,6 @@ NXT_LIB_SRCS=" \
     src/nxt_conn_read.c \
     src/nxt_conn_write.c \
     src/nxt_conn_close.c \
-    src/nxt_conn_proxy.c \
     src/nxt_sockaddr.c \
     src/nxt_listen_socket.c \
     src/nxt_http_parse.c \
@@ -95,23 +88,8 @@ NXT_LIB_SRCS=" \
     src/nxt_h1proto_websocket.c \
 "
 
-NXT_LIB_SRC0=" \
-    src/nxt_stream_module.c \
-    src/nxt_stream_source.c \
-    src/nxt_upstream_source.c \
-    src/nxt_http_source.c \
-    src/nxt_fastcgi_source.c \
-    src/nxt_fastcgi_record_parse.c \
-\
-    src/nxt_mem_pool_cleanup.h \
-    src/nxt_mem_pool_cleanup.c \
-"
-
 NXT_LIB_UNIT_SRCS="src/nxt_unit.c"
 
-
-NXT_LIB_PCRE_SRCS="src/nxt_pcre.c"
-NXT_LIB_PCRE2_SRCS="src/nxt_pcre2.c"
 
 NXT_LIB_EPOLL_SRCS="src/nxt_epoll_engine.c"
 NXT_LIB_KQUEUE_SRCS="src/nxt_kqueue_engine.c"
@@ -140,10 +118,8 @@ NXT_TEST_SRCS=" \
     src/test/nxt_tests.c \
     src/test/nxt_rbtree1.c \
     src/test/nxt_rbtree_test.c \
-    src/test/nxt_term_parse_test.c \
     src/test/nxt_msec_diff_test.c \
     src/test/nxt_mp_test.c \
-    src/test/nxt_mem_zone_test.c \
     src/test/nxt_lvlhsh_test.c \
     src/test/nxt_gmtime_test.c \
     src/test/nxt_sprintf_test.c \
@@ -170,14 +146,6 @@ if [ $NXT_HAVE_ROOTFS = YES ]; then
     NXT_LIB_SRCS="$NXT_LIB_SRCS src/nxt_fs.c"
 fi
 
-
-if [ "$NXT_REGEX" = "YES" ]; then
-    if [ "$NXT_HAVE_PCRE2" = "YES" ]; then
-        NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_PCRE2_SRCS"
-    else
-        NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_PCRE_SRCS"
-    fi
-fi
 
 if [ "$NXT_HAVE_EPOLL" = "YES" -o "$NXT_TEST_BUILD_EPOLL" = "YES" ]; then
     NXT_LIB_SRCS="$NXT_LIB_SRCS $NXT_LIB_EPOLL_SRCS"

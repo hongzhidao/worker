@@ -36,7 +36,7 @@ config.env.%:
 	cp -Pa $(CURDIR)/CHANGES $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/LICENSE $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/NOTICE $(BUILDDIR_$*)/
-	cp -Pa $(CURDIR)/README $(BUILDDIR_$*)/
+	cp -Pa $(CURDIR)/README.md $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/go $(BUILDDIR_$*)/
 	mkdir -p $(BUILDDIR_$*)/docs/man
 	cp -Pa $(CURDIR)/docs/man/workerd.8.in $(BUILDDIR_$*)/docs/man/
@@ -116,7 +116,7 @@ install: build do.tests
 	mkdir -p $(INSTALLDIR)/usr/share/doc/worker/examples
 	install -m 644 debian/worker.example.config $(INSTALLDIR)/usr/share/doc/worker/examples/example.config
 	install -m 644 CHANGES $(INSTALLDIR)/usr/share/doc/worker/changelog
-	install -m 644 README $(INSTALLDIR)/usr/share/doc/worker/
+	install -m 644 README.md $(INSTALLDIR)/usr/share/doc/worker/
 	install -m 644 NOTICE $(INSTALLDIR)/usr/share/doc/worker/
 
 binary-indep: build install

@@ -9,9 +9,6 @@
 #define _NXT_RUNTIME_H_INCLUDED_
 
 
-typedef void (*nxt_runtime_cont_t)(nxt_task_t *task, nxt_uint_t status);
-
-
 struct nxt_runtime_s {
     nxt_mp_t               *mem_pool;
 
@@ -22,15 +19,10 @@ struct nxt_runtime_s {
     nxt_array_t            *languages;          /* of nxt_app_lang_module_t */
     void                   *data;
 
-    nxt_runtime_cont_t     start;
-
     nxt_str_t              hostname;
 
     nxt_file_name_t        *pid_file;
 
-
-    nxt_array_t            *thread_pools;       /* of nxt_thread_pool_t */
-    nxt_runtime_cont_t     continuation;
 
     nxt_process_t          *mprocess;
     size_t                 nprocesses;
@@ -55,7 +47,6 @@ struct nxt_runtime_s {
 
     const char             *engine;
     uint32_t               engine_connections;
-    uint32_t               auxiliary_threads;
     nxt_credential_t       user_cred;
     nxt_capabilities_t     capabilities;
     const char             *group;
@@ -86,10 +77,6 @@ nxt_int_t nxt_runtime_create(nxt_task_t *task);
 void nxt_runtime_quit(nxt_task_t *task, nxt_uint_t status);
 
 void nxt_runtime_event_engine_free(nxt_runtime_t *rt);
-
-nxt_int_t nxt_runtime_thread_pool_create(nxt_thread_t *thr, nxt_runtime_t *rt,
-    nxt_uint_t max_threads, nxt_nsec_t timeout);
-
 
 void nxt_runtime_process_add(nxt_task_t *task, nxt_process_t *process);
 void nxt_runtime_process_remove(nxt_runtime_t *rt, nxt_process_t *process);
@@ -130,10 +117,6 @@ nxt_file_t *nxt_runtime_log_file_add(nxt_runtime_t *rt, nxt_str_t *name);
 /* STUB */
 void nxt_cdecl nxt_log_time_handler(nxt_uint_t level, nxt_log_t *log,
     const char *fmt, ...);
-
-void nxt_stream_connection_init(nxt_task_t *task, void *obj, void *data);
-
-
 
 #define nxt_runtime_process_each(rt, process)                                 \
     do {                                                                      \

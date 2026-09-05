@@ -33,7 +33,6 @@ nxt_rdtsc(void)
 #endif
 
 
-nxt_int_t nxt_term_parse_test(nxt_thread_t *thr);
 nxt_int_t nxt_msec_diff_test(nxt_thread_t *thr, nxt_msec_less_t);
 
 nxt_int_t nxt_rbtree_test(nxt_thread_t *thr, nxt_uint_t n);
@@ -53,8 +52,6 @@ void nxt_rbtree1_mb_delete(nxt_thread_t *thr);
 
 nxt_int_t nxt_mp_test(nxt_thread_t *thr, nxt_uint_t runs, nxt_uint_t nblocks,
     size_t max_size);
-nxt_int_t nxt_mem_zone_test(nxt_thread_t *thr, nxt_uint_t runs,
-    nxt_uint_t nblocks, size_t max_size);
 nxt_int_t nxt_lvlhsh_test(nxt_thread_t *thr, nxt_uint_t n,
     nxt_bool_t use_pool);
 

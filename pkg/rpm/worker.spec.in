@@ -39,7 +39,6 @@ Requires(post):    systemd
 Requires(preun):   systemd
 Requires(postun):  systemd
 
-BuildRequires: pcre2-devel
 BuildRequires: pkgconfig
 
 %description
@@ -119,7 +118,7 @@ DESTDIR=%{buildroot} make workerd-install libworker-install manpage-install
     %{buildroot}%{_datadir}/doc/worker/
 %{__install} -m 644 -p NOTICE \
     %{buildroot}%{_datadir}/doc/worker/COPYRIGHT
-%{__install} -m 644 -p README \
+%{__install} -m 644 -p README.md \
     %{buildroot}%{_datadir}/doc/worker/
 
 %{__rm} -rf %{buildroot}%{_initrddir}/

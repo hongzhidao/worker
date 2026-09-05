@@ -159,7 +159,7 @@ endif
 debuild/worker_$(VERSION).orig.tar.gz: | debuild/$(SRCDIR)/debian
 	cd ../.. && tar -czf pkg/deb/debuild/$(SRCDIR).tar.gz \
 		--transform "s#^#$(SRCDIR)/#" \
-		LICENSE NOTICE CHANGES README configure auto src test version go docs/man/workerd.8.in
+		LICENSE NOTICE CHANGES README.md configure auto src test version go docs/man/workerd.8.in
 	mv debuild/$(SRCDIR).tar.gz debuild/worker_$(VERSION).orig.tar.gz
 	cd debuild && tar zxf worker_$(VERSION).orig.tar.gz
 
