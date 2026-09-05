@@ -22,7 +22,7 @@ struct nxt_port_handlers_s {
     nxt_port_handler_t  reserved[2];
     nxt_port_handler_t  script_get;
     nxt_port_handler_t  script_delete;
-    nxt_port_handler_t  access_log;
+    nxt_port_handler_t  reserved_access;  /* Preserve application message IDs. */
 
     /* File descriptor exchange. */
     nxt_port_handler_t  change_file;
@@ -87,7 +87,6 @@ typedef enum {
     _NXT_PORT_MSG_CONF_STORE      = nxt_port_handler_idx(conf_store),
     _NXT_PORT_MSG_SCRIPT_GET      = nxt_port_handler_idx(script_get),
     _NXT_PORT_MSG_SCRIPT_DELETE   = nxt_port_handler_idx(script_delete),
-    _NXT_PORT_MSG_ACCESS_LOG      = nxt_port_handler_idx(access_log),
 
     _NXT_PORT_MSG_CHANGE_FILE     = nxt_port_handler_idx(change_file),
     _NXT_PORT_MSG_NEW_PORT        = nxt_port_handler_idx(new_port),
@@ -128,7 +127,6 @@ typedef enum {
     NXT_PORT_MSG_CONF_STORE       = nxt_msg_last(_NXT_PORT_MSG_CONF_STORE),
     NXT_PORT_MSG_SCRIPT_GET       = nxt_msg_last(_NXT_PORT_MSG_SCRIPT_GET),
     NXT_PORT_MSG_SCRIPT_DELETE    = nxt_msg_last(_NXT_PORT_MSG_SCRIPT_DELETE),
-    NXT_PORT_MSG_ACCESS_LOG       = nxt_msg_last(_NXT_PORT_MSG_ACCESS_LOG),
     NXT_PORT_MSG_CHANGE_FILE      = nxt_msg_last(_NXT_PORT_MSG_CHANGE_FILE),
     NXT_PORT_MSG_NEW_PORT         = nxt_msg_last(_NXT_PORT_MSG_NEW_PORT),
     NXT_PORT_MSG_GET_PORT         = nxt_msg_last(_NXT_PORT_MSG_GET_PORT),

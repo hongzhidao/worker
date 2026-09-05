@@ -59,8 +59,6 @@ static void nxt_main_port_conf_store_handler(nxt_task_t *task,
     nxt_port_recv_msg_t *msg);
 static nxt_int_t nxt_main_file_store(nxt_task_t *task, const char *tmp_name,
     const char *name, u_char *buf, size_t size);
-static void nxt_main_port_access_log_handler(nxt_task_t *task,
-    nxt_port_recv_msg_t *msg);
 
 const nxt_sig_event_t  nxt_main_process_signals[] = {
     nxt_event_signal(SIGHUP,  nxt_main_process_signal_handler),
@@ -525,7 +523,6 @@ static nxt_port_handlers_t  nxt_main_process_port_handlers = {
     .script_get       = nxt_script_store_get_handler,
     .script_delete    = nxt_script_store_delete_handler,
 #endif
-    .access_log       = nxt_main_port_access_log_handler,
     .rpc_ready        = nxt_port_rpc_handler,
     .rpc_error        = nxt_port_rpc_handler,
 };
@@ -706,7 +703,6 @@ nxt_main_process_sigusr1_handler(nxt_task_t *task, void *obj, void *data)
     nxt_mp_t        *mp;
     nxt_int_t       ret;
     nxt_uint_t      n;
-    nxt_port_t      *port;
     nxt_file_t      *file, *new_file;
     nxt_array_t     *new_files;
     nxt_runtime_t   *rt;
@@ -715,13 +711,6 @@ nxt_main_process_sigusr1_handler(nxt_task_t *task, void *obj, void *data)
             (int) (uintptr_t) obj, data, "log files rotation");
 
     rt = task->thread->runtime;
-
-    port = rt->port_by_type[NXT_PROCESS_ROUTER];
-
-    if (nxt_fast_path(port != NULL)) {
-        (void) nxt_port_socket_write(task, port, NXT_PORT_MSG_ACCESS_LOG,
-                                     -1, 0, 0, NULL);
-    }
 
     mp = nxt_mp_create(1024, 128, 256, 32);
     if (mp == NULL) {
@@ -1480,41 +1469,4 @@ nxt_main_file_store(nxt_task_t *task, const char *tmp_name, const char *name,
     }
 
     return nxt_file_rename(file.name, (nxt_file_name_t *) name);
-}
-
-
-static void
-nxt_main_port_access_log_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
-{
-    u_char               *path;
-    nxt_int_t            ret;
-    nxt_file_t           file;
-    nxt_port_t           *port;
-    nxt_port_msg_type_t  type;
-
-    nxt_debug(task, "opening access log file");
-
-    path = msg->buf->mem.pos;
-
-    nxt_memzero(&file, sizeof(nxt_file_t));
-
-    file.name = (nxt_file_name_t *) path;
-    file.log_level = NXT_LOG_ERR;
-
-    ret = nxt_file_open(task, &file, O_WRONLY | O_APPEND, O_CREAT,
-                        NXT_FILE_OWNER_ACCESS);
-
-    type = (ret == NXT_OK) ? NXT_PORT_MSG_RPC_READY_LAST | NXT_PORT_MSG_CLOSE_FD
-                           : NXT_PORT_MSG_RPC_ERROR;
-
-    port = nxt_runtime_port_find(task->thread->runtime, msg->port_msg.pid,
-                                 msg->port_msg.reply_port);
-
-    if (nxt_fast_path(port != NULL)) {
-        (void) nxt_port_socket_write(task, port, type, file.fd,
-                                     msg->port_msg.stream, 0, NULL);
-
-    } else {
-        nxt_file_close(task, &file);
-    }
 }

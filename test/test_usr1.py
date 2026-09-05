@@ -11,42 +11,6 @@ prerequisites = {'modules': {'python': 'any'}}
 client = ApplicationPython()
 
 
-def test_usr1_access_log(search_in_file, temp_dir, worker_pid, wait_for_record
-):
-    client.load('empty')
-
-    log = 'access.log'
-    log_new = 'new.log'
-    log_path = temp_dir + '/' + log
-
-    assert 'success' in client.conf(
-        '"' + log_path + '"', 'access_log'
-    ), 'access log configure'
-
-    assert waitforfiles(log_path), 'open'
-
-    os.rename(log_path, temp_dir + '/' + log_new)
-
-    assert client.get()['status'] == 200
-
-    assert (
-        wait_for_record(r'"GET / HTTP/1.1" 200 0 "-" "-"', log_new)
-        is not None
-    ), 'rename new'
-    assert not os.path.isfile(log_path), 'rename old'
-
-    os.kill(worker_pid, signal.SIGUSR1)
-
-    assert waitforfiles(log_path), 'reopen'
-
-    assert client.get(url='/usr1')['status'] == 200
-
-    assert (
-        wait_for_record(r'"GET /usr1 HTTP/1.1" 200 0 "-" "-"', log)
-        is not None
-    ), 'reopen 2'
-    assert search_in_file(r'/usr1', log_new) is None, 'rename new 2'
-
 def test_usr1_unit_log(search_in_file, temp_dir, worker_pid, wait_for_record
 ):
     client.load('log_body')

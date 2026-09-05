@@ -168,7 +168,6 @@ struct nxt_http_request_s {
     uint8_t                         pass_count;   /* 8 bits */
     uint8_t                         app_target;
     nxt_http_protocol_t             protocol:8;   /* 2 bits */
-    uint8_t                         logged;       /* 1 bit  */
     uint8_t                         header_sent;  /* 1 bit  */
     uint8_t                         inconsistent; /* 1 bit  */
     uint8_t                         error;        /* 1 bit  */
@@ -301,9 +300,6 @@ void nxt_h1p_websocket_frame_start(nxt_task_t *task, nxt_http_request_t *r,
 void nxt_h1p_complete_buffers(nxt_task_t *task, nxt_h1proto_t *h1p,
     nxt_bool_t all);
 nxt_msec_t nxt_h1p_conn_request_timer_value(nxt_conn_t *c, uintptr_t data);
-
-int nxt_http_cond_value(nxt_task_t *task, nxt_http_request_t *r,
-    nxt_tstr_cond_t *cond);
 
 extern const nxt_conn_state_t  nxt_h1p_idle_close_state;
 
