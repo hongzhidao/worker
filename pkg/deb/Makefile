@@ -28,11 +28,6 @@ include Makefile.python310
 include Makefile.go
 include Makefile.perl
 include Makefile.ruby
-include Makefile.jsc-common
-include Makefile.jsc11
-include Makefile.jsc16
-include Makefile.jsc17
-include Makefile.jsc18
 endif
 
 # Ubuntu 21.04
@@ -43,11 +38,6 @@ include Makefile.python39
 include Makefile.go
 include Makefile.perl
 include Makefile.ruby
-include Makefile.jsc-common
-include Makefile.jsc11
-include Makefile.jsc15
-include Makefile.jsc16
-include Makefile.jsc17
 endif
 
 # Ubuntu 20.04
@@ -58,8 +48,6 @@ include Makefile.python38
 include Makefile.go
 include Makefile.perl
 include Makefile.ruby
-include Makefile.jsc-common
-include Makefile.jsc11
 endif
 
 # Ubuntu 18.04
@@ -72,9 +60,6 @@ include Makefile.python38
 include Makefile.go
 include Makefile.perl
 include Makefile.ruby
-include Makefile.jsc-common
-include Makefile.jsc8
-include Makefile.jsc11
 endif
 
 # Debian 11
@@ -85,8 +70,6 @@ include Makefile.python39
 include Makefile.go
 include Makefile.perl
 include Makefile.ruby
-include Makefile.jsc-common
-include Makefile.jsc11
 endif
 
 # Debian 10
@@ -97,8 +80,6 @@ include Makefile.python37
 include Makefile.go
 include Makefile.perl
 include Makefile.ruby
-include Makefile.jsc-common
-include Makefile.jsc11
 endif
 
 CONFIGURE_ARGS_COMMON=\
@@ -273,9 +254,8 @@ worker-%: check-build-depends-% | debuild-%
 
 test: worker modules
 	@{ \
-	for so in `find debuild-*/worker-$(VERSION)/debian/build-worker/ -type f \( -name "*.so" -o -name "*.jar" \)`; do \
+	for so in `find debuild-*/worker-$(VERSION)/debian/build-worker/ -type f -name "*.so"`; do \
 		soname=`basename $${so}` ; \
-		test "$${soname}" = "java.worker.so" && continue ; \
 		test -h debuild/worker-$(VERSION)/debian/build-worker/build/$${soname} || \
 		ln -fs `pwd`/$${so} debuild/worker-$(VERSION)/debian/build-worker/build/$${soname} ; \
 	done ; \
@@ -284,9 +264,8 @@ test: worker modules
 
 test-debug: worker modules
 	@{ \
-	for so in `find debuild-*/worker-$(VERSION)/debian/build-worker-debug/ -type f \( -name "*.so" -o -name "*.jar" \)`; do \
+	for so in `find debuild-*/worker-$(VERSION)/debian/build-worker-debug/ -type f -name "*.so"`; do \
 		soname=`basename $${so}` ; \
-		test "$${soname}" = "java.worker.so" && continue ; \
 		test -h debuild/worker-$(VERSION)/debian/build-worker-debug/build/$${soname} || \
 		ln -fs `pwd`/$${so} debuild/worker-$(VERSION)/debian/build-worker-debug/build/$${soname} ; \
 	done ; \

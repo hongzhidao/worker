@@ -8,7 +8,7 @@ DEFAULT_VERSION := $(NXT_VERSION)
 VERSION ?= $(DEFAULT_VERSION)
 EXPORT_DIR := $(VERSION)
 
-MODULES ?= go jsc node perl php python ruby
+MODULES ?= go node perl php python ruby
 
 VARIANT ?= bullseye
 
@@ -29,12 +29,6 @@ COPY --from=BUILDER /usr/lib/x86_64-linux-gnu/libworker.a /usr/lib/x86_64-linux-
 COPY --from=BUILDER /usr/include/nxt_* /usr/include/\n\$
 COPY --from=BUILDER /go/src/ /go/src/
 endef
-
-VERSIONS_jsc ?=		11
-$(foreach jscversion, $(VERSIONS_jsc), $(eval CONTAINER_jsc$(jscversion) = openjdk:$(jscversion)-jdk))
-CONFIGURE_jsc ?=	java --jars=/usr/share/worker-jsc-common/
-INSTALL_jsc ?=		java-shared-install java-install
-COPY_jsc =	 		COPY --from=BUILDER /usr/share/worker-jsc-common/ /usr/share/worker-jsc-common/
 
 VERSIONS_node ?=	16
 VARIANT_node ?=		$(VARIANT)

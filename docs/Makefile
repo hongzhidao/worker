@@ -12,10 +12,7 @@ PACKAGES=	worker 							\
 		worker-go worker-go1.7 worker-go1.8 worker-go1.9 worker-go1.10	\
 		worker-go1.12 worker-go1.13					\
 		worker-perl						\
-		worker-ruby						\
-		worker-jsc-common worker-jsc8 worker-jsc10 worker-jsc11		\
-		worker-jsc13 worker-jsc14 worker-jsc15 worker-jsc16 worker-jsc17 \
-		worker-jsc18
+		worker-ruby
 
 CURDATE:=$(shell date +"%Y-%m-%d")
 CURTIME:=$(shell date +"%H:%M:%S %z")

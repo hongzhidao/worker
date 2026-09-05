@@ -60,8 +60,6 @@ ifeq ($(OSVER), centos6)
 include Makefile.php
 include Makefile.python
 include Makefile.go
-include Makefile.jsc-common
-include Makefile.jsc8
 endif
 
 ifeq ($(OSVER), centos7)
@@ -70,9 +68,6 @@ include Makefile.python27
 include Makefile.python36
 include Makefile.go
 include Makefile.perl
-include Makefile.jsc-common
-include Makefile.jsc8
-include Makefile.jsc11
 endif
 
 ifeq ($(OSVER), centos8)
@@ -81,9 +76,6 @@ include Makefile.python27
 include Makefile.python36
 include Makefile.go
 include Makefile.perl
-include Makefile.jsc-common
-include Makefile.jsc8
-include Makefile.jsc11
 endif
 
 ifeq ($(OSVER), amazonlinux1)
@@ -94,8 +86,6 @@ include Makefile.python35
 include Makefile.python36
 include Makefile.go
 include Makefile.perl
-include Makefile.jsc-common
-include Makefile.jsc8
 endif
 
 ifeq ($(OSVER), amazonlinux2)
@@ -104,8 +94,6 @@ include Makefile.python27
 include Makefile.python37
 include Makefile.go
 include Makefile.perl
-include Makefile.jsc-common
-include Makefile.jsc8
 endif
 
 ifeq ($(OSVER), opensuse-leap)
@@ -150,9 +138,6 @@ endif
 include Makefile.go
 include Makefile.perl
 include Makefile.ruby
-include Makefile.jsc-common
-include Makefile.jsc8
-include Makefile.jsc11
 endif
 
 ifeq ($(OSVER), fedora41)
@@ -299,9 +284,8 @@ test: worker modules
 	@{ \
 	BUILDROOT=`rpmbuild -bc --short-circuit -D "_topdir \`pwd\`/rpmbuild" -D "__spec_build_pre echo bdir=%{_builddir}; exit 0" rpmbuild/SPECS/worker.spec | grep ^bdir= | cut -d'=' -f 2` ; \
 	NODEBUGS=`find rpmbuild/BUILD -type d -name "build-nodebug"` ; \
-	for so in `find $${NODEBUGS} -type f \( -name "*.so" -o -name "*.jar" \)`; do \
+	for so in `find $${NODEBUGS} -type f -name "*.so"`; do \
 		soname=`basename $${so}` ; \
-		test "$${soname}" = "java.worker.so" && continue ; \
 		test -h $$BUILDROOT/worker-$(VERSION)/build-nodebug/$${soname} || \
 		ln -fs `pwd`/$${so} $$BUILDROOT/worker-$(VERSION)/build-nodebug/$${soname} ; \
 	done ; \
@@ -312,9 +296,8 @@ test-debug: worker modules
 	@{ \
 	BUILDROOT=`rpmbuild -bc --short-circuit -D "_topdir \`pwd\`/rpmbuild" -D "__spec_build_pre echo bdir=%{_builddir}; exit 0" rpmbuild/SPECS/worker.spec | grep ^bdir= | cut -d'=' -f 2` ; \
 	DEBUGS=`find rpmbuild/BUILD -type d -name "build-debug"` ; \
-	for so in `find $$DEBUGS -type f \( -name "*.so" -o -name "*.jar" \)`; do \
+	for so in `find $$DEBUGS -type f -name "*.so"`; do \
 		soname=`basename $${so}` ; \
-		test "$${soname}" = "java.worker.so" && continue ; \
 		test -h $$BUILDROOT/worker-$(VERSION)/build-debug/$${soname} || \
 		ln -fs `pwd`/$${so} $$BUILDROOT/worker-$(VERSION)/build-debug/$${soname} ; \
 	done ; \

@@ -286,53 +286,12 @@ static nxt_conf_map_t  nxt_ruby_app_conf[] = {
 };
 
 
-static nxt_conf_map_t  nxt_java_app_conf[] = {
-    {
-        nxt_string("classpath"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_common_app_conf_t, u.java.classpath),
-    },
-    {
-        nxt_string("webapp"),
-        NXT_CONF_MAP_CSTRZ,
-        offsetof(nxt_common_app_conf_t, u.java.webapp),
-    },
-    {
-        nxt_string("options"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_common_app_conf_t, u.java.options),
-    },
-    {
-        nxt_string("unit_jars"),
-        NXT_CONF_MAP_CSTRZ,
-        offsetof(nxt_common_app_conf_t, u.java.unit_jars),
-    },
-    {
-        nxt_string("worker_jars"),
-        NXT_CONF_MAP_CSTRZ,
-        offsetof(nxt_common_app_conf_t, u.java.unit_jars),
-    },
-    {
-        nxt_string("threads"),
-        NXT_CONF_MAP_INT32,
-        offsetof(nxt_common_app_conf_t, u.java.threads),
-    },
-    {
-        nxt_string("thread_stack_size"),
-        NXT_CONF_MAP_INT32,
-        offsetof(nxt_common_app_conf_t, u.java.thread_stack_size),
-    },
-
-};
-
-
 static nxt_conf_app_map_t  nxt_app_maps[] = {
     { nxt_nitems(nxt_external_app_conf),  nxt_external_app_conf },
     { nxt_nitems(nxt_python_app_conf),    nxt_python_app_conf },
     { nxt_nitems(nxt_php_app_conf),       nxt_php_app_conf },
     { nxt_nitems(nxt_perl_app_conf),      nxt_perl_app_conf },
     { nxt_nitems(nxt_ruby_app_conf),      nxt_ruby_app_conf },
-    { nxt_nitems(nxt_java_app_conf),      nxt_java_app_conf },
 };
 
 

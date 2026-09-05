@@ -20,7 +20,6 @@ typedef enum {
     NXT_APP_PHP,
     NXT_APP_PERL,
     NXT_APP_RUBY,
-    NXT_APP_JAVA,
 
     NXT_APP_UNKNOWN,
 } nxt_app_type_t;
@@ -78,16 +77,6 @@ typedef struct {
 } nxt_ruby_app_conf_t;
 
 
-typedef struct {
-    nxt_conf_value_t           *classpath;
-    char                       *webapp;
-    nxt_conf_value_t           *options;
-    char                       *unit_jars;
-    uint32_t                   threads;
-    uint32_t                   thread_stack_size;
-} nxt_java_app_conf_t;
-
-
 struct nxt_common_app_conf_s {
     nxt_str_t                  name;
     nxt_str_t                  type;
@@ -109,7 +98,6 @@ struct nxt_common_app_conf_s {
         nxt_php_app_conf_t       php;
         nxt_perl_app_conf_t      perl;
         nxt_ruby_app_conf_t      ruby;
-        nxt_java_app_conf_t      java;
     } u;
 
     nxt_conf_value_t           *self;
