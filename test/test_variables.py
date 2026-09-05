@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 import re
 import time
@@ -92,27 +91,6 @@ def test_variables_uri(search_in_file, wait_for_record):
     check_uri('/5%2A', '/5*')
     check_uri('/9?q#a', '/9')
 
-def test_variables_uri_no_cache(temp_dir):
-    os.makedirs(f'{temp_dir}/foo/bar')
-    Path(f'{temp_dir}/foo/bar/index.html').write_text('index')
-
-    assert 'success' in client.conf(
-        {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "action": {
-                        "rewrite": "/foo${uri}/",
-                        "share": f'{temp_dir}$uri',
-                    }
-                }
-            ],
-        }
-    )
-
-    assert client.get(url='/bar')['status'] == 200
-
-
 def test_variables_host(search_in_file, wait_for_record):
     set_format('$host')
 
@@ -170,12 +148,13 @@ def test_variables_time_local(date_to_sec_epoch, search_in_file, wait_for_record
         < 5
     ), '$time_local'
 
-def test_variables_request_line(search_in_file, wait_for_record):
+@pytest.mark.parametrize('target', ['/r_line', '/a%2Fb?x=%2F&x=2', '/empty?'])
+def test_variables_request_line(search_in_file, wait_for_record, target):
     set_format('$request_line')
 
-    reg = r'^GET \/r_line HTTP\/1\.1$'
+    reg = '^' + re.escape(f'GET {target} HTTP/1.1') + '$'
     assert search_in_file(reg, 'access.log') is None
-    assert client.get(url='/r_line')['status'] == 200
+    assert client.get(url=target)['status'] == 200
     assert wait_for_record(reg, 'access.log') is not None
 
 def test_variables_request_id(search_in_file, wait_for_record, findall):

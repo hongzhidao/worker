@@ -476,15 +476,21 @@ def test_routes_route_pass_invalid():
     ids=['return', 'share', 'proxy', 'pass'],
 )
 @pytest.mark.parametrize('fallback', [False, True], ids=['route', 'fallback'])
-def test_routes_response_headers_unsupported(action, fallback):
+@pytest.mark.parametrize(
+    'name,value',
+    [('response_headers', {"X-Test": "value"}), ('rewrite', '/new')],
+    ids=['response_headers', 'rewrite'],
+)
+def test_routes_action_option_unsupported(action, fallback, name, value):
     before = client.conf_get()
-    action = dict(action, response_headers={"X-Test": "value"})
+    action = dict(action)
+    action[name] = value
     if fallback:
         action = {"share": "/missing", "fallback": action}
 
     resp = client.conf(action, 'routes/0/action')
 
-    assert resp.get('detail') == 'Unknown parameter "response_headers".'
+    assert resp.get('detail') == f'Unknown parameter "{name}".'
     assert client.conf_get() == before
     assert client.get()['status'] == 200
 

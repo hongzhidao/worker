@@ -683,7 +683,6 @@ nxt_http_static_next(nxt_task_t *task, nxt_http_request_t *r,
     }
 
     if (action->fallback != NULL) {
-        r->action = action->fallback;
         nxt_http_request_action(task, r, action->fallback);
         return;
     }

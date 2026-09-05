@@ -362,8 +362,7 @@ nxt_http_var_request_line(nxt_task_t *task, nxt_str_t *str, void *ctx,
 
     r = ctx;
 
-    target = (r->original_target.start != NULL) ? &r->original_target
-                                                : &r->target;
+    target = &r->target;
 
     length = r->method->length + 1 + target->length + 1 + r->version.length;
 

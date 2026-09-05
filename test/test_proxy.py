@@ -103,6 +103,35 @@ def test_proxy_http10():
     for _ in range(10):
         assert get_http10()['status'] == 200, 'status'
 
+@pytest.mark.parametrize(
+    'target',
+    ['/plain', '/a%2Fb/%25?q=%2F&empty=', '/a/../b?x=1&x=2', '/empty?'],
+)
+def test_proxy_request_target(target):
+    assert 'success' in client.conf(
+        {
+            "type": client.get_application_type(),
+            "processes": {"spare": 0},
+            "path": f'{option.test_dir}/python/variables',
+            "module": "wsgi",
+        },
+        'applications/mirror',
+    )
+
+    resp = client.get(
+        url=target,
+        headers={
+            'Host': 'localhost',
+            'Content-Type': 'text/plain',
+            'Custom-Header': 'value',
+            'Connection': 'close',
+        },
+    )
+
+    assert resp['status'] == 200
+    assert resp['headers']['Request-Uri'] == target
+
+
 def test_proxy_chain():
     assert 'success' in client.conf(
         {

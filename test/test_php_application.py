@@ -94,14 +94,13 @@ def test_php_application_query_string_empty():
     assert resp['status'] == 200, 'query string empty status'
     assert resp['headers']['Query-String'] == '', 'query string empty'
 
-def test_php_application_query_string_rewrite():
+def test_php_application_query_string_route():
     assert 'success' in client.conf(
         {
             "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "action": {
-                        "rewrite": "/new",
                         "pass": "applications/query_string",
                     },
                 },
