@@ -63,10 +63,12 @@ def test_status_requests(skip_alert):
     )
     assert Status.get('/requests/total') == 3, '4xx'
     wait_requests('empty', total=1, completed=1)
+    wait_responses('empty', {'2xx': 1})
 
     assert client.get(port=8082)['status'] == 503
     assert Status.get('/requests/total') == 4, '5xx'
     wait_requests('blah', total=1, completed=1)
+    wait_responses('blah', {'5xx': 1})
 
     client.http(
         b"""GET / HTTP/1.1
@@ -81,6 +83,7 @@ Connection: close
     )
     assert Status.get('/requests/total') == 6, 'pipeline'
     wait_requests('empty', total=3, completed=3)
+    wait_responses('empty', {'2xx': 3})
 
     sock = client.get(port=8081, no_recv=True)
 
@@ -118,6 +121,7 @@ def test_status_requests_keepalive():
 
     assert client.get(sock=sock)['status'] == 200
     assert Status.get('/requests/total') == 3
+    wait_responses('empty', {'2xx': 3})
 
     # active
 
@@ -143,7 +147,7 @@ def test_status_applications():
         assert apps == expert.sort()
 
     def check_application(name, running, starting, idle, total=0,
-                          waiting=0, processing=0, completed=0):
+                          waiting=0, processing=0, completed=0, response_2xx=0):
         expected = {
             'processes': {
                 'running': running,
@@ -156,6 +160,13 @@ def test_status_applications():
                 'waiting': waiting,
                 'processing': processing,
                 'completed': completed,
+            },
+            'responses': {
+                '1xx': 0,
+                '2xx': response_2xx,
+                '3xx': 0,
+                '4xx': 0,
+                '5xx': 0,
             },
         }
 
@@ -177,7 +188,7 @@ def test_status_applications():
     # idle
 
     assert client.get()['status'] == 200
-    check_application('delayed', 1, 0, 1, total=1, completed=1)
+    check_application('delayed', 1, 0, 1, total=1, completed=1, response_2xx=1)
 
     assert 'success' in client.conf('4', 'applications/delayed/processes')
     wait_processes('delayed', running=4, idle=4)
@@ -194,7 +205,7 @@ def test_status_applications():
         start=True,
         read_timeout=1,
     )
-    check_application('delayed', 4, 0, 3, total=1, processing=1)
+    check_application('delayed', 4, 0, 3, total=1, processing=1, response_2xx=1)
     sock.close()
 
     # starting
@@ -241,6 +252,101 @@ def wait_requests(name, total=0, waiting=0, processing=0, completed=0):
         time.sleep(0.05)
 
     assert requests == expected
+
+
+def wait_responses(name, counts=None):
+    expected = {key: 0 for key in ('1xx', '2xx', '3xx', '4xx', '5xx')}
+    expected.update(counts or {})
+
+    for _ in range(100):
+        responses = client.conf_get(f'/status/applications/{name}/responses')
+        if responses == expected:
+            return
+        time.sleep(0.05)
+
+    assert responses == expected
+
+
+def test_status_application_response_classes():
+    client.load('request_status')
+    wait_responses('request_status')
+    counts = {}
+
+    for status, group in (
+        (200, '2xx'), (299, '2xx'), (302, '3xx'), (404, '4xx'),
+        (500, '5xx'), (599, '5xx'), (100, None), (103, None), (600, None),
+    ):
+        assert client.get(headers={
+            'Host': 'localhost', 'X-Status': str(status), 'Connection': 'close',
+        })['status'] == status
+
+        if group is not None:
+            counts[group] = counts.get(group, 0) + 1
+        wait_responses('request_status', counts)
+
+    wait_requests('request_status', total=9, completed=9)
+
+
+@pytest.mark.parametrize('timeout', [False, True])
+def test_status_application_response_stream(timeout, temp_dir):
+    release_path = temp_dir + '/release-response'
+    client.load(
+        'request_status',
+        environment={'RELEASE_PATH': release_path},
+        limits={'timeout': 1 if timeout else 0},
+    )
+    sock = client.get(
+        headers={
+            'Host': 'localhost', 'X-Wait-Body': '1', 'Connection': 'close',
+        },
+        no_recv=True,
+    )
+    try:
+        wait_responses('request_status', {'2xx': 1})
+        wait_requests('request_status', total=1, processing=1)
+        first = client.recvall(sock, read_timeout=0.1)
+        assert b'HTTP/1.1 200' in first
+        assert b'Transfer-Encoding: chunked' in first
+
+        if not timeout:
+            open(release_path, 'a').close()
+        rest = client.recvall(sock)
+        if not timeout:
+            assert rest.endswith(b'0\r\n\r\n')
+        wait_requests('request_status', total=1, completed=1)
+        wait_responses('request_status', {'2xx': 1})
+    finally:
+        open(release_path, 'a').close()
+        sock.close()
+
+    assert client.get()['status'] == 200
+    wait_responses('request_status', {'2xx': 2})
+
+
+def test_status_application_response_reconfigure(temp_dir):
+    release_path = temp_dir + '/release-response'
+    client.load('request_status', environment={'RELEASE_PATH': release_path})
+    sock = client.get(
+        headers={'Host': 'localhost', 'X-Wait': '1', 'Connection': 'close'},
+        no_recv=True,
+    )
+    try:
+        wait_requests('request_status', total=1, processing=1)
+        wait_responses('request_status')
+        assert 'success' in client.conf(
+            {'REVISION': '2'}, 'applications/request_status/environment'
+        )
+        wait_responses('request_status')
+        open(release_path, 'a').close()
+        assert b'HTTP/1.1 200' in client.recvall(sock)
+        wait_responses('request_status')
+        wait_requests('request_status')
+    finally:
+        open(release_path, 'a').close()
+        sock.close()
+
+    assert client.get()['status'] == 200
+    wait_responses('request_status', {'2xx': 1})
 
 
 @pytest.mark.parametrize(
@@ -316,6 +422,7 @@ def test_status_application_request_process_exit(skip_alert, temp_dir):
         os.kill(pid, signal.SIGKILL)
         assert b'HTTP/1.1 503' in client.recvall(sock)
         wait_requests('request_status', total=2, completed=2)
+        wait_responses('request_status', {'2xx': 1, '5xx': 1})
     finally:
         open(release_path, 'a').close()
         sock.close()
@@ -366,6 +473,7 @@ def test_status_application_request_timeout():
         wait_requests('request_status', total=1, processing=1)
         assert b'HTTP/1.1 503' in client.recvall(sock)
         wait_requests('request_status', total=1, completed=1)
+        wait_responses('request_status', {'5xx': 1})
     finally:
         sock.close()
 
@@ -384,6 +492,7 @@ def test_status_application_request_counter_lifetime():
     )
     wait_processes('request_status', running=1, idle=1)
     wait_requests('request_status', total=1, completed=1)
+    wait_responses('request_status', {'2xx': 1})
 
     assert 'success' in client.conf(
         '"*:8081"', 'applications/request_status/listen'
@@ -396,11 +505,13 @@ def test_status_application_request_counter_lifetime():
         {'REVISION': '2'}, 'applications/request_status/environment'
     )
     wait_requests('request_status')
+    wait_responses('request_status')
     assert client.get(
         port=8081,
         headers={'Host': 'localhost', 'X-Status': '500', 'Connection': 'close'},
     )['status'] == 500
     wait_requests('request_status', total=1, completed=1)
+    wait_responses('request_status', {'5xx': 1})
 
 
 def wait_processes(name, running=0, starting=0, idle=0, stopping=0):

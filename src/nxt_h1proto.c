@@ -1027,6 +1027,7 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
 
     } else {
         status = &nxt_http_server_error[0];
+        n = NXT_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     size = status->length;
@@ -1136,6 +1137,8 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
     c->write = header;
     h1p->conn_write_tail = &header->next;
     c->write_state = &nxt_h1p_request_send_state;
+
+    nxt_router_response_header_sent(r, n);
 
     if (body_handler != NULL) {
         /*

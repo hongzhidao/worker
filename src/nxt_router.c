@@ -4240,6 +4240,8 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
                    <= app->total_requests);
 
         app_stat->total_requests = app->total_requests;
+        nxt_memcpy(app_stat->responses, app->responses,
+                   sizeof(app_stat->responses));
         app_stat->waiting_requests = app->waiting_requests;
         app_stat->processing_requests = app->processing_requests;
         app_stat->pending_processes = app->pending_processes;
@@ -4878,6 +4880,9 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
 
     r->app_target = conf->target;
 
+    /* The request configuration retains the app through response sending. */
+    r->response_app = conf->app;
+
     req_rpc_data = nxt_port_rpc_register_handler_ex(task, engine->port,
                                           nxt_router_response_ready_handler,
                                           nxt_router_response_error_handler,
@@ -4927,6 +4932,33 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
 
     nxt_router_app_port_get(task, conf->app, req_rpc_data);
     nxt_router_app_prepare_request(task, req_rpc_data);
+}
+
+
+void
+nxt_router_response_header_sent(nxt_http_request_t *r, nxt_uint_t status)
+{
+    nxt_app_t  *app;
+
+    app = r->response_app;
+
+    if (app == NULL || r->response_counted) {
+        return;
+    }
+
+    if (status != NXT_HTTP_SWITCHING_PROTOCOLS
+        && (status < NXT_HTTP_OK || status > NXT_HTTP_SERVER_ERROR_MAX))
+    {
+        return;
+    }
+
+    r->response_counted = 1;
+
+    nxt_thread_mutex_lock(&app->mutex);
+
+    app->responses[status / 100 - 1]++;
+
+    nxt_thread_mutex_unlock(&app->mutex);
 }
 
 

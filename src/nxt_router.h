@@ -121,6 +121,7 @@ struct nxt_app_s {
     nxt_str_t              name;
 
     uint64_t               total_requests;
+    uint64_t               responses[5];
     uint32_t               waiting_requests;
     uint32_t               processing_requests;
     uint32_t               pending_processes;
@@ -213,6 +214,7 @@ typedef struct {
 
 void nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
     nxt_http_action_t *action);
+void nxt_router_response_header_sent(nxt_http_request_t *r, nxt_uint_t status);
 nxt_int_t nxt_router_application_init(nxt_mp_t *mp, nxt_router_conf_t *rtcf,
     nxt_str_t *name, nxt_str_t *target, nxt_http_action_t *action);
 void nxt_router_listen_event_release(nxt_task_t *task, nxt_listen_event_t *lev,

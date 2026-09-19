@@ -11,7 +11,7 @@
 nxt_conf_value_t *
 nxt_status_get(nxt_status_report_t *report, nxt_mp_t *mp)
 {
-    size_t            i;
+    size_t            i, j;
     nxt_str_t         name;
     nxt_int_t         ret;
     nxt_status_app_t  *app;
@@ -22,12 +22,21 @@ nxt_status_get(nxt_status_report_t *report, nxt_mp_t *mp)
     static nxt_str_t completed_str = nxt_string("completed");
     static nxt_str_t idle_str = nxt_string("idle");
     static nxt_str_t reqs_str = nxt_string("requests");
+    static nxt_str_t resps_str = nxt_string("responses");
     static nxt_str_t total_str = nxt_string("total");
     static nxt_str_t apps_str = nxt_string("applications");
     static nxt_str_t procs_str = nxt_string("processes");
     static nxt_str_t run_str = nxt_string("running");
     static nxt_str_t start_str = nxt_string("starting");
     static nxt_str_t stop_str = nxt_string("stopping");
+
+    static nxt_str_t response_classes[] = {
+        nxt_string("1xx"),
+        nxt_string("2xx"),
+        nxt_string("3xx"),
+        nxt_string("4xx"),
+        nxt_string("5xx"),
+    };
 
     status = nxt_conf_create_object(mp, 2);
     if (nxt_slow_path(status == NULL)) {
@@ -53,7 +62,7 @@ nxt_status_get(nxt_status_report_t *report, nxt_mp_t *mp)
     for (i = 0; i < report->apps_count; i++) {
         app = &report->apps[i];
 
-        app_obj = nxt_conf_create_object(mp, 2);
+        app_obj = nxt_conf_create_object(mp, 3);
         if (nxt_slow_path(app_obj == NULL)) {
             return NULL;
         }
@@ -93,6 +102,18 @@ nxt_status_get(nxt_status_report_t *report, nxt_mp_t *mp)
         nxt_conf_set_member_integer(obj, &completed_str,
                                    app->total_requests - app->waiting_requests
                                    - app->processing_requests, 3);
+
+        obj = nxt_conf_create_object(mp, nxt_nitems(response_classes));
+        if (nxt_slow_path(obj == NULL)) {
+            return NULL;
+        }
+
+        nxt_conf_set_member(app_obj, &resps_str, obj, 2);
+
+        for (j = 0; j < nxt_nitems(response_classes); j++) {
+            nxt_conf_set_member_integer(obj, &response_classes[j],
+                                       app->responses[j], j);
+        }
     }
 
     return status;

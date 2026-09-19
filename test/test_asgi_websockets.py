@@ -92,9 +92,13 @@ def test_asgi_websockets_mirror():
         'processing': 0,
         'completed': 1,
     }
+    expected_responses = {'1xx': 1, '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0}
     assert client.conf_get('/status/applications')['websockets/mirror'][
         'requests'
     ] == expected_requests
+    assert client.conf_get('/status/applications')['websockets/mirror'][
+        'responses'
+    ] == expected_responses
 
     ws.frame_write(sock, ws.OP_TEXT, message)
     frame = ws.frame_read(sock)
@@ -111,6 +115,9 @@ def test_asgi_websockets_mirror():
     assert client.conf_get('/status/applications')['websockets/mirror'][
         'requests'
     ] == expected_requests
+    assert client.conf_get('/status/applications')['websockets/mirror'][
+        'responses'
+    ] == expected_responses
 
 def test_asgi_websockets_mirror_app_change():
     client.load('websockets/mirror')
