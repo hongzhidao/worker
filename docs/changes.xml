@@ -12,6 +12,77 @@
                 worker-python3.7 worker-python3.8 worker-python3.9
                 worker-python3.10 worker-python3.13
                 worker-go worker-ruby"
+         ver="0.2.0" rev="1"
+         date="2026-09-08" time="00:00:00 +0000"
+         packager="Zhidao HONG &lt;hongzhidao@gmail.com&gt;">
+
+<change type="change">
+<para>
+the status API now exposes processes, requests, responses, and latency at the
+top level and for each application. Global statistics cover only currently
+configured application instances; removing or replacing an application removes
+its previous statistics from the totals. Connection statistics were removed.
+</para>
+</change>
+
+<change type="feature">
+<para>
+application process statistics include stopping processes separately from running
+and idle processes, until the router receives a process removal notification.
+</para>
+</change>
+
+<change type="change">
+<para>
+request statistics expose total, waiting, processing, and completed. Total counts
+application dispatches, excluding requests rejected before dispatch. Waiting and
+processing replace active; completed includes errors, cancellations, and
+WebSocket upgrades.
+</para>
+</change>
+
+<change type="feature">
+<para>
+response statistics count 1xx through 5xx statuses when final headers are
+prepared for sending, including Worker-generated errors for an application.
+The 1xx class counts 101 upgrades only. Later body errors do not add a response.
+</para>
+</change>
+
+<change type="feature">
+<para>
+processing latency statistics expose p50, p95, and p99 in milliseconds over a
+rolling 60-second window. Samples cover ended acknowledged requests and exclude
+waiting time. Global percentiles use merged application histograms. Short
+durations use the high-resolution monotonic clock where available.
+</para>
+</change>
+
+<change type="bugfix">
+<para>
+Go application processes could remain blocked after reaching the configured
+request limit. Removed ports now close their sockets, and the application
+library handles end-of-file notifications without retrying indefinitely.
+</para>
+</change>
+
+<change type="feature">
+<para>
+Linux runtime packages include a combined Python/PHP bundle, a checksum-verifying
+installer, persistent launcher state, and configuration and status commands.
+</para>
+</change>
+
+</changes>
+
+
+<changes apply="worker
+                worker-php
+                worker-python worker-python2.7
+                worker-python3.4 worker-python3.5 worker-python3.6
+                worker-python3.7 worker-python3.8 worker-python3.9
+                worker-python3.10 worker-python3.13
+                worker-go worker-ruby"
          ver="0.1.0" rev="1"
          date="2026-09-05" time="00:00:00 +0000"
          packager="Zhidao HONG &lt;hongzhidao@gmail.com&gt;">

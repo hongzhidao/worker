@@ -7,8 +7,8 @@ Ruby applications through a JSON control API.
   deployment systems can manage them automatically.
 - **Multi-language**: Use a unified management approach for PHP, Python, Go,
   and Ruby, reducing duplicated deployment and maintenance tooling.
-- **Observable**: Inspect request, connection, and application process
-  statistics directly through the status API once applications are running.
+- **Observable**: Inspect application processes, request lifecycles, response
+  statuses, and processing latency through a unified status API.
 - **High performance**: Keep the resource overhead of unified application
   management low. Performance claims must be backed by reproducible tests.
 
@@ -17,16 +17,14 @@ Worker can also run behind an external reverse proxy.
 
 ## Download And Try
 
-The installer, combined bundle, and persistent launcher below are prepared for the
-next runtime release. The published [v0.1.0 packages](https://github.com/hongzhidao/worker/releases/tag/v0.1.0)
-contain the earlier single-language launcher: extract the selected archive, enter
-its directory, and run `./worker` to try its example.
+Worker 0.2.0 includes an installer, a combined Python/PHP bundle, and a persistent
+launcher. See [CHANGES](CHANGES) for the release notes and status API changes.
 
 On Linux x86_64 or ARM64 with glibc 2.39 or newer:
 
 ```sh
-curl -fLO https://github.com/hongzhidao/worker/releases/latest/download/install.sh
-sh install.sh all
+curl -fLO https://github.com/hongzhidao/worker/releases/download/v0.2.0/install.sh
+sh install.sh all --version 0.2.0
 ./worker-all/worker --state ./worker-state
 ```
 

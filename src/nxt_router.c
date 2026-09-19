@@ -2655,6 +2655,7 @@ nxt_router_app_process_create(nxt_task_t *task, nxt_port_t *port,
 static void
 nxt_router_app_process_cleanup(nxt_task_t *task, void *obj, void *data)
 {
+#if (NXT_DEBUG)
     nxt_router_app_process_t  *app_process;
 
     app_process = obj;
@@ -2665,6 +2666,7 @@ nxt_router_app_process_cleanup(nxt_task_t *task, void *obj, void *data)
     nxt_assert(app_process->link.next == NULL);
     nxt_assert(app_process->idle_link.next == NULL);
     nxt_assert(app_process->stopping_link.next == NULL);
+#endif
 }
 
 
