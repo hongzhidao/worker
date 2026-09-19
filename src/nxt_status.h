@@ -13,6 +13,7 @@ typedef struct {
     uint32_t          pending_processes;
     uint32_t          processes;
     uint32_t          idle_processes;
+    uint32_t          stopping_processes;
 } nxt_status_app_t;
 
 

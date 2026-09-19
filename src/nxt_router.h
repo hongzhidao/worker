@@ -28,6 +28,7 @@ typedef struct {
 
     nxt_queue_t              sockets;  /* of nxt_socket_conf_t */
     nxt_queue_t              apps;     /* of nxt_app_t */
+    nxt_queue_t              stopping_processes;
 } nxt_router_t;
 
 
@@ -83,6 +84,7 @@ typedef struct {
 typedef struct {
     uint32_t               use_count;
     nxt_app_t              *app;
+    nxt_str_t              name;
     nxt_timer_t            idle_timer;
     nxt_work_t             free_app_work;
 } nxt_app_joint_t;
@@ -94,6 +96,8 @@ typedef struct {
 
     nxt_queue_link_t      link;
     nxt_queue_link_t      idle_link;
+    nxt_queue_link_t      stopping_link;
+    nxt_str_t             name;
     nxt_msec_t            idle_start;
 
     uint32_t              active_requests;

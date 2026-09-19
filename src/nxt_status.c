@@ -25,6 +25,7 @@ nxt_status_get(nxt_status_report_t *report, nxt_mp_t *mp)
     static nxt_str_t procs_str = nxt_string("processes");
     static nxt_str_t run_str = nxt_string("running");
     static nxt_str_t start_str = nxt_string("starting");
+    static nxt_str_t stop_str = nxt_string("stopping");
 
     status = nxt_conf_create_object(mp, 2);
     if (nxt_slow_path(status == NULL)) {
@@ -63,7 +64,7 @@ nxt_status_get(nxt_status_report_t *report, nxt_mp_t *mp)
             return NULL;
         }
 
-        obj = nxt_conf_create_object(mp, 3);
+        obj = nxt_conf_create_object(mp, 4);
         if (nxt_slow_path(obj == NULL)) {
             return NULL;
         }
@@ -73,6 +74,7 @@ nxt_status_get(nxt_status_report_t *report, nxt_mp_t *mp)
         nxt_conf_set_member_integer(obj, &run_str, app->processes, 0);
         nxt_conf_set_member_integer(obj, &start_str, app->pending_processes, 1);
         nxt_conf_set_member_integer(obj, &idle_str, app->idle_processes, 2);
+        nxt_conf_set_member_integer(obj, &stop_str, app->stopping_processes, 3);
 
         obj = nxt_conf_create_object(mp, 1);
         if (nxt_slow_path(obj == NULL)) {

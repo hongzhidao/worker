@@ -138,9 +138,11 @@ static void nxt_router_thread_exit_handler(nxt_task_t *task, void *obj,
 
 nxt_inline nxt_bool_t nxt_router_app_need_start(nxt_app_t *app);
 static nxt_router_app_process_t *nxt_router_app_process_create(nxt_task_t *task,
-    nxt_port_t *port);
+    nxt_port_t *port, nxt_str_t *name);
 static void nxt_router_app_process_cleanup(nxt_task_t *task, void *obj,
     void *data);
+static void nxt_router_app_process_stopping(nxt_task_t *task,
+    nxt_router_app_process_t *app_process);
 static void nxt_router_app_rpc_create(nxt_task_t *task,
     nxt_router_temp_conf_t *tmcf, nxt_app_t *app);
 static void nxt_router_app_prefork_ready(nxt_task_t *task,
@@ -263,6 +265,7 @@ nxt_router_start(nxt_task_t *task, nxt_process_start_data_t *start)
     nxt_queue_init(&router->engines);
     nxt_queue_init(&router->sockets);
     nxt_queue_init(&router->apps);
+    nxt_queue_init(&router->stopping_processes);
 
     nxt_router = router;
 
@@ -804,12 +807,17 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
             apcf.processes_value = NULL;
             apcf.targets_value = NULL;
 
-            app_joint = nxt_malloc(sizeof(nxt_app_joint_t));
+            app_joint = nxt_malloc(sizeof(nxt_app_joint_t) + name.length);
             if (nxt_slow_path(app_joint == NULL)) {
                 goto app_fail;
             }
 
             nxt_memzero(app_joint, sizeof(nxt_app_joint_t));
+
+            app_joint->name.start = nxt_pointer_to(app_joint,
+                                                  sizeof(nxt_app_joint_t));
+            app_joint->name.length = name.length;
+            nxt_memcpy(app_joint->name.start, name.start, name.length);
 
             ret = nxt_conf_map_object(mp, application, nxt_router_app_conf,
                                       nxt_nitems(nxt_router_app_conf), &apcf);
@@ -2572,7 +2580,8 @@ nxt_router_app_process(nxt_port_t *port)
 
 
 static nxt_router_app_process_t *
-nxt_router_app_process_create(nxt_task_t *task, nxt_port_t *port)
+nxt_router_app_process_create(nxt_task_t *task, nxt_port_t *port,
+    nxt_str_t *name)
 {
     nxt_mp_t                  *mp;
     nxt_process_t             *process;
@@ -2589,7 +2598,8 @@ nxt_router_app_process_create(nxt_task_t *task, nxt_port_t *port)
         return NULL;
     }
 
-    app_process = nxt_mp_zget(mp, sizeof(nxt_router_app_process_t));
+    app_process = nxt_mp_zget(mp, sizeof(nxt_router_app_process_t)
+                                 + name->length);
     if (nxt_slow_path(app_process == NULL)) {
         nxt_mp_destroy(mp);
         return NULL;
@@ -2603,6 +2613,10 @@ nxt_router_app_process_create(nxt_task_t *task, nxt_port_t *port)
     }
 
     app_process->port = port;
+    app_process->name.start = nxt_pointer_to(app_process,
+                                             sizeof(nxt_router_app_process_t));
+    app_process->name.length = name->length;
+    nxt_memcpy(app_process->name.start, name->start, name->length);
 
     /* Port references retain the process and its router state. */
     process->mem_pool = mp;
@@ -2625,6 +2639,22 @@ nxt_router_app_process_cleanup(nxt_task_t *task, void *obj, void *data)
     nxt_assert(app_process->app == NULL);
     nxt_assert(app_process->link.next == NULL);
     nxt_assert(app_process->idle_link.next == NULL);
+    nxt_assert(app_process->stopping_link.next == NULL);
+}
+
+
+static void
+nxt_router_app_process_stopping(nxt_task_t *task,
+    nxt_router_app_process_t *app_process)
+{
+    if (app_process->stopping_link.next != NULL) {
+        return;
+    }
+
+    /* Keep the name and process state until REMOVE_PID releases the record. */
+    nxt_process_use(task, app_process->port->process, 1);
+    nxt_queue_insert_tail(&nxt_router->stopping_processes,
+                          &app_process->stopping_link);
 }
 
 
@@ -2741,7 +2771,7 @@ nxt_router_app_prefork_ready(nxt_task_t *task, nxt_port_recv_msg_t *msg,
     nxt_assert(port != NULL);
     nxt_assert(port->id == 0);
 
-    app_process = nxt_router_app_process_create(task, port);
+    app_process = nxt_router_app_process_create(task, port, &app->name);
     if (nxt_slow_path(app_process == NULL)) {
         nxt_port_socket_write(task, port, NXT_PORT_MSG_QUIT, -1, 0, 0, NULL);
         nxt_router_app_prefork_error(task, msg, data);
@@ -2970,22 +3000,22 @@ nxt_router_app_port_ready(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 
     app = app_joint->app;
 
-    app_process = NULL;
-
-    if (app != NULL) {
-        app_process = nxt_router_app_process_create(task, port);
-        if (nxt_slow_path(app_process == NULL)) {
-            nxt_port_socket_write(task, port, NXT_PORT_MSG_QUIT,
-                                  -1, 0, 0, NULL);
-            nxt_router_app_port_error(task, msg, data);
-            return;
-        }
+    app_process = nxt_router_app_process_create(task, port, &app_joint->name);
+    if (nxt_slow_path(app_process == NULL)) {
+        nxt_port_socket_write(task, port, NXT_PORT_MSG_QUIT,
+                              -1, 0, 0, NULL);
+        nxt_router_app_port_error(task, msg, data);
+        return;
     }
 
     nxt_router_app_joint_use(task, app_joint, -1);
 
     if (nxt_slow_path(app == NULL)) {
         nxt_debug(task, "new port ready for released app, send QUIT");
+
+        if (port->type == NXT_PROCESS_APP) {
+            nxt_router_app_process_stopping(task, app_process);
+        }
 
         nxt_port_socket_write(task, port, NXT_PORT_MSG_QUIT, -1, 0, 0, NULL);
 
@@ -3040,6 +3070,8 @@ nxt_router_app_port_ready(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 
     if (nxt_slow_path(restarted)) {
         nxt_debug(task, "new port ready for restarted app, send QUIT");
+
+        nxt_router_app_process_stopping(task, app_process);
 
         start_process = !task->thread->engine->shutdown
                         && nxt_router_app_can_start(app)
@@ -3148,12 +3180,13 @@ nxt_router_app_port_error(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 static void
 nxt_router_app_restart_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 {
-    nxt_app_t            *app;
-    nxt_int_t            ret;
-    nxt_str_t            app_name;
-    nxt_port_t           *reply_port, *shared_port, *old_shared_port;
-    nxt_port_t           *proto_port;
-    nxt_port_msg_type_t  reply;
+    nxt_app_t                 *app;
+    nxt_int_t                 ret;
+    nxt_str_t                 app_name;
+    nxt_port_t                *reply_port, *shared_port, *old_shared_port;
+    nxt_port_t                *proto_port;
+    nxt_port_msg_type_t       reply;
+    nxt_router_app_process_t  *app_process;
 
     reply_port = nxt_runtime_port_find(task->thread->runtime,
                                        msg->port_msg.pid,
@@ -3210,6 +3243,12 @@ nxt_router_app_restart_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
         old_shared_port = app->shared_port;
 
         app->shared_port = shared_port;
+
+        nxt_queue_each(app_process, &app->process_queue,
+                       nxt_router_app_process_t, link)
+        {
+            nxt_router_app_process_stopping(task, app_process);
+        } nxt_queue_loop;
 
         nxt_thread_mutex_unlock(&app->mutex);
 
@@ -3543,6 +3582,7 @@ nxt_router_adjust_idle_timer(nxt_task_t *task, void *obj, void *data)
 
         app->idle_processes--;
         app->processes--;
+        nxt_router_app_process_stopping(task, app_process);
         app_process->app = NULL;
 
         nxt_thread_mutex_unlock(&app->mutex);
@@ -3672,6 +3712,7 @@ nxt_router_app_get_port_for_quit(nxt_task_t *task, nxt_app_t *app)
 
         nxt_port_hash_remove(&app->port_hash, port);
 
+        nxt_router_app_process_stopping(task, app_process);
         app_process->app = NULL;
         app->processes--;
 
@@ -3920,9 +3961,21 @@ nxt_router_app_process_remove_pid(nxt_task_t *task, nxt_port_t *port,
 static void
 nxt_router_remove_pid_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 {
-    nxt_event_engine_t  *engine;
+    nxt_process_t             *process;
+    nxt_event_engine_t        *engine;
+    nxt_router_app_process_t  *app_process;
 
     nxt_port_remove_pid_handler(task, msg);
+
+    process = nxt_runtime_process_find(task->thread->runtime,
+                                       msg->u.removed_pid);
+    if (process != NULL && process->data != NULL) {
+        app_process = process->data;
+
+        if (nxt_queue_chk_remove(&app_process->stopping_link)) {
+            nxt_process_use(task, process, -1);
+        }
+    }
 
     nxt_queue_each(engine, &nxt_router->engines, nxt_event_engine_t, link0)
     {
@@ -4123,15 +4176,16 @@ nxt_router_oosm_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 static void
 nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 {
-    u_char               *p;
-    size_t               alloc;
-    nxt_app_t            *app;
-    nxt_buf_t            *b;
-    nxt_uint_t           type;
-    nxt_port_t           *port;
-    nxt_status_app_t     *app_stat;
-    nxt_event_engine_t   *engine;
-    nxt_status_report_t  *report;
+    u_char                    *p;
+    size_t                    alloc;
+    nxt_app_t                 *app;
+    nxt_buf_t                 *b;
+    nxt_uint_t                type;
+    nxt_port_t                *port;
+    nxt_status_app_t          *app_stat;
+    nxt_event_engine_t        *engine;
+    nxt_status_report_t       *report;
+    nxt_router_app_process_t  *app_process;
 
     port = nxt_runtime_port_find(task->thread->runtime,
                                  msg->port_msg.pid,
@@ -4178,10 +4232,34 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
         app_stat->name.length = app->name.length;
         app_stat->name.start = (u_char *) (p - b->mem.pos);
 
+        nxt_thread_mutex_lock(&app->mutex);
+
         app_stat->active_requests = app->active_requests;
         app_stat->pending_processes = app->pending_processes;
         app_stat->processes = app->processes;
         app_stat->idle_processes = app->idle_processes;
+        app_stat->stopping_processes = 0;
+
+        nxt_queue_each(app_process, &nxt_router->stopping_processes,
+                       nxt_router_app_process_t, stopping_link)
+        {
+            if (!nxt_strstr_eq(&app_process->name, &app->name)) {
+                continue;
+            }
+
+            app_stat->stopping_processes++;
+
+            /* Restarted processes stay attached to finish their requests. */
+            if (app_process->app == app) {
+                app_stat->processes--;
+
+                if (app_process->idle_link.next != NULL) {
+                    app_stat->idle_processes--;
+                }
+            }
+        } nxt_queue_loop;
+
+        nxt_thread_mutex_unlock(&app->mutex);
 
         report->apps_count++;
         app_stat++;

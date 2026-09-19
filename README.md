@@ -231,8 +231,13 @@ curl --unix-socket /tmp/control.worker.sock http://localhost/config/
 curl --unix-socket /tmp/control.worker.sock http://localhost/status
 ```
 
-The status response includes total requests, and running, starting, and idle
-processes plus active requests for each application.
+The status response includes total requests, and running, starting, idle, and
+stopping processes plus active requests for each application. Idle processes
+are included in running. Stopping processes have been told to exit and are
+counted separately until the router receives a process removal notification,
+including old processes after a restart or configuration change. They are
+excluded from running and idle. These are router process management statistics,
+not an operating system process inventory. Prototype processes are excluded.
 
 ## Source And License
 
