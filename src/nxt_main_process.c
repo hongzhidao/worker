@@ -425,7 +425,7 @@ nxt_main_start_process_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
     app_conf->self = conf;
 
     process->stream = msg->port_msg.stream;
-    process->data.app = app_conf;
+    process->start.app = app_conf;
 
     ret = nxt_process_start(task, process);
     if (nxt_fast_path(ret == NXT_OK || ret == NXT_AGAIN)) {

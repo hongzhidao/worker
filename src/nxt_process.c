@@ -475,7 +475,7 @@ nxt_process_do_start(nxt_task_t *task, nxt_process_t *process)
             break;
         }
 
-        ret = init->start(task, &process->data);
+        ret = init->start(task, &process->start);
 
         nxt_port_write_close(port);
 
@@ -666,7 +666,7 @@ nxt_process_created_ok(nxt_task_t *task, nxt_port_recv_msg_t *msg, void *data)
         goto fail;
     }
 
-    ret = init->start(task, &process->data);
+    ret = init->start(task, &process->start);
 
     if (nxt_process_type(process) != NXT_PROCESS_PROTOTYPE) {
         nxt_port_write_close(nxt_process_port_first(process));

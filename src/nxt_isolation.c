@@ -71,7 +71,7 @@ nxt_isolation_main_prefork(nxt_task_t *task, nxt_process_t *process,
     nxt_common_app_conf_t  *app_conf;
 
     rt = task->thread->runtime;
-    app_conf = process->data.app;
+    app_conf = process->start.app;
     cap_setid = rt->capabilities.setid;
 
 #if (NXT_HAVE_PR_SET_NO_NEW_PRIVS)

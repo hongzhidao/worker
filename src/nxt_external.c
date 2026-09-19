@@ -9,7 +9,8 @@
 #include <nxt_unit.h>
 
 
-static nxt_int_t nxt_external_start(nxt_task_t *task, nxt_process_data_t *data);
+static nxt_int_t nxt_external_start(nxt_task_t *task,
+    nxt_process_start_data_t *start);
 
 
 nxt_app_module_t  nxt_external_module = {
@@ -57,7 +58,7 @@ nxt_external_fd_no_cloexec(nxt_task_t *task, nxt_socket_t fd)
 
 
 static nxt_int_t
-nxt_external_start(nxt_task_t *task, nxt_process_data_t *data)
+nxt_external_start(nxt_task_t *task, nxt_process_start_data_t *start)
 {
     char                     **argv;
     u_char                   buf[256];
@@ -74,7 +75,7 @@ nxt_external_start(nxt_task_t *task, nxt_process_data_t *data)
     nxt_external_app_conf_t  *c;
 
     rt = task->thread->runtime;
-    conf = data->app;
+    conf = start->app;
 
     proto_port = rt->port_by_type[NXT_PROCESS_PROTOTYPE];
     router_port = rt->port_by_type[NXT_PROCESS_ROUTER];

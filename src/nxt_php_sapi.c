@@ -80,7 +80,8 @@ typedef void (*zif_handler)(INTERNAL_FUNCTION_PARAMETERS);
 
 static nxt_int_t nxt_php_setup(nxt_task_t *task, nxt_process_t *process,
     nxt_common_app_conf_t *conf);
-static nxt_int_t nxt_php_start(nxt_task_t *task, nxt_process_data_t *data);
+static nxt_int_t nxt_php_start(nxt_task_t *task,
+    nxt_process_start_data_t *start);
 static nxt_int_t nxt_php_set_target(nxt_task_t *task, nxt_php_target_t *target,
     nxt_conf_value_t *conf);
 static nxt_int_t nxt_php_set_ini_path(nxt_task_t *task, nxt_str_t *path,
@@ -449,7 +450,7 @@ nxt_php_setup(nxt_task_t *task, nxt_process_t *process,
 
 
 static nxt_int_t
-nxt_php_start(nxt_task_t *task, nxt_process_data_t *data)
+nxt_php_start(nxt_task_t *task, nxt_process_start_data_t *start)
 {
     uint32_t               next;
     nxt_int_t              ret;
@@ -461,7 +462,7 @@ nxt_php_start(nxt_task_t *task, nxt_process_data_t *data)
     nxt_php_app_conf_t     *c;
     nxt_common_app_conf_t  *conf;
 
-    conf = data->app;
+    conf = start->app;
     c = &conf->u.php;
 
     n = (c->targets != NULL) ? nxt_conf_object_members_count(c->targets) : 1;

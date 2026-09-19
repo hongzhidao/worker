@@ -27,7 +27,7 @@ typedef struct {
 
 
 static nxt_int_t nxt_ruby_start(nxt_task_t *task,
-    nxt_process_data_t *data);
+    nxt_process_start_data_t *start);
 static VALUE nxt_ruby_init_basic(VALUE arg);
 
 static VALUE nxt_ruby_hook_procs_load(VALUE path);
@@ -245,7 +245,7 @@ nxt_ruby_hook_call(VALUE name)
 
 
 static nxt_int_t
-nxt_ruby_start(nxt_task_t *task, nxt_process_data_t *data)
+nxt_ruby_start(nxt_task_t *task, nxt_process_start_data_t *start)
 {
     int                    state, rc;
     VALUE                  res, path;
@@ -258,7 +258,7 @@ nxt_ruby_start(nxt_task_t *task, nxt_process_data_t *data)
 
     static char  *argv[2] = { (char *) "Worker", (char *) "-e0" };
 
-    conf = data->app;
+    conf = start->app;
     c = &conf->u.ruby;
 
     setlocale(LC_CTYPE, "");

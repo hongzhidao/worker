@@ -46,7 +46,7 @@ typedef union {
     nxt_controller_init_t      controller;
     void                       *router;
     nxt_common_app_conf_t      *app;
-} nxt_process_data_t;
+} nxt_process_start_data_t;
 
 
 typedef enum {
@@ -95,30 +95,30 @@ typedef struct {
 
 
 struct nxt_process_s {
-    nxt_pid_t                pid;
-    nxt_queue_t              ports;      /* of nxt_port_t.link */
-    nxt_process_state_t      state;
-    nxt_bool_t               registered;
-    nxt_int_t                use_count;
+    nxt_pid_t                 pid;
+    nxt_queue_t               ports;      /* of nxt_port_t.link */
+    nxt_process_state_t       state;
+    nxt_bool_t                registered;
+    nxt_int_t                 use_count;
 
-    nxt_port_mmaps_t         incoming;
+    nxt_port_mmaps_t          incoming;
 
 
-    nxt_pid_t                isolated_pid;
-    const char               *name;
-    nxt_port_t               *parent_port;
+    nxt_pid_t                 isolated_pid;
+    const char                *name;
+    nxt_port_t                *parent_port;
 
-    uint32_t                 stream;
+    uint32_t                  stream;
 
-    nxt_mp_t                 *mem_pool;
-    nxt_credential_t         *user_cred;
+    nxt_mp_t                  *mem_pool;
+    nxt_credential_t          *user_cred;
 
-    nxt_queue_t              children;   /* of nxt_process_t.link */
-    nxt_queue_link_t         link;       /* for nxt_process_t.children */
+    nxt_queue_t               children;   /* of nxt_process_t.link */
+    nxt_queue_link_t          link;       /* for nxt_process_t.children */
 
-    nxt_process_data_t       data;
+    nxt_process_start_data_t  start;
 
-    nxt_process_isolation_t  isolation;
+    nxt_process_isolation_t   isolation;
 };
 
 
@@ -129,7 +129,7 @@ typedef nxt_int_t (*nxt_process_postfork_t)(nxt_task_t *task,
 typedef nxt_int_t (*nxt_process_setup_t)(nxt_task_t *task,
     nxt_process_t *process);
 typedef nxt_int_t (*nxt_process_start_t)(nxt_task_t *task,
-    nxt_process_data_t *data);
+    nxt_process_start_data_t *start);
 
 
 typedef struct {

@@ -55,7 +55,8 @@ typedef struct {
 
 static nxt_int_t nxt_router_prefork(nxt_task_t *task, nxt_process_t *process,
     nxt_mp_t *mp);
-static nxt_int_t nxt_router_start(nxt_task_t *task, nxt_process_data_t *data);
+static nxt_int_t nxt_router_start(nxt_task_t *task,
+    nxt_process_start_data_t *start);
 static void nxt_router_greet_controller(nxt_task_t *task,
     nxt_port_t *controller_port);
 
@@ -275,7 +276,7 @@ nxt_router_prefork(nxt_task_t *task, nxt_process_t *process, nxt_mp_t *mp)
 
 
 static nxt_int_t
-nxt_router_start(nxt_task_t *task, nxt_process_data_t *data)
+nxt_router_start(nxt_task_t *task, nxt_process_start_data_t *start)
 {
     nxt_int_t      ret;
     nxt_port_t     *controller_port;

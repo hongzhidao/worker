@@ -20,7 +20,7 @@ static nxt_int_t nxt_python3_init_config(nxt_int_t pep405);
 #endif
 
 static nxt_int_t nxt_python_start(nxt_task_t *task,
-    nxt_process_data_t *data);
+    nxt_process_start_data_t *start);
 static nxt_int_t nxt_python_set_target(nxt_task_t *task,
     nxt_python_target_t *target, nxt_conf_value_t *conf);
 static nxt_int_t nxt_python_set_path(nxt_task_t *task, nxt_conf_value_t *value);
@@ -128,7 +128,7 @@ nxt_python3_init_config(nxt_int_t pep405)
 
 
 static nxt_int_t
-nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
+nxt_python_start(nxt_task_t *task, nxt_process_start_data_t *start)
 {
     int                    rc;
     size_t                 len, size;
@@ -153,7 +153,7 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     static const nxt_str_t  wsgi = nxt_string("wsgi");
     static const nxt_str_t  asgi = nxt_string("asgi");
 
-    app_conf = data->app;
+    app_conf = start->app;
     c = &app_conf->u.python;
 
     if (c->home != NULL) {
@@ -291,7 +291,7 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
         }
     }
 
-    nxt_unit_default_init(task, &python_init, data->app);
+    nxt_unit_default_init(task, &python_init, start->app);
 
     proto = c->protocol;
 

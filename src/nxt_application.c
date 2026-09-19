@@ -39,7 +39,7 @@ typedef struct {
 
 
 static nxt_int_t nxt_discovery_start(nxt_task_t *task,
-    nxt_process_data_t *data);
+    nxt_process_start_data_t *start);
 static nxt_buf_t *nxt_discovery_modules(nxt_task_t *task, const char *path);
 static nxt_int_t nxt_discovery_module(nxt_task_t *task, nxt_mp_t *mp,
     nxt_array_t *modules, const char *name);
@@ -50,7 +50,8 @@ static void nxt_discovery_quit(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 static nxt_app_module_t *nxt_app_module_load(nxt_task_t *task,
     const char *name);
 static nxt_int_t nxt_proto_setup(nxt_task_t *task, nxt_process_t *process);
-static nxt_int_t nxt_proto_start(nxt_task_t *task, nxt_process_data_t *data);
+static nxt_int_t nxt_proto_start(nxt_task_t *task,
+    nxt_process_start_data_t *start);
 static nxt_int_t nxt_app_setup(nxt_task_t *task, nxt_process_t *process);
 static nxt_int_t nxt_app_set_environment(nxt_conf_value_t *environment);
 static void nxt_proto_start_process_handler(nxt_task_t *task,
@@ -161,7 +162,7 @@ const nxt_process_init_t  nxt_app_process = {
 
 
 static nxt_int_t
-nxt_discovery_start(nxt_task_t *task, nxt_process_data_t *data)
+nxt_discovery_start(nxt_task_t *task, nxt_process_start_data_t *start)
 {
     uint32_t       stream;
     nxt_buf_t      *b;
@@ -509,7 +510,7 @@ nxt_proto_setup(nxt_task_t *task, nxt_process_t *process)
     nxt_app_lang_module_t  *lang;
     nxt_common_app_conf_t  *app_conf;
 
-    app_conf = process->data.app;
+    app_conf = process->start.app;
 
     nxt_queue_init(&nxt_proto_children);
 
@@ -583,7 +584,7 @@ nxt_proto_setup(nxt_task_t *task, nxt_process_t *process)
 
 
 static nxt_int_t
-nxt_proto_start(nxt_task_t *task, nxt_process_data_t *data)
+nxt_proto_start(nxt_task_t *task, nxt_process_start_data_t *start)
 {
     nxt_debug(task, "prototype waiting for clone messages");
 
@@ -640,7 +641,7 @@ nxt_proto_start_process_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 
     process->user_cred = &rt->user_cred;
 
-    process->data.app = nxt_app_conf;
+    process->start.app = nxt_app_conf;
     process->stream = msg->port_msg.stream;
 
     init->siblings = &nxt_proto_children;
@@ -964,7 +965,7 @@ nxt_app_setup(nxt_task_t *task, nxt_process_t *process)
 
     init = nxt_process_init(process);
 
-    return init->start(task, &process->data);
+    return init->start(task, &process->start);
 }
 
 
