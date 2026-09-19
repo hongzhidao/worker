@@ -267,7 +267,7 @@ nxt_h1p_conn_request_init(nxt_task_t *task, void *obj, void *data)
 
     nxt_debug(task, "h1p conn request init");
 
-    nxt_conn_active(task->thread->engine, c);
+    nxt_conn_active(c);
 
     r = nxt_http_request_create(task);
 
@@ -1507,7 +1507,7 @@ nxt_h1p_conn_close(nxt_task_t *task, void *obj, void *data)
 
     nxt_debug(task, "h1p conn close");
 
-    nxt_conn_active(task->thread->engine, c);
+    nxt_conn_active(c);
 
     nxt_h1p_shutdown(task, c);
 }
@@ -1522,7 +1522,7 @@ nxt_h1p_conn_error(nxt_task_t *task, void *obj, void *data)
 
     nxt_debug(task, "h1p conn error");
 
-    nxt_conn_active(task->thread->engine, c);
+    nxt_conn_active(c);
 
     nxt_h1p_shutdown(task, c);
 }
@@ -1624,7 +1624,7 @@ nxt_h1p_idle_close(nxt_task_t *task, void *obj, void *data)
 
     nxt_debug(task, "h1p idle close");
 
-    nxt_conn_active(task->thread->engine, c);
+    nxt_conn_active(c);
 
     nxt_h1p_idle_response(task, c);
 }
@@ -1643,7 +1643,7 @@ nxt_h1p_idle_timeout(nxt_task_t *task, void *obj, void *data)
     c = nxt_read_timer_conn(timer);
     c->block_read = 1;
 
-    nxt_conn_active(task->thread->engine, c);
+    nxt_conn_active(c);
 
     nxt_h1p_idle_response(task, c);
 }

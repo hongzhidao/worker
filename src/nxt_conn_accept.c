@@ -198,8 +198,6 @@ nxt_conn_accept(nxt_task_t *task, nxt_listen_event_t *lev, nxt_conn_t *c)
 
     engine = task->thread->engine;
 
-    engine->accepted_conns_cnt++;
-
     nxt_conn_idle(engine, c);
 
     c->listen = lev;

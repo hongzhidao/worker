@@ -153,7 +153,6 @@ struct nxt_conn_s {
     uint8_t                       block_read;   /* 1 bit */
     uint8_t                       block_write;  /* 1 bit */
     uint8_t                       delayed;      /* 1 bit */
-    uint8_t                       idle;         /* 1 bit */
 
 #define NXT_CONN_SENDFILE_OFF     0
 #define NXT_CONN_SENDFILE_ON      1
@@ -290,20 +289,11 @@ ssize_t nxt_event_conn_io_send(nxt_conn_t *c, void *buf, size_t size);
         nxt_event_engine_t  *e = engine;                                      \
                                                                               \
         nxt_queue_insert_head(&e->idle_connections, &c->link);                \
-                                                                              \
-        c->idle = 1;                                                          \
-        e->idle_conns_cnt++;                                                  \
     } while (0)
 
 
-#define nxt_conn_active(engine, c)                                            \
-    do {                                                                      \
-        nxt_event_engine_t  *e = engine;                                      \
-                                                                              \
-        nxt_queue_remove(&c->link);                                           \
-                                                                              \
-        e->idle_conns_cnt -= c->idle;                               \
-    } while (0)
+#define nxt_conn_active(c)                                                    \
+    nxt_queue_remove(&(c)->link)
 
 
 extern nxt_conn_io_t             nxt_unix_conn_io;

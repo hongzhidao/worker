@@ -231,9 +231,8 @@ curl --unix-socket /tmp/control.worker.sock http://localhost/config/
 curl --unix-socket /tmp/control.worker.sock http://localhost/status
 ```
 
-The status response includes total requests; accepted, active, idle, and
-closed connections; and running, starting, and idle processes plus active
-requests for each application.
+The status response includes total requests, and running, starting, and idle
+processes plus active requests for each application.
 
 ## Source And License
 

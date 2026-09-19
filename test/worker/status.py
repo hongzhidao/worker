@@ -7,12 +7,6 @@ class Status:
 
     def _check_zeros():
         assert Status.control.conf_get('/status') == {
-            'connections': {
-                'accepted': 0,
-                'active': 0,
-                'idle': 0,
-                'closed': 0,
-            },
             'requests': {'total': 0},
             'applications': {},
         }

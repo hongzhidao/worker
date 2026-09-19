@@ -10,14 +10,6 @@ prerequisites = {'modules': {'python': 'any'}}
 client = ApplicationPython()
 
 
-def check_connections(accepted, active, idle, closed):
-    assert Status.get('/connections') == {
-        'accepted': accepted,
-        'active': active,
-        'idle': idle,
-        'closed': closed,
-    }
-
 def app_default(name="empty", module="wsgi", listen="*:8080"):
     return {
         "listen": listen,
@@ -30,6 +22,8 @@ def app_default(name="empty", module="wsgi", listen="*:8080"):
 
 def test_status():
     assert 'error' in client.conf_delete('/status'), 'DELETE method'
+    assert set(client.conf_get('/status')) == {'requests', 'applications'}
+    assert 'error' in client.conf_get('/status/connections')
 
 def test_status_requests(skip_alert):
     skip_alert(r'Python failed to import module "blah"')
@@ -87,7 +81,7 @@ Connection: close
 
     sock.close()
 
-def test_status_connections():
+def test_status_requests_keepalive():
     assert 'success' in client.conf(
         {
             "applications": {
@@ -99,10 +93,8 @@ def test_status_connections():
 
     Status.init()
 
-    # accepted, closed
-
     assert client.get()['status'] == 200
-    check_connections(1, 0, 0, 1)
+    assert Status.get('/requests/total') == 1
 
     # idle
 
@@ -112,10 +104,10 @@ def test_status_connections():
         read_timeout=1,
     )
 
-    check_connections(2, 0, 1, 1)
+    assert Status.get('/requests/total') == 2
 
-    client.get(sock=sock)
-    check_connections(2, 0, 0, 2)
+    assert client.get(sock=sock)['status'] == 200
+    assert Status.get('/requests/total') == 3
 
     # active
 
@@ -129,10 +121,11 @@ def test_status_connections():
         start=True,
         read_timeout=1,
     )
-    check_connections(3, 1, 0, 2)
+    assert Status.get('/requests/total') == 4
 
-    client.get(sock=sock)
-    check_connections(3, 0, 0, 3)
+    client.recvall(sock)
+    sock.close()
+    assert Status.get('/requests/total') == 4
 
 def test_status_applications():
     def check_applications(expert):
@@ -210,5 +203,4 @@ def test_status_application_pass():
     Status.init()
 
     assert client.get()['status'] == 200
-    check_connections(1, 0, 0, 1)
     assert Status.get('/requests/total') == 1, 'application pass'
