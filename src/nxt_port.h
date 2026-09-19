@@ -216,19 +216,13 @@ struct nxt_port_recv_msg_s {
 #define nxt_recv_msg_cmsg_pid_ref(msg)  (NULL)
 #endif
 
-typedef struct nxt_app_s  nxt_app_t;
+typedef void (*nxt_port_close_t)(nxt_task_t *task, nxt_port_t *port);
 
 struct nxt_port_s {
     nxt_fd_event_t      socket;
 
     nxt_queue_link_t    link;       /* for nxt_process_t.ports */
     nxt_process_t       *process;
-
-    nxt_queue_link_t    app_link;   /* for nxt_app_t.ports */
-    nxt_app_t           *app;
-
-    nxt_queue_link_t    idle_link;  /* for nxt_app_t.idle_ports */
-    nxt_msec_t          idle_start;
 
     nxt_queue_t         messages;   /* of nxt_port_send_msg_t */
     nxt_thread_mutex_t  write_mutex;
@@ -238,11 +232,9 @@ struct nxt_port_s {
     /* Maximum interleave of message parts. */
     uint32_t            max_share;
 
-    uint32_t            active_websockets;
-    uint32_t            active_requests;
-
     nxt_port_handler_t  handler;
     nxt_port_handler_t  *data;
+    nxt_port_close_t    close_handler;
 
     nxt_mp_t            *mem_pool;
     nxt_event_engine_t  *engine;

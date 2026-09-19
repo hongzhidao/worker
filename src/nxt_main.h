@@ -20,6 +20,7 @@ typedef void (*nxt_port_handler_t)(nxt_task_t *task, nxt_port_recv_msg_t *msg);
 typedef struct nxt_port_handlers_s   nxt_port_handlers_t;
 typedef struct nxt_sig_event_s       nxt_sig_event_t;
 typedef struct nxt_runtime_s         nxt_runtime_t;
+typedef struct nxt_app_s             nxt_app_t;
 
 typedef struct nxt_thread_s          nxt_thread_t;
 typedef struct nxt_event_engine_s    nxt_event_engine_t;

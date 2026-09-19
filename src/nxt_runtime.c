@@ -1236,7 +1236,7 @@ nxt_runtime_process_release(nxt_runtime_t *rt, nxt_process_t *process)
 
     nxt_thread_mutex_destroy(&process->incoming.mutex);
 
-    /* processes from nxt_runtime_process_get() have no memory pool */
+    /* Remote process records may have no memory pool. */
     if (process->mem_pool != NULL) {
         nxt_mp_destroy(process->mem_pool);
     }

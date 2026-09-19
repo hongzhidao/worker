@@ -7,7 +7,6 @@
 #include <nxt_main.h>
 #include <nxt_runtime.h>
 #include <nxt_port.h>
-#include <nxt_router.h>
 #include <nxt_app_queue.h>
 #include <nxt_port_queue.h>
 
@@ -32,9 +31,6 @@ nxt_port_mp_cleanup(nxt_task_t *task, void *obj, void *data)
     nxt_assert(port->pair[1] == -1);
 
     nxt_assert(port->use_count == 0);
-    nxt_assert(port->app_link.next == NULL);
-    nxt_assert(port->idle_link.next == NULL);
-
     nxt_assert(nxt_queue_is_empty(&port->messages));
     nxt_assert(nxt_lvlhsh_is_empty(&port->rpc_streams));
     nxt_assert(nxt_lvlhsh_is_empty(&port->rpc_peers));
@@ -103,8 +99,8 @@ nxt_port_close(nxt_task_t *task, nxt_port_t *port)
         nxt_fd_close(port->pair[1]);
         port->pair[1] = -1;
 
-        if (port->app != NULL) {
-            nxt_router_app_port_close(task, port);
+        if (port->close_handler != NULL) {
+            port->close_handler(task, port);
         }
     }
 
@@ -128,8 +124,6 @@ nxt_port_release(nxt_task_t *task, nxt_port_t *port)
 {
     nxt_debug(task, "port %p %d:%d release, type %d", port, port->pid,
               port->id, port->type);
-
-    port->app = NULL;
 
     if (port->link.next != NULL) {
         nxt_assert(port->process != NULL);

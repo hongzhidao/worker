@@ -117,6 +117,7 @@ struct nxt_process_s {
     nxt_queue_link_t          link;       /* for nxt_process_t.children */
 
     nxt_process_start_data_t  start;
+    void                     *data;
 
     nxt_process_isolation_t   isolation;
 };
