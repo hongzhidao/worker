@@ -78,6 +78,10 @@ main(int argc, char **argv)
         return 1;
     }
 
+    if (nxt_app_latency_test(thr) != NXT_OK) {
+        return 1;
+    }
+
     if (nxt_rbtree_test(thr, 100 * 1000) != NXT_OK) {
         return 1;
     }

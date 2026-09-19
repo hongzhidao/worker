@@ -267,6 +267,24 @@ response to the client. A later body error does not add another response. Reques
 that end without final response headers do not increment these counters, and
 their sum need not equal `requests.completed`.
 
+Each application's `latency` object exposes `p50`, `p95`, and `p99` processing
+latencies in milliseconds. Samples are recorded only when an acknowledged
+request ends, including errors and cancellations. Time before acknowledgment
+is excluded. WebSocket requests are sampled at upgrade, not at connection close.
+All three fields are `null` when the rolling window has no samples; a numeric
+zero represents a measured duration below one millisecond.
+
+The rolling histogram uses 60 one-second slices, so samples can expire up to
+one second before reaching an age of 60 seconds. Where available, latency reads
+`CLOCK_MONOTONIC` directly instead of the runtime's cached or coarse clock.
+Nanosecond start and end timestamps are subtracted before the elapsed duration
+is rounded down to integer milliseconds. Other platforms use the runtime's
+monotonic clock fallback. The nearest-rank percentile is reported as the upper
+bound of its histogram bucket: values below 32 ms have 1 ms resolution, while
+larger values have at most 6.25% bucket quantization overhead. Histogram memory
+is fixed (about 316 KiB per sampled application), allocated on the first sample
+and released with the application. No individual request history is retained.
+
 Counters belong to the application configuration instance. Restarting its
 processes or changing only its listeners preserves the counters; a configuration
 change that replaces the application instance resets them. Requests still using

@@ -11,6 +11,8 @@ typedef struct {
     nxt_str_t         name;
     uint64_t          total_requests;
     uint64_t          responses[5];
+    uint64_t          latency[3];
+    nxt_bool_t        latency_valid;
     uint32_t          waiting_requests;
     uint32_t          processing_requests;
     uint32_t          pending_processes;

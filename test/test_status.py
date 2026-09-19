@@ -69,6 +69,7 @@ def test_status_requests(skip_alert):
     assert Status.get('/requests/total') == 4, '5xx'
     wait_requests('blah', total=1, completed=1)
     wait_responses('blah', {'5xx': 1})
+    check_empty_latency('blah')
 
     client.http(
         b"""GET / HTTP/1.1
@@ -172,6 +173,7 @@ def test_status_applications():
 
         for _ in range(100):
             status = Status.get(f'/applications/{name}')
+            status.pop('latency')
             if status == expected:
                 return
             time.sleep(0.05)
@@ -265,6 +267,78 @@ def wait_responses(name, counts=None):
         time.sleep(0.05)
 
     assert responses == expected
+
+
+def check_latency(name, minimum=0, maximum=1000):
+    latency = client.conf_get(f'/status/applications/{name}/latency')
+    assert set(latency) == {'p50', 'p95', 'p99'}
+    assert all(isinstance(value, int) for value in latency.values())
+    assert (
+        minimum <= latency['p50'] <= latency['p95'] <= latency['p99'] <= maximum
+    )
+    return latency
+
+
+def check_empty_latency(name):
+    assert client.conf_get(f'/status/applications/{name}/latency') == {
+        'p50': None,
+        'p95': None,
+        'p99': None,
+    }
+
+
+@pytest.mark.parametrize('status', [200, 500])
+def test_status_application_latency_completion(status, temp_dir):
+    release_path = temp_dir + '/release-latency'
+    client.load('request_status', environment={'RELEASE_PATH': release_path})
+    check_empty_latency('request_status')
+
+    sock = client.get(
+        headers={
+            'Host': 'localhost',
+            'X-Wait': '1',
+            'X-Status': str(status),
+            'Connection': 'close',
+        },
+        no_recv=True,
+    )
+    try:
+        wait_requests('request_status', total=1, processing=1)
+        check_empty_latency('request_status')
+        time.sleep(0.15)
+        open(release_path, 'a').close()
+        assert f'HTTP/1.1 {status}'.encode() in client.recvall(sock)
+        wait_requests('request_status', total=1, completed=1)
+        latency = check_latency('request_status', minimum=100)
+        assert latency['p50'] == latency['p95'] == latency['p99']
+    finally:
+        open(release_path, 'a').close()
+        sock.close()
+
+
+def test_status_application_latency_excludes_waiting():
+    client.load('request_status', processes=1)
+    pid = int(client.get()['body'])
+    os.kill(pid, signal.SIGSTOP)
+    sock = None
+    try:
+        sock = client.get(
+            headers={
+                'Host': 'localhost', 'X-Delay': '0.2', 'Connection': 'close',
+            },
+            no_recv=True,
+        )
+        wait_requests('request_status', total=2, waiting=1, completed=1)
+        time.sleep(1.2)
+        os.kill(pid, signal.SIGCONT)
+        assert b'HTTP/1.1 200' in client.recvall(sock)
+        wait_requests('request_status', total=2, completed=2)
+        latency = check_latency('request_status', maximum=800)
+        assert latency['p99'] >= 150
+    finally:
+        os.kill(pid, signal.SIGCONT)
+        if sock is not None:
+            sock.close()
 
 
 def test_status_application_response_classes():
@@ -418,11 +492,13 @@ def test_status_application_request_process_exit(skip_alert, temp_dir):
     )
     try:
         wait_requests('request_status', total=2, processing=1, completed=1)
+        time.sleep(0.15)
         skip_alert(fr'app process {pid} exited on signal 9')
         os.kill(pid, signal.SIGKILL)
         assert b'HTTP/1.1 503' in client.recvall(sock)
         wait_requests('request_status', total=2, completed=2)
         wait_responses('request_status', {'2xx': 1, '5xx': 1})
+        assert check_latency('request_status')['p99'] >= 100
     finally:
         open(release_path, 'a').close()
         sock.close()
@@ -474,6 +550,7 @@ def test_status_application_request_timeout():
         assert b'HTTP/1.1 503' in client.recvall(sock)
         wait_requests('request_status', total=1, completed=1)
         wait_responses('request_status', {'5xx': 1})
+        check_latency('request_status', minimum=800, maximum=1500)
     finally:
         sock.close()
 
@@ -486,6 +563,7 @@ def test_status_application_request_counter_lifetime():
     client.load('request_status', processes=1)
     assert client.get()['status'] == 200
     wait_requests('request_status', total=1, completed=1)
+    latency = check_latency('request_status')
 
     assert 'success' in client.conf_get(
         '/control/applications/request_status/restart'
@@ -493,6 +571,7 @@ def test_status_application_request_counter_lifetime():
     wait_processes('request_status', running=1, idle=1)
     wait_requests('request_status', total=1, completed=1)
     wait_responses('request_status', {'2xx': 1})
+    assert check_latency('request_status') == latency
 
     assert 'success' in client.conf(
         '"*:8081"', 'applications/request_status/listen'
@@ -506,6 +585,7 @@ def test_status_application_request_counter_lifetime():
     )
     wait_requests('request_status')
     wait_responses('request_status')
+    check_empty_latency('request_status')
     assert client.get(
         port=8081,
         headers={'Host': 'localhost', 'X-Status': '500', 'Connection': 'close'},

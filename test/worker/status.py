@@ -25,6 +25,8 @@ class Status:
                     if k in d2
                 }
             else:
+                if d1 is None or d2 is None:
+                    return d1
                 return d1 - d2
 
         return find_diffs(Status.control.conf_get('/status'), Status._status)

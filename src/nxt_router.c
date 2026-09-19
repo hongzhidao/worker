@@ -161,7 +161,7 @@ static void nxt_router_app_restart_handler(nxt_task_t *task,
 static nxt_int_t nxt_router_app_shared_port_send(nxt_task_t *task,
     nxt_port_t *app_port);
 static void nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app,
-    nxt_port_t *port, nxt_apr_action_t action);
+    nxt_port_t *port, nxt_apr_action_t action, nxt_nsec_t processing_start);
 static void nxt_router_app_port_close(nxt_task_t *task, nxt_port_t *port);
 static void nxt_router_adjust_idle_timer(nxt_task_t *task, void *obj,
     void *data);
@@ -3105,7 +3105,7 @@ nxt_router_app_port_ready(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 
     nxt_router_app_shared_port_send(task, port);
 
-    nxt_router_app_port_release(task, app, port, NXT_APR_NEW_PORT);
+    nxt_router_app_port_release(task, app, port, NXT_APR_NEW_PORT, 0);
 }
 
 
@@ -3315,9 +3315,10 @@ nxt_router_app_shared_port_send(nxt_task_t *task, nxt_port_t *app_port)
 
 static void
 nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
-    nxt_apr_action_t action)
+    nxt_apr_action_t action, nxt_nsec_t processing_start)
 {
     int                       inc_use;
+    nxt_nsec_t                now;
     uint32_t                  got_response, dec_requests;
     nxt_bool_t                adjust_idle_timer;
     nxt_router_app_process_t  *app_process;
@@ -3367,6 +3368,20 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
 
     app_process->processing_requests -= got_response + dec_requests;
     app->processing_requests -= got_response + dec_requests;
+
+    if (got_response + dec_requests != 0) {
+        now = nxt_app_latency_now(task->thread);
+
+        if (app->latency == NULL) {
+            app->latency = nxt_zalloc(sizeof(nxt_app_latency_t));
+        }
+
+        if (app->latency != NULL) {
+            nxt_app_latency_record(app->latency, now,
+                                   now >= processing_start
+                                   ? now - processing_start : 0);
+        }
+    }
 
     if (port->pair[1] != -1 && app_process->link.next == NULL) {
         nxt_queue_insert_tail(&app->process_queue, &app_process->link);
@@ -3778,6 +3793,8 @@ nxt_router_free_app(nxt_task_t *task, void *obj, void *data)
     nxt_assert(nxt_queue_is_empty(&app->process_queue));
     nxt_assert(nxt_queue_is_empty(&app->spare_process_queue));
     nxt_assert(nxt_queue_is_empty(&app->idle_process_queue));
+
+    nxt_free(app->latency);
 
     nxt_port_mmaps_destroy(&app->outgoing, 1);
 
@@ -4244,6 +4261,9 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
                    sizeof(app_stat->responses));
         app_stat->waiting_requests = app->waiting_requests;
         app_stat->processing_requests = app->processing_requests;
+        app_stat->latency_valid = nxt_app_latency_get(app->latency,
+                                 nxt_app_latency_now(task->thread),
+                                 app_stat->latency);
         app_stat->pending_processes = app->pending_processes;
         app_stat->processes = app->processes;
         app_stat->idle_processes = app->idle_processes;
@@ -4384,7 +4404,8 @@ nxt_request_rpc_data_unlink(nxt_task_t *task,
 
     if (req_rpc_data->app_port != NULL) {
         nxt_router_app_port_release(task, app, req_rpc_data->app_port,
-                                    req_rpc_data->apr_action);
+                                    req_rpc_data->apr_action,
+                                    req_rpc_data->processing_start);
 
         req_rpc_data->app_port = NULL;
     }
@@ -4607,7 +4628,8 @@ nxt_router_response_ready_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 
             nxt_thread_mutex_unlock(&app->mutex);
 
-            nxt_router_app_port_release(task, app, app_port, NXT_APR_UPGRADE);
+            nxt_router_app_port_release(task, app, app_port, NXT_APR_UPGRADE,
+                                        req_rpc_data->processing_start);
             req_rpc_data->apr_action = NXT_APR_CLOSE;
 
             nxt_debug(task, "stream #%uD upgrade", req_rpc_data->stream);
@@ -4721,6 +4743,8 @@ nxt_router_req_headers_ack_handler(nxt_task_t *task,
     app->waiting_requests--;
     app->processing_requests++;
     app_process->processing_requests++;
+
+    req_rpc_data->processing_start = nxt_app_latency_now(task->thread);
 
     nxt_port_inc_use(app_port);
 

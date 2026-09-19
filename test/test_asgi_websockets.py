@@ -100,6 +100,12 @@ def test_asgi_websockets_mirror():
         'responses'
     ] == expected_responses
 
+    latency = client.conf_get('/status/applications')['websockets/mirror'][
+        'latency'
+    ]
+    assert set(latency) == {'p50', 'p95', 'p99'}
+    assert all(isinstance(value, int) for value in latency.values())
+
     ws.frame_write(sock, ws.OP_TEXT, message)
     frame = ws.frame_read(sock)
 
@@ -110,6 +116,7 @@ def test_asgi_websockets_mirror():
 
     assert message == frame['data'].decode('utf-8'), 'mirror 2'
 
+    time.sleep(0.1)
     sock.close()
 
     assert client.conf_get('/status/applications')['websockets/mirror'][
@@ -118,6 +125,9 @@ def test_asgi_websockets_mirror():
     assert client.conf_get('/status/applications')['websockets/mirror'][
         'responses'
     ] == expected_responses
+    assert client.conf_get('/status/applications')['websockets/mirror'][
+        'latency'
+    ] == latency
 
 def test_asgi_websockets_mirror_app_change():
     client.load('websockets/mirror')

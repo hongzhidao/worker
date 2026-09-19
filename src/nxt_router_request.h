@@ -29,6 +29,7 @@ typedef struct {
 
     nxt_port_t              *app_port;
     nxt_apr_action_t        apr_action;
+    nxt_nsec_t              processing_start;
 
     nxt_http_request_t      *request;
     nxt_msg_info_t          msg_info;
