@@ -232,12 +232,33 @@ curl --unix-socket /tmp/control.worker.sock http://localhost/status
 ```
 
 The status response includes total requests, and running, starting, idle, and
-stopping processes plus active requests for each application. Idle processes
-are included in running. Stopping processes have been told to exit and are
-counted separately until the router receives a process removal notification,
+stopping processes plus request lifecycle statistics for each application.
+Idle processes are included in running. Stopping processes have been told to
+exit and are counted separately until the router receives a process removal notification,
 including old processes after a restart or configuration change. They are
 excluded from running and idle. These are router process management statistics,
 not an operating system process inventory. Prototype processes are excluded.
+
+Each application's `requests` object contains:
+
+| Field | Meaning |
+| --- | --- |
+| `total` | Cumulative requests entering application dispatch. |
+| `waiting` | Current requests awaiting acknowledgment from an application process. |
+| `processing` | Current acknowledged requests that have not ended. |
+| `completed` | Cumulative ended requests, including errors and cancellations. |
+
+`total = waiting + processing + completed`. The former `active` field is
+replaced by `waiting` and `processing`; their sum gives the active request count.
+Requests end when the router receives the complete application response, fails
+or cancels the request, or completes a WebSocket upgrade. Sending buffered
+response data to the client and the subsequent WebSocket connection lifetime
+are outside these request counters.
+
+Counters belong to the application configuration instance. Restarting its
+processes or changing only its listeners preserves the counters; a configuration
+change that replaces the application instance resets them. Requests still using
+the previous instance are not included in the new instance's statistics.
 
 ## Source And License
 

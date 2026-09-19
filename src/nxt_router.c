@@ -2669,7 +2669,8 @@ nxt_router_app_can_start(nxt_app_t *app)
 nxt_inline nxt_bool_t
 nxt_router_app_need_start(nxt_app_t *app)
 {
-    return (app->active_requests > app->processes + app->pending_processes)
+    return ((uint64_t) app->waiting_requests + app->processing_requests
+            > app->processes + app->pending_processes)
            || (app->spare_processes
                 > app->idle_processes + app->pending_processes);
 }
@@ -3353,7 +3354,7 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
     if (port->id == NXT_SHARED_PORT_ID) {
         nxt_thread_mutex_lock(&app->mutex);
 
-        app->active_requests -= got_response + dec_requests;
+        app->waiting_requests -= got_response + dec_requests;
 
         nxt_thread_mutex_unlock(&app->mutex);
 
@@ -3364,8 +3365,8 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
 
     nxt_thread_mutex_lock(&app->mutex);
 
-    app_process->active_requests -= got_response + dec_requests;
-    app->active_requests -= got_response + dec_requests;
+    app_process->processing_requests -= got_response + dec_requests;
+    app->processing_requests -= got_response + dec_requests;
 
     if (port->pair[1] != -1 && app_process->link.next == NULL) {
         nxt_queue_insert_tail(&app->process_queue, &app_process->link);
@@ -3376,7 +3377,7 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
     adjust_idle_timer = 0;
 
     if (port->pair[1] != -1
-        && app_process->active_requests == 0
+        && app_process->processing_requests == 0
         && app_process->active_websockets == 0
         && app_process->idle_link.next == NULL)
     {
@@ -3770,7 +3771,8 @@ nxt_router_free_app(nxt_task_t *task, void *obj, void *data)
 
     nxt_assert(app->proto_port == NULL);
     nxt_assert(app->processes == 0);
-    nxt_assert(app->active_requests == 0);
+    nxt_assert(app->waiting_requests == 0);
+    nxt_assert(app->processing_requests == 0);
     nxt_assert(nxt_lvlhsh_is_empty(&app->port_hash));
     nxt_assert(app->idle_processes == 0);
     nxt_assert(nxt_queue_is_empty(&app->process_queue));
@@ -4234,7 +4236,12 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 
         nxt_thread_mutex_lock(&app->mutex);
 
-        app_stat->active_requests = app->active_requests;
+        nxt_assert((uint64_t) app->waiting_requests + app->processing_requests
+                   <= app->total_requests);
+
+        app_stat->total_requests = app->total_requests;
+        app_stat->waiting_requests = app->waiting_requests;
+        app_stat->processing_requests = app->processing_requests;
         app_stat->pending_processes = app->pending_processes;
         app_stat->processes = app->processes;
         app_stat->idle_processes = app->idle_processes;
@@ -4708,7 +4715,10 @@ nxt_router_req_headers_ack_handler(nxt_task_t *task,
         }
     }
 
-    app_process->active_requests++;
+    nxt_assert(app->waiting_requests != 0);
+    app->waiting_requests--;
+    app->processing_requests++;
+    app_process->processing_requests++;
 
     nxt_port_inc_use(app_port);
 
@@ -4822,7 +4832,8 @@ nxt_router_app_port_get(nxt_task_t *task, nxt_app_t *app,
     port = app->shared_port;
     nxt_port_inc_use(port);
 
-    app->active_requests++;
+    app->total_requests++;
+    app->waiting_requests++;
 
     if (nxt_router_app_can_start(app) && nxt_router_app_need_start(app)) {
         app->pending_processes++;
@@ -4872,6 +4883,10 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
                                           nxt_router_response_error_handler,
                                           sizeof(nxt_request_rpc_data_t));
     if (nxt_slow_path(req_rpc_data == NULL)) {
+        nxt_thread_mutex_lock(&conf->app->mutex);
+        conf->app->total_requests++;
+        nxt_thread_mutex_unlock(&conf->app->mutex);
+
         nxt_http_request_error(task, r, NXT_HTTP_INTERNAL_SERVER_ERROR);
         return;
     }

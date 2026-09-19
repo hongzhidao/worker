@@ -100,7 +100,7 @@ typedef struct {
     nxt_str_t             name;
     nxt_msec_t            idle_start;
 
-    uint32_t              active_requests;
+    uint32_t              processing_requests;
     uint32_t              active_websockets;
 } nxt_router_app_process_t;
 
@@ -120,7 +120,9 @@ struct nxt_app_s {
 
     nxt_str_t              name;
 
-    uint32_t               active_requests;
+    uint64_t               total_requests;
+    uint32_t               waiting_requests;
+    uint32_t               processing_requests;
     uint32_t               pending_processes;
     uint32_t               processes;
     uint32_t               idle_processes;
