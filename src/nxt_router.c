@@ -7,7 +7,6 @@
 
 #include <nxt_router.h>
 #include <nxt_conf.h>
-#include <nxt_status.h>
 #include <nxt_http.h>
 #include <nxt_port_memory_int.h>
 #include <nxt_unit_request.h>
@@ -3318,7 +3317,6 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
     nxt_apr_action_t action, nxt_nsec_t processing_start)
 {
     int                       inc_use;
-    nxt_nsec_t                now;
     uint32_t                  got_response, dec_requests;
     nxt_bool_t                adjust_idle_timer;
     nxt_router_app_process_t  *app_process;
@@ -3370,17 +3368,8 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
     app->processing_requests -= got_response + dec_requests;
 
     if (got_response + dec_requests != 0) {
-        now = nxt_app_latency_now(task->thread);
-
-        if (app->latency == NULL) {
-            app->latency = nxt_zalloc(sizeof(nxt_app_latency_t));
-        }
-
-        if (app->latency != NULL) {
-            nxt_app_latency_record(app->latency, now,
-                                   now >= processing_start
-                                   ? now - processing_start : 0);
-        }
+        nxt_app_status_record_latency(&app->status, task->thread,
+                                      processing_start);
     }
 
     if (port->pair[1] != -1 && app_process->link.next == NULL) {
@@ -3794,7 +3783,7 @@ nxt_router_free_app(nxt_task_t *task, void *obj, void *data)
     nxt_assert(nxt_queue_is_empty(&app->spare_process_queue));
     nxt_assert(nxt_queue_is_empty(&app->idle_process_queue));
 
-    nxt_free(app->latency);
+    nxt_free(app->status.latency);
 
     nxt_port_mmaps_destroy(&app->outgoing, 1);
 
@@ -4195,17 +4184,9 @@ nxt_router_oosm_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 static void
 nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 {
-    u_char                    *p;
-    size_t                    alloc;
-    uint64_t                  buckets[NXT_APP_LATENCY_BUCKETS];
-    uint64_t                  merged[NXT_APP_LATENCY_BUCKETS];
-    nxt_app_t                 *app;
-    nxt_buf_t                 *b;
-    nxt_uint_t                type, i;
-    nxt_port_t                *port;
-    nxt_status_app_t          *app_stat;
-    nxt_status_report_t       *report;
-    nxt_router_app_process_t  *app_process;
+    nxt_buf_t   *b;
+    nxt_uint_t  type;
+    nxt_port_t  *port;
 
     port = nxt_runtime_port_find(task->thread->runtime,
                                  msg->port_msg.pid,
@@ -4215,106 +4196,9 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
         return;
     }
 
-    alloc = sizeof(nxt_status_report_t);
-
-    nxt_queue_each(app, &nxt_router->apps, nxt_app_t, link) {
-
-        alloc += sizeof(nxt_status_app_t) + app->name.length;
-
-    } nxt_queue_loop;
-
-    b = nxt_buf_mem_alloc(port->mem_pool, alloc, 0);
-    if (nxt_slow_path(b == NULL)) {
-        type = NXT_PORT_MSG_RPC_ERROR;
-        goto fail;
-    }
-
-    report = (nxt_status_report_t *) b->mem.free;
-    b->mem.free = b->mem.end;
-
-    nxt_memzero(report, sizeof(nxt_status_report_t));
-    nxt_memzero(merged, sizeof(merged));
-
-    report->apps_count = 0;
-    app_stat = report->apps;
-    p = b->mem.end;
-
-    nxt_queue_each(app, &nxt_router->apps, nxt_app_t, link) {
-        p -= app->name.length;
-
-        nxt_memcpy(p, app->name.start, app->name.length);
-
-        app_stat->name.length = app->name.length;
-        app_stat->name.start = (u_char *) (p - b->mem.pos);
-
-        nxt_thread_mutex_lock(&app->mutex);
-
-        nxt_assert((uint64_t) app->waiting_requests + app->processing_requests
-                   <= app->total_requests);
-
-        app_stat->total_requests = app->total_requests;
-        nxt_memcpy(app_stat->responses, app->responses,
-                   sizeof(app_stat->responses));
-        app_stat->waiting_requests = app->waiting_requests;
-        app_stat->processing_requests = app->processing_requests;
-        nxt_memzero(buckets, sizeof(buckets));
-        nxt_app_latency_merge(buckets, app->latency,
-                              nxt_app_latency_now(task->thread));
-        app_stat->pending_processes = app->pending_processes;
-        app_stat->processes = app->processes;
-        app_stat->idle_processes = app->idle_processes;
-        app_stat->stopping_processes = 0;
-
-        nxt_queue_each(app_process, &nxt_router->stopping_processes,
-                       nxt_router_app_process_t, stopping_link)
-        {
-            if (!nxt_strstr_eq(&app_process->name, &app->name)) {
-                continue;
-            }
-
-            app_stat->stopping_processes++;
-
-            /* Restarted processes stay attached to finish their requests. */
-            if (app_process->app == app) {
-                app_stat->processes--;
-
-                if (app_process->idle_link.next != NULL) {
-                    app_stat->idle_processes--;
-                }
-            }
-        } nxt_queue_loop;
-
-        nxt_thread_mutex_unlock(&app->mutex);
-
-        app_stat->latency_valid = nxt_app_latency_percentiles(buckets,
-                                                             app_stat->latency);
-
-        report->summary.total_requests += app_stat->total_requests;
-        report->summary.waiting_requests += app_stat->waiting_requests;
-        report->summary.processing_requests += app_stat->processing_requests;
-        report->summary.pending_processes += app_stat->pending_processes;
-        report->summary.processes += app_stat->processes;
-        report->summary.idle_processes += app_stat->idle_processes;
-        report->summary.stopping_processes += app_stat->stopping_processes;
-
-        for (i = 0; i < nxt_nitems(app_stat->responses); i++) {
-            report->summary.responses[i] += app_stat->responses[i];
-        }
-
-        for (i = 0; i < NXT_APP_LATENCY_BUCKETS; i++) {
-            merged[i] += buckets[i];
-        }
-
-        report->apps_count++;
-        app_stat++;
-    } nxt_queue_loop;
-
-    report->summary.latency_valid = nxt_app_latency_percentiles(merged,
-                                                     report->summary.latency);
-
-    type = NXT_PORT_MSG_RPC_READY_LAST;
-
-fail:
+    b = nxt_app_status_report(task, port->mem_pool, &nxt_router->apps,
+                              &nxt_router->stopping_processes);
+    type = (b != NULL) ? NXT_PORT_MSG_RPC_READY_LAST : NXT_PORT_MSG_RPC_ERROR;
 
     nxt_port_socket_write(task, port, type, -1, msg->port_msg.stream, 0, b);
 }
@@ -4876,7 +4760,7 @@ nxt_router_app_port_get(nxt_task_t *task, nxt_app_t *app,
     port = app->shared_port;
     nxt_port_inc_use(port);
 
-    app->total_requests++;
+    app->status.total_requests++;
     app->waiting_requests++;
 
     if (nxt_router_app_can_start(app) && nxt_router_app_need_start(app)) {
@@ -4921,9 +4805,7 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
     engine = task->thread->engine;
 
     r->app_target = conf->target;
-
-    /* The request configuration retains the app through response sending. */
-    r->response_app = conf->app;
+    r->engine = engine;
 
     req_rpc_data = nxt_port_rpc_register_handler_ex(task, engine->port,
                                           nxt_router_response_ready_handler,
@@ -4931,7 +4813,7 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
                                           sizeof(nxt_request_rpc_data_t));
     if (nxt_slow_path(req_rpc_data == NULL)) {
         nxt_thread_mutex_lock(&conf->app->mutex);
-        conf->app->total_requests++;
+        conf->app->status.total_requests++;
         nxt_thread_mutex_unlock(&conf->app->mutex);
 
         nxt_http_request_error(task, r, NXT_HTTP_INTERNAL_SERVER_ERROR);
@@ -4953,7 +4835,6 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
     r->timer.log = engine->task.log;
     r->timer.bias = NXT_TIMER_DEFAULT_BIAS;
 
-    r->engine = engine;
     r->err_work.handler = nxt_router_http_request_error;
     r->err_work.task = task;
     r->err_work.obj = r;
@@ -4977,30 +4858,20 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
 }
 
 
-void
-nxt_router_response_header_sent(nxt_http_request_t *r, nxt_uint_t status)
+nxt_app_t *
+nxt_router_request_app(nxt_http_request_t *r)
 {
-    nxt_app_t  *app;
+    nxt_http_app_conf_t  *conf;
 
-    app = r->response_app;
-
-    if (app == NULL || r->response_counted) {
-        return;
+    /* The engine is assigned when the request enters application dispatch. */
+    if (r->engine == NULL) {
+        return NULL;
     }
 
-    if (status != NXT_HTTP_SWITCHING_PROTOCOLS
-        && (status < NXT_HTTP_OK || status > NXT_HTTP_SERVER_ERROR_MAX))
-    {
-        return;
-    }
+    /* The request retains its listener's app even after the RPC ends. */
+    conf = r->conf->socket_conf->action->conf;
 
-    r->response_counted = 1;
-
-    nxt_thread_mutex_lock(&app->mutex);
-
-    app->responses[status / 100 - 1]++;
-
-    nxt_thread_mutex_unlock(&app->mutex);
+    return conf->app;
 }
 
 

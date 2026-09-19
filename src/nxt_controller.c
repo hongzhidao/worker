@@ -9,7 +9,7 @@
 #include <nxt_runtime.h>
 #include <nxt_main_process.h>
 #include <nxt_conf.h>
-#include <nxt_status.h>
+#include <nxt_app_status.h>
 
 
 typedef struct {
@@ -1491,8 +1491,9 @@ nxt_controller_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg,
     req = data;
 
     if (msg->port_msg.type == NXT_PORT_MSG_RPC_READY) {
-        status = nxt_status_get((nxt_status_report_t *) msg->buf->mem.pos,
-                                req->conn->mem_pool);
+        status = nxt_app_status_get(
+                     (nxt_app_status_report_t *) msg->buf->mem.pos,
+                     req->conn->mem_pool);
     } else {
         status = NULL;
     }

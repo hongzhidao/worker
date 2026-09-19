@@ -12,11 +12,11 @@
 #include <nxt_runtime.h>
 #include <nxt_main_process.h>
 
-typedef struct nxt_http_request_s  nxt_http_request_t;
 #include <nxt_application.h>
-#include <nxt_app.h>
+#include <nxt_app_status.h>
 
 
+typedef struct nxt_http_request_s              nxt_http_request_t;
 typedef struct nxt_http_action_s               nxt_http_action_t;
 
 
@@ -107,7 +107,7 @@ typedef struct {
 
 
 struct nxt_app_s {
-    nxt_thread_mutex_t     mutex;       /* Protects process state. */
+    nxt_thread_mutex_t     mutex;       /* Protects runtime state and status. */
 
     /* Queue of nxt_router_app_process_t.link. */
     nxt_queue_t            process_queue;
@@ -121,9 +121,7 @@ struct nxt_app_s {
 
     nxt_str_t              name;
 
-    uint64_t               total_requests;
-    uint64_t               responses[5];
-    nxt_app_latency_t      *latency;
+    nxt_app_status_t       status;
     uint32_t               waiting_requests;
     uint32_t               processing_requests;
     uint32_t               pending_processes;
@@ -216,7 +214,7 @@ typedef struct {
 
 void nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
     nxt_http_action_t *action);
-void nxt_router_response_header_sent(nxt_http_request_t *r, nxt_uint_t status);
+nxt_app_t *nxt_router_request_app(nxt_http_request_t *r);
 nxt_int_t nxt_router_application_init(nxt_mp_t *mp, nxt_router_conf_t *rtcf,
     nxt_str_t *name, nxt_str_t *target, nxt_http_action_t *action);
 void nxt_router_listen_event_release(nxt_task_t *task, nxt_listen_event_t *lev,

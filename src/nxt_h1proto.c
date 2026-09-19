@@ -976,6 +976,7 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
     nxt_uint_t          n;
     nxt_bool_t          http11;
     nxt_conn_t          *c;
+    nxt_app_t           *app;
     nxt_h1proto_t       *h1p;
     const nxt_str_t     *status;
     nxt_http_field_t    *field;
@@ -1138,7 +1139,15 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
     h1p->conn_write_tail = &header->next;
     c->write_state = &nxt_h1p_request_send_state;
 
-    nxt_router_response_header_sent(r, n);
+    app = nxt_router_request_app(r);
+
+    if (app != NULL) {
+        nxt_thread_mutex_lock(&app->mutex);
+
+        nxt_app_status_response(&app->status, n);
+
+        nxt_thread_mutex_unlock(&app->mutex);
+    }
 
     if (body_handler != NULL) {
         /*

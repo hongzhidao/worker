@@ -1,5 +1,5 @@
 #include <nxt_main.h>
-#include <nxt_app.h>
+#include <nxt_app_status.h>
 #include "nxt_tests.h"
 
 

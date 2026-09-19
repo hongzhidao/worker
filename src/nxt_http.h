@@ -144,7 +144,6 @@ struct nxt_http_request_s {
     void                            *timer_data;
 
     void                            *req_rpc_data;
-    nxt_app_t                       *response_app;
 
     nxt_buf_t                       *last;
 
@@ -160,7 +159,6 @@ struct nxt_http_request_s {
     uint8_t                         app_target;
     nxt_http_protocol_t             protocol:8;   /* 2 bits */
     uint8_t                         header_sent;  /* 1 bit  */
-    uint8_t                         response_counted;  /* 1 bit */
     uint8_t                         inconsistent; /* 1 bit  */
     uint8_t                         error;        /* 1 bit  */
     uint8_t                         websocket_handshake;  /* 1 bit */
