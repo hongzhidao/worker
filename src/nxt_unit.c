@@ -5726,8 +5726,9 @@ retry:
     }
 
     res = nxt_unit_port_recv(ctx, port, rbuf);
-    if (nxt_slow_path(res == NXT_UNIT_ERROR)) {
-        return NXT_UNIT_ERROR;
+    /* EOF has no queue marker and must reach message processing directly. */
+    if (nxt_slow_path(res == NXT_UNIT_ERROR || rbuf->size == 0)) {
+        return res;
     }
 
     read = 1;

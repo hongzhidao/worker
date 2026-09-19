@@ -139,7 +139,8 @@ def test_go_application_concurrent():
 
     assert len(pids) == 1, 'shared context in one application process'
 
-def test_go_application_request_limit():
+@pytest.mark.parametrize('delay', [False, True])
+def test_go_application_request_limit(delay):
     client.load('concurrent', processes=1)
     assert 'success' in client.conf(
         {'requests': 2}, 'applications/concurrent/limits'
@@ -148,7 +149,14 @@ def test_go_application_request_limit():
     pids = []
     for index in range(6):
         body = f'request {index}'
-        resp = client.post(body=body)
+        resp = client.post(
+            headers={
+                'Host': 'localhost', 'Connection': 'close',
+                'X-Delay': '1' if delay else '0',
+            },
+            body=body,
+            read_timeout=5,
+        )
         assert resp['status'] == 200, 'response across process recycle'
         assert resp['body'] == body, 'response body'
         pids.append(resp['headers']['X-Pid'])

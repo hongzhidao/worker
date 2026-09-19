@@ -11,6 +11,7 @@ package worker
 import "C"
 
 import (
+	"errors"
 	"io"
 	"net"
 	"os"
@@ -132,11 +133,13 @@ func nxt_go_remove_port(unit *C.nxt_unit_t, ctx *C.nxt_unit_ctx_t,
 	}
 
 	port_registry_.Lock()
-	if port_registry_.m != nil {
-		delete(port_registry_.m, key)
-	}
-
+	old := port_registry_.m[key]
+	delete(port_registry_.m, key)
 	port_registry_.Unlock()
+
+	if old != nil {
+		old.Close()
+	}
 }
 
 //export nxt_go_port_send
@@ -187,10 +190,9 @@ func nxt_go_port_recv(pid C.int, id C.int, buf unsafe.Pointer, buf_size C.int,
 		GoBytes(oob, C.int(*oob_size)))
 
 	if err != nil {
-		if nerr, ok := err.(*net.OpError); ok {
-			if nerr.Err == io.EOF {
-				return 0
-			}
+		if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
+			*oob_size = 0
+			return 0
 		}
 
 		nxt_go_warn("read result %d (%d), %s", n, oobn, err)

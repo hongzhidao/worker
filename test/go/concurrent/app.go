@@ -34,6 +34,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Header.Get("X-Delay") == "1" {
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	w.Header().Set("X-Pid", strconv.Itoa(os.Getpid()))
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.Write(body)
