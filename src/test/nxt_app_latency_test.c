@@ -75,6 +75,7 @@ nxt_int_t
 nxt_app_latency_test(nxt_thread_t *thr)
 {
     uint64_t           values[3], msec;
+    uint64_t           merged[NXT_APP_LATENCY_BUCKETS];
     nxt_uint_t         i;
     nxt_nsec_t         now;
     nxt_app_latency_t  *latency;
@@ -178,6 +179,42 @@ nxt_app_latency_test(nxt_thread_t *thr)
     if (!nxt_app_latency_get(latency, 0, values)
         || values[0] != 1 || values[1] != 1 || values[2] != 1)
     {
+        goto fail;
+    }
+
+    nxt_memzero(latency, sizeof(*latency));
+    nxt_memzero(merged, sizeof(merged));
+
+    for (i = 0; i < 95; i++) {
+        nxt_app_latency_record(latency, 0, 10 * 1000000);
+    }
+
+    nxt_app_latency_merge(merged, latency, 0);
+    nxt_memzero(latency, sizeof(*latency));
+
+    for (i = 0; i < 5; i++) {
+        nxt_app_latency_record(latency, 0, 1000 * 1000000);
+    }
+
+    nxt_app_latency_merge(merged, latency, 0);
+
+    if (!nxt_app_latency_percentiles(merged, values)
+        || values[0] != 10 || values[1] != 10 || values[2] != 1023)
+    {
+        goto fail;
+    }
+
+    if (!nxt_app_latency_get(latency, 0, values)
+        || values[0] != 1023 || values[1] != 1023 || values[2] != 1023)
+    {
+        goto fail;
+    }
+
+    nxt_memzero(merged, sizeof(merged));
+    nxt_app_latency_merge(merged, NULL, 0);
+    nxt_app_latency_merge(merged, latency, 60ULL * 1000000000);
+
+    if (nxt_app_latency_percentiles(merged, values)) {
         goto fail;
     }
 

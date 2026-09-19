@@ -231,8 +231,19 @@ curl --unix-socket /tmp/control.worker.sock http://localhost/config/
 curl --unix-socket /tmp/control.worker.sock http://localhost/status
 ```
 
-The status response includes total requests, and running, starting, idle, and
-stopping processes plus request lifecycle statistics for each application.
+The status response exposes `processes`, `requests`, `responses`, and `latency`
+at the top level and for each entry in `applications`. Top-level process,
+request, and response counts sum the application snapshots in that response.
+Top-level latency percentiles are calculated from the combined recent latency
+histograms, weighted by request count, rather than averaging app percentiles.
+With no applications, counts are zero and latency percentiles are `null`.
+
+These totals cover only the currently configured applications. Removing or
+replacing an application also removes its previous statistics from the totals;
+they are not lifetime server counters. In particular, `/status/requests/total`
+now counts application dispatches, not HTTP requests created by the router.
+Requests rejected before application dispatch do not contribute to these totals.
+
 Idle processes are included in running. Stopping processes have been told to
 exit and are counted separately until the router receives a process removal notification,
 including old processes after a restart or configuration change. They are

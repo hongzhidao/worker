@@ -4197,12 +4197,13 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 {
     u_char                    *p;
     size_t                    alloc;
+    uint64_t                  buckets[NXT_APP_LATENCY_BUCKETS];
+    uint64_t                  merged[NXT_APP_LATENCY_BUCKETS];
     nxt_app_t                 *app;
     nxt_buf_t                 *b;
-    nxt_uint_t                type;
+    nxt_uint_t                type, i;
     nxt_port_t                *port;
     nxt_status_app_t          *app_stat;
-    nxt_event_engine_t        *engine;
     nxt_status_report_t       *report;
     nxt_router_app_process_t  *app_process;
 
@@ -4232,12 +4233,7 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
     b->mem.free = b->mem.end;
 
     nxt_memzero(report, sizeof(nxt_status_report_t));
-
-    nxt_queue_each(engine, &nxt_router->engines, nxt_event_engine_t, link0) {
-
-        report->requests += engine->requests_cnt;
-
-    } nxt_queue_loop;
+    nxt_memzero(merged, sizeof(merged));
 
     report->apps_count = 0;
     app_stat = report->apps;
@@ -4261,9 +4257,9 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
                    sizeof(app_stat->responses));
         app_stat->waiting_requests = app->waiting_requests;
         app_stat->processing_requests = app->processing_requests;
-        app_stat->latency_valid = nxt_app_latency_get(app->latency,
-                                 nxt_app_latency_now(task->thread),
-                                 app_stat->latency);
+        nxt_memzero(buckets, sizeof(buckets));
+        nxt_app_latency_merge(buckets, app->latency,
+                              nxt_app_latency_now(task->thread));
         app_stat->pending_processes = app->pending_processes;
         app_stat->processes = app->processes;
         app_stat->idle_processes = app->idle_processes;
@@ -4290,9 +4286,31 @@ nxt_router_status_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg)
 
         nxt_thread_mutex_unlock(&app->mutex);
 
+        app_stat->latency_valid = nxt_app_latency_percentiles(buckets,
+                                                             app_stat->latency);
+
+        report->summary.total_requests += app_stat->total_requests;
+        report->summary.waiting_requests += app_stat->waiting_requests;
+        report->summary.processing_requests += app_stat->processing_requests;
+        report->summary.pending_processes += app_stat->pending_processes;
+        report->summary.processes += app_stat->processes;
+        report->summary.idle_processes += app_stat->idle_processes;
+        report->summary.stopping_processes += app_stat->stopping_processes;
+
+        for (i = 0; i < nxt_nitems(app_stat->responses); i++) {
+            report->summary.responses[i] += app_stat->responses[i];
+        }
+
+        for (i = 0; i < NXT_APP_LATENCY_BUCKETS; i++) {
+            merged[i] += buckets[i];
+        }
+
         report->apps_count++;
         app_stat++;
     } nxt_queue_loop;
+
+    report->summary.latency_valid = nxt_app_latency_percentiles(merged,
+                                                     report->summary.latency);
 
     type = NXT_PORT_MSG_RPC_READY_LAST;
 

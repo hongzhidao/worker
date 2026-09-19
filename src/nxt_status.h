@@ -13,17 +13,17 @@ typedef struct {
     uint64_t          responses[5];
     uint64_t          latency[3];
     nxt_bool_t        latency_valid;
-    uint32_t          waiting_requests;
-    uint32_t          processing_requests;
-    uint32_t          pending_processes;
-    uint32_t          processes;
-    uint32_t          idle_processes;
-    uint32_t          stopping_processes;
+    uint64_t          waiting_requests;
+    uint64_t          processing_requests;
+    uint64_t          pending_processes;
+    uint64_t          processes;
+    uint64_t          idle_processes;
+    uint64_t          stopping_processes;
 } nxt_status_app_t;
 
 
 typedef struct {
-    uint64_t          requests;
+    nxt_status_app_t  summary;
 
     size_t            apps_count;
     nxt_status_app_t  apps[];

@@ -21,8 +21,12 @@ typedef struct {
 nxt_nsec_t nxt_app_latency_now(nxt_thread_t *thr);
 void nxt_app_latency_record(nxt_app_latency_t *latency, nxt_nsec_t now,
     nxt_nsec_t duration);
-nxt_bool_t nxt_app_latency_get(nxt_app_latency_t *latency, nxt_nsec_t now,
+nxt_bool_t nxt_app_latency_get(const nxt_app_latency_t *latency, nxt_nsec_t now,
     uint64_t values[3]);
+void nxt_app_latency_merge(uint64_t buckets[NXT_APP_LATENCY_BUCKETS],
+    const nxt_app_latency_t *latency, nxt_nsec_t now);
+nxt_bool_t nxt_app_latency_percentiles(
+    const uint64_t buckets[NXT_APP_LATENCY_BUCKETS], uint64_t values[3]);
 
 
 #endif /* _NXT_APP_H_INCLUDED_ */

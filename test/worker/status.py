@@ -7,7 +7,14 @@ class Status:
 
     def _check_zeros():
         assert Status.control.conf_get('/status') == {
-            'requests': {'total': 0},
+            'processes': {
+                'running': 0, 'idle': 0, 'starting': 0, 'stopping': 0,
+            },
+            'requests': {
+                'total': 0, 'waiting': 0, 'processing': 0, 'completed': 0,
+            },
+            'responses': {'1xx': 0, '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0},
+            'latency': {'p50': None, 'p95': None, 'p99': None},
             'applications': {},
         }
 

@@ -28,8 +28,139 @@ def app_default(name="empty", module="wsgi", listen="*:8080"):
 
 def test_status():
     assert 'error' in client.conf_delete('/status'), 'DELETE method'
-    assert set(client.conf_get('/status')) == {'requests', 'applications'}
+    assert set(client.conf_get('/status')) == {
+        'processes', 'requests', 'responses', 'latency', 'applications',
+    }
     assert 'error' in client.conf_get('/status/connections')
+
+
+def check_aggregate():
+    status = client.conf_get('/status')
+    apps = list(status['applications'].values())
+
+    for app in apps:
+        assert set(app) == {'processes', 'requests', 'responses', 'latency'}
+
+    for group in ('processes', 'requests', 'responses'):
+        assert status[group] == {
+            key: sum(app[group][key] for app in apps) for key in status[group]
+        }
+
+    requests = status['requests']
+    assert requests['total'] == (
+        requests['waiting'] + requests['processing'] + requests['completed']
+    )
+
+    sampled = [
+        app['latency'] for app in apps if app['latency']['p50'] is not None
+    ]
+    if sampled:
+        for key, value in status['latency'].items():
+            assert min(app[key] for app in sampled) <= value <= max(
+                app[key] for app in sampled
+            )
+    else:
+        assert status['latency'] == {'p50': None, 'p95': None, 'p99': None}
+
+    return status
+
+
+def test_status_aggregate(temp_dir):
+    release_path = temp_dir + '/release-aggregate'
+    one = app_default('request_status')
+    one['processes'] = 2
+    two = app_default('request_status', listen='*:8081')
+    two['processes'] = 1
+    two['environment'] = {'RELEASE_PATH': release_path}
+
+    assert 'success' in client.conf({'applications': {'one': one, 'two': two}})
+    status = check_aggregate()
+    assert status['processes'] == {
+        'running': 3, 'idle': 3, 'starting': 0, 'stopping': 0,
+    }
+    assert status['requests']['total'] == 0
+
+    assert client.get()['status'] == 200
+    assert client.get(port=8081, headers={
+        'Host': 'localhost', 'X-Status': '404', 'Connection': 'close',
+    })['status'] == 404
+
+    socks = []
+    try:
+        socks.append(client.get(
+            port=8081,
+            headers={'Host': 'localhost', 'X-Wait': '1', 'Connection': 'close'},
+            no_recv=True,
+        ))
+        wait_requests('two', total=2, processing=1, completed=1)
+        socks.append(client.get(port=8081, no_recv=True))
+        wait_requests('two', total=3, waiting=1, processing=1, completed=1)
+
+        status = check_aggregate()
+        assert status['requests'] == {
+            'total': 4, 'waiting': 1, 'processing': 1, 'completed': 2,
+        }
+        assert status['responses'] == {
+            '1xx': 0, '2xx': 1, '3xx': 0, '4xx': 1, '5xx': 0,
+        }
+        open(release_path, 'a').close()
+        for sock in socks:
+            assert b'HTTP/1.1 200' in client.recvall(sock)
+        wait_requests('two', total=3, completed=3)
+    finally:
+        open(release_path, 'a').close()
+        for sock in socks:
+            sock.close()
+
+    assert check_aggregate()['requests']['completed'] == 4
+    assert 'success' in client.conf_delete('applications/one')
+    status = check_aggregate()
+    assert status['requests']['total'] == 3
+    assert {
+        key: status[key]
+        for key in ('processes', 'requests', 'responses', 'latency')
+    } == status['applications']['two']
+
+    assert 'success' in client.conf(
+        {'REVISION': '2'}, 'applications/two/environment'
+    )
+    wait_requests('two')
+    status = check_aggregate()
+    assert status['requests']['total'] == 0
+    assert status['responses'] == {
+        '1xx': 0, '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0,
+    }
+
+    assert 'success' in client.conf_delete('applications/two')
+    Status._check_zeros()
+
+
+def test_status_aggregate_latency():
+    fast = app_default('request_status')
+    fast['processes'] = 1
+    slow = app_default('request_status', listen='*:8081')
+    slow['processes'] = 1
+    assert 'success' in client.conf(
+        {'applications': {'fast': fast, 'slow': slow}}
+    )
+
+    for _ in range(20):
+        assert client.get()['status'] == 200
+    assert client.get(port=8081, headers={
+        'Host': 'localhost', 'X-Delay': '0.2', 'Connection': 'close',
+    })['status'] == 200
+    wait_requests('fast', total=20, completed=20)
+    wait_requests('slow', total=1, completed=1)
+
+    status = check_aggregate()
+    fast_latency = status['applications']['fast']['latency']
+    slow_latency = status['applications']['slow']['latency']
+    assert fast_latency['p99'] < slow_latency['p50']
+    assert status['latency']['p50'] <= fast_latency['p99']
+    assert status['latency']['p95'] == fast_latency['p99']
+    assert status['latency']['p99'] == slow_latency['p99']
+    assert status['requests']['total'] == 21
+
 
 def test_status_requests(skip_alert):
     skip_alert(r'Python failed to import module "blah"')
@@ -61,12 +192,12 @@ def test_status_requests(skip_alert):
         client.get(headers={'Host': '/', 'Connection': 'close'})['status']
         == 400
     )
-    assert Status.get('/requests/total') == 3, '4xx'
+    assert Status.get('/requests/total') == 2, 'rejected before app dispatch'
     wait_requests('empty', total=1, completed=1)
     wait_responses('empty', {'2xx': 1})
 
     assert client.get(port=8082)['status'] == 503
-    assert Status.get('/requests/total') == 4, '5xx'
+    assert Status.get('/requests/total') == 3, '5xx'
     wait_requests('blah', total=1, completed=1)
     wait_responses('blah', {'5xx': 1})
     check_empty_latency('blah')
@@ -82,7 +213,7 @@ Connection: close
 """,
         raw=True,
     )
-    assert Status.get('/requests/total') == 6, 'pipeline'
+    assert Status.get('/requests/total') == 5, 'pipeline'
     wait_requests('empty', total=3, completed=3)
     wait_responses('empty', {'2xx': 3})
 
@@ -90,7 +221,7 @@ Connection: close
 
     time.sleep(1)
 
-    assert Status.get('/requests/total') == 7, 'no receive'
+    assert Status.get('/requests/total') == 6, 'no receive'
 
     sock.close()
     wait_requests('other', total=2, completed=2)

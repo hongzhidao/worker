@@ -55,24 +55,31 @@ nxt_app_latency_record(nxt_app_latency_t *latency, nxt_nsec_t now,
 
 
 nxt_bool_t
-nxt_app_latency_get(nxt_app_latency_t *latency, nxt_nsec_t now,
+nxt_app_latency_get(const nxt_app_latency_t *latency, nxt_nsec_t now,
     uint64_t values[3])
 {
-    uint64_t                 second, count, cumulative, ranks[3];
-    uint64_t                 buckets[NXT_APP_LATENCY_BUCKETS];
-    nxt_uint_t               i, j, quantile, shift;
-    nxt_app_latency_slice_t  *slice;
+    uint64_t  buckets[NXT_APP_LATENCY_BUCKETS];
 
-    static const uint8_t  percentages[] = { 50, 95, 99 };
+    nxt_memzero(buckets, sizeof(buckets));
+    nxt_app_latency_merge(buckets, latency, now);
 
-    nxt_memzero(values, 3 * sizeof(uint64_t));
+    return nxt_app_latency_percentiles(buckets, values);
+}
+
+
+void
+nxt_app_latency_merge(uint64_t buckets[NXT_APP_LATENCY_BUCKETS],
+    const nxt_app_latency_t *latency, nxt_nsec_t now)
+{
+    uint64_t                       second;
+    nxt_uint_t                     i, j;
+    const nxt_app_latency_slice_t  *slice;
 
     if (latency == NULL) {
-        return 0;
+        return;
     }
 
     second = now / 1000000000;
-    nxt_memzero(buckets, sizeof(buckets));
 
     for (i = 0; i < NXT_APP_LATENCY_WINDOW; i++) {
         slice = &latency->slices[i];
@@ -87,6 +94,19 @@ nxt_app_latency_get(nxt_app_latency_t *latency, nxt_nsec_t now,
             buckets[j] += slice->buckets[j];
         }
     }
+}
+
+
+nxt_bool_t
+nxt_app_latency_percentiles(const uint64_t buckets[NXT_APP_LATENCY_BUCKETS],
+    uint64_t values[3])
+{
+    uint64_t    count, cumulative, ranks[3];
+    nxt_uint_t  i, quantile, shift;
+
+    static const uint8_t  percentages[] = { 50, 95, 99 };
+
+    nxt_memzero(values, 3 * sizeof(uint64_t));
 
     count = 0;
 
