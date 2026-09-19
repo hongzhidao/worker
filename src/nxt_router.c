@@ -2620,6 +2620,8 @@ nxt_router_app_process_cleanup(nxt_task_t *task, void *obj, void *data)
 
     app_process = obj;
 
+    (void) app_process;
+
     nxt_assert(app_process->app == NULL);
     nxt_assert(app_process->link.next == NULL);
     nxt_assert(app_process->idle_link.next == NULL);
@@ -3395,7 +3397,6 @@ nxt_router_app_port_close(nxt_task_t *task, nxt_port_t *port)
 {
     nxt_app_t                 *app;
     nxt_bool_t                unchain, start_process;
-    nxt_port_t                *idle_port;
     nxt_queue_link_t          *idle_lnk;
     nxt_router_app_process_t  *app_process, *idle_process;
 
@@ -3442,7 +3443,6 @@ nxt_router_app_port_close(nxt_task_t *task, nxt_port_t *port)
             idle_lnk = nxt_queue_last(&app->idle_process_queue);
             idle_process = nxt_queue_link_data(idle_lnk,
                                           nxt_router_app_process_t, idle_link);
-            idle_port = idle_process->port;
             nxt_queue_remove(idle_lnk);
 
             nxt_queue_insert_tail(&app->spare_process_queue, idle_lnk);
@@ -3450,7 +3450,7 @@ nxt_router_app_port_close(nxt_task_t *task, nxt_port_t *port)
             idle_process->idle_start = 0;
 
             nxt_debug(task, "app '%V' move process %PI: idle -> spare",
-                      &app->name, idle_port->pid);
+                      &app->name, idle_process->port->pid);
         }
     }
 
@@ -4553,7 +4553,7 @@ nxt_router_req_headers_ack_handler(nxt_task_t *task,
     nxt_app_t                 *app;
     nxt_buf_t                 *b;
     nxt_bool_t                start_process, unlinked;
-    nxt_port_t                *app_port, *idle_port;
+    nxt_port_t                *app_port;
     nxt_queue_link_t          *idle_lnk;
     nxt_http_request_t        *r;
     nxt_router_app_process_t  *app_process, *idle_process;
@@ -4617,7 +4617,6 @@ nxt_router_req_headers_ack_handler(nxt_task_t *task,
             idle_lnk = nxt_queue_last(&app->idle_process_queue);
             idle_process = nxt_queue_link_data(idle_lnk,
                                           nxt_router_app_process_t, idle_link);
-            idle_port = idle_process->port;
             nxt_queue_remove(idle_lnk);
 
             nxt_queue_insert_tail(&app->spare_process_queue, idle_lnk);
@@ -4625,7 +4624,7 @@ nxt_router_req_headers_ack_handler(nxt_task_t *task,
             idle_process->idle_start = 0;
 
             nxt_debug(task, "app '%V' move process %PI: idle -> spare",
-                      &app->name, idle_port->pid);
+                      &app->name, idle_process->port->pid);
         }
 
         if (nxt_router_app_can_start(app) && nxt_router_app_need_start(app)) {
