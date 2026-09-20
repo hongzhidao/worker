@@ -1558,8 +1558,10 @@ nxt_controller_conf_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 
     req = data;
 
-    nxt_debug(task, "controller conf ready: %*s",
-              nxt_buf_mem_used_size(&msg->buf->mem), msg->buf->mem.pos);
+    if (msg->buf != NULL) {
+        nxt_debug(task, "controller conf ready: %*s",
+                  nxt_buf_mem_used_size(&msg->buf->mem), msg->buf->mem.pos);
+    }
 
     nxt_queue_remove(&req->link);
 
@@ -1581,6 +1583,14 @@ nxt_controller_conf_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg,
         resp.status = 500;
         resp.title = (u_char *) "Failed to apply new configuration.";
         resp.offset = -1;
+
+        if (msg->buf != NULL && msg->size != 0) {
+            resp.detail.start = nxt_mp_nget(req->conn->mem_pool, msg->size);
+            if (resp.detail.start != NULL) {
+                nxt_memcpy(resp.detail.start, msg->buf->mem.pos, msg->size);
+                resp.detail.length = msg->size;
+            }
+        }
     }
 
     nxt_controller_response(task, req, &resp);

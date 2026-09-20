@@ -1405,7 +1405,20 @@ static void
 nxt_router_conf_send(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_port_msg_type_t type)
 {
-    nxt_port_socket_write(task, tmcf->port, type, -1, tmcf->stream, 0, NULL);
+    nxt_buf_t  *b;
+
+    b = NULL;
+
+    if (type == NXT_PORT_MSG_RPC_ERROR && tmcf->error.length != 0) {
+        b = nxt_buf_mem_ts_alloc(task, task->thread->engine->mem_pool,
+                                 tmcf->error.length);
+        if (b != NULL) {
+            b->mem.free = nxt_cpymem(b->mem.free, tmcf->error.start,
+                                     tmcf->error.length);
+        }
+    }
+
+    nxt_port_socket_write(task, tmcf->port, type, -1, tmcf->stream, 0, b);
 
     nxt_port_use(task, tmcf->port, -1);
 
@@ -1784,11 +1797,24 @@ static void
 nxt_router_listen_socket_error(nxt_task_t *task, nxt_port_recv_msg_t *msg,
     void *data)
 {
+    u_char                  *p;
+    size_t                  size;
     nxt_socket_rpc_t        *rpc;
     nxt_router_temp_conf_t  *tmcf;
 
     rpc = data;
     tmcf = rpc->temp_conf;
+
+    if (msg->buf != NULL && msg->size > 1) {
+        p = msg->buf->mem.pos;
+        size = msg->size - 1;
+        tmcf->error.start = nxt_mp_nget(tmcf->mem_pool, size);
+
+        if (tmcf->error.start != NULL) {
+            nxt_memcpy(tmcf->error.start, p + 1, size);
+            tmcf->error.length = size;
+        }
+    }
 
 #if 0
     u_char                  *p;

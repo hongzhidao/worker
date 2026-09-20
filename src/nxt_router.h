@@ -66,6 +66,7 @@ typedef struct {
     uint32_t               new_threads;
     uint32_t               stream;
     uint32_t               count;
+    nxt_str_t              error;
 
     nxt_event_engine_t     *engine;
     nxt_port_t             *port;

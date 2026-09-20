@@ -104,6 +104,7 @@ def test_listen_bind_failure_rolls_back(skip_alert, add_app):
         else:
             response = client.conf(json.dumps(address), 'applications/listen/listen')
         assert 'error' in response
+        assert 'bind(' in response.get('detail', '')
     assert client.conf_get() == before
     assert client.get()['body'] == body
     assert 'success' in client.conf('"127.0.0.1:8081"', 'applications/listen/listen')
