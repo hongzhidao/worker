@@ -217,11 +217,31 @@ class Installer(unittest.TestCase):
         self.destination = self.directory / "installed with 'quotes'"
         self.archive = self.directory / 'worker-all-0.1.0-ubuntu24.04-amd64.tar.gz'
         with tarfile.open(self.archive, 'w:gz') as stream:
-            body = b'#!/bin/sh\necho worker\n'
-            member = tarfile.TarInfo('bundle/worker')
-            member.size = len(body)
-            member.mode = 0o755
-            stream.addfile(member, io.BytesIO(body))
+            files = {
+                'bundle/worker': b'#!/bin/sh\nprintf "Worker 0.1.0 (all, amd64)\\n"\n',
+                'bundle/python': b'#!/bin/sh\nexit 0\n',
+                'bundle/php': b'#!/bin/sh\nexit 0\n',
+                'bundle/manifest.json': b'{"version":"0.1.0"}\n',
+                'bundle/bundle.env': (
+                    b'WORKER_FLAVOR=all\nWORKER_ARCH=amd64\n'
+                    b'WORKER_GLIBC_MIN=2.39\nWORKER_VERSION=0.1.0\n'
+                ),
+                'bundle/bin/workerd': b'\\0',
+                'bundle/bin/curl': b'\\0',
+                'bundle/runtime/bin/python': b'\\0',
+                'bundle/runtime/bin/php': b'\\0',
+                'bundle/modules/python3.worker.so': b'\\0',
+                'bundle/modules/php.worker.so': b'\\0',
+            }
+            for name, body in files.items():
+                member = tarfile.TarInfo(name)
+                member.size = len(body)
+                member.mode = 0o755 if name in {
+                    'bundle/worker', 'bundle/python', 'bundle/php',
+                    'bundle/bin/workerd', 'bundle/bin/curl',
+                    'bundle/runtime/bin/python', 'bundle/runtime/bin/php',
+                } else 0o644
+                stream.addfile(member, io.BytesIO(body))
         self.digest = hashlib.sha256(self.archive.read_bytes()).hexdigest()
         self.index()
 
